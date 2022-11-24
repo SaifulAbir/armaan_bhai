@@ -1,5 +1,6 @@
 from rest_framework import serializers, status
 from rest_framework.validators import UniqueValidator
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .models import *
 from .utils import UserIDManager
@@ -409,24 +410,20 @@ class UserRegSerializer(serializers.ModelSerializer):
 #                                 modified_by=self.context['request'].user.id,
 #                                 modified_at=timezone.now())
 #         return super().update(instance, validated_data)
-#
-#
-# class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-#
-#     def validate(self, attrs):
-#         # The default result (access/refresh tokens)
-#         data = super(CustomTokenObtainPairSerializer, self).validate(attrs)
-#         # Custom data you want to include
-#         refresh = self.get_token(self.user)
-#         try:
-#             user_profile = ProfileSerializer(self.user.user_profile).data
-#         except User.user_profile.RelatedObjectDoesNotExist:
-#             user_profile = None
-#         data.update({'is_account_created': self.user.is_modified, 'user_profile': user_profile, 'user_id': self.user.id,
-#                      'is_superuser': self.user.is_superuser, 'is_staff': self.user.is_staff,
-#                      'lifetime': int(refresh.access_token.lifetime.total_seconds())})
-#         # and everything else you want to send in the response
-#         return data
+
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+
+    def validate(self, attrs):
+        # The default result (access/refresh tokens)
+        data = super(CustomTokenObtainPairSerializer, self).validate(attrs)
+        # Custom data you want to include
+        refresh = self.get_token(self.user)
+        data.update({'username': self.user.username, 'user_id': self.user.id,
+                     'user_type': self.user.user_type, 'is_active': self.user.is_active,
+                     'lifetime': int(refresh.access_token.lifetime.total_seconds())})
+        # and everything else you want to send in the response
+        return data
 #
 #
 # class VerifyInvitationSerializer(serializers.Serializer):

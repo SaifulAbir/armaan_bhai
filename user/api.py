@@ -23,11 +23,11 @@ class UserRegApi(CreateAPIView):
     serializer_class = UserRegSerializer
     permission_classes = [AllowAny]
 
-# class CustomTokenObtainPairView(TokenObtainPairView):
-#     # Replace the serializer with your custom
-#     serializer_class = CustomTokenObtainPairSerializer
-#
-#
+class CustomTokenObtainPairView(TokenObtainPairView):
+    # Replace the serializer with your custom
+    serializer_class = CustomTokenObtainPairSerializer
+
+
 # class SocialSignupAPIView(CreateAPIView):
 #     permission_classes = [AllowAny]
 #     serializer_class = UserSocialRegSerializer

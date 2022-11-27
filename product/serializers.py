@@ -87,11 +87,33 @@ class ProductCreateSerializer(serializers.ModelSerializer):
 
         # production steps
         if production_steps:
-            print(production_steps)
             for step in production_steps:
                 ProductionStep.objects.create(
                     product=product_instance, image=step['image'], step_date=step['step_date'], step=step['step'])
         return product_instance
+
+
+class ProductListSerializer(serializers.ModelSerializer):
+    production_steps = ProductionStepSerializer(many=True, read_only=True)
+    product_images = ProductImageSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Product
+        fields = [
+            'id',
+            'title',
+            'category',
+            'sub_category',
+            'unit',
+            'product_images',
+            'thumbnail',
+            'price_per_unit',
+            'full_description',
+            'quantity',
+            'user',
+            'possible_productions_date',
+            'production_steps'
+        ]
 
 
 

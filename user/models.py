@@ -58,7 +58,7 @@ class User(AbstractUser):
     village = models.CharField(max_length=255, null=True)
     postcode = models.IntegerField(null=True)
     phone_number = models.CharField(max_length=255, validators=[phone_regex], null=True)
-    terms_and_conditions = models.BooleanField()
+    terms_and_conditions = models.BooleanField(default=False)
     image = models.ImageField(upload_to='images/user', null=True)
     user_type = models.CharField(max_length=50, choices=USER_CHOICES, null=True)
     is_admin = models.BooleanField(default=False)

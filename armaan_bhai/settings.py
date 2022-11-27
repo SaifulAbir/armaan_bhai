@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'drf_yasg',
 
     'user',
+    'product',
 ]
 
 MIDDLEWARE = [
@@ -103,6 +104,7 @@ DATABASES = {
         'PASSWORD': os.environ.get('DB_PASSWORD'),
     }
 }
+
 
 
 # Password validation

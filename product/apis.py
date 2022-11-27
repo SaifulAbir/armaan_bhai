@@ -1,8 +1,10 @@
-#product create class views
-# class ProductCreateAPIView(CreateAPIView):
-#     permission_classes = [IsAuthenticated]
-#     serializer_class = ProductCreateSerializer
+from rest_framework.generics import CreateAPIView
+from product.serializers import ProductCreateSerializer
 
-#     def perform_create(self, serializer):
-#         serializer.save(user=self.request.user)
+
+class ProductCreateAPIView(CreateAPIView):
+    serializer_class = ProductCreateSerializer
+
+    def post(self, request, *args, **kwargs):
+        return super(ProductCreateAPIView, self).post(request, *args, **kwargs)
         

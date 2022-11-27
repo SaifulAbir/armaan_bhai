@@ -75,6 +75,19 @@ class User(AbstractUser):
         return self.full_name
 
 
+class AgentFarmer(AbstractTimeStamp):
+    farmer = models.ForeignKey(User, on_delete=models.PROTECT, related_name="farmer_agent")
+    agent = models.ForeignKey(User, on_delete=models.PROTECT, related_name="agent_farmer")
+
+    class Meta:
+        verbose_name = 'Agent Farmer'
+        verbose_name_plural = 'Agent Farmers'
+        db_table = 'agent_farmers'
+
+    def __str__(self):
+        return self.agent.full_name
+
+
 
 # phone_regex = RegexValidator(regex='^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\./0-9]*$',message='invalid phone number')
 # class User(AbstractBaseUser,PermissionsMixin):

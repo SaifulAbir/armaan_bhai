@@ -2,5 +2,5 @@ from django.urls import path
 from .apis import *
 
 urlpatterns = [
-    # path('send-otp/', SendOTPAPIView.as_view(), name='send_otp'),
+    path('create/product/', ProductCreateAPIView.as_view(), name='create_product'),
 ]

@@ -3,6 +3,7 @@ from django.core.validators import RegexValidator
 from django.db import models
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from armaan_bhai.models import AbstractTimeStamp
+from django.utils.translation import gettext as _
 
 
 class Division(AbstractTimeStamp):
@@ -47,6 +48,7 @@ class User(AbstractUser):
     USER_CHOICES = (
         ('FARMER', 'Farmer'),
         ('AGENT', 'Agent'),
+        ('CUSTOMER', 'Customer'),
     )
     full_name = models.CharField(max_length=255, null=True)
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, null=True)
@@ -72,7 +74,7 @@ class User(AbstractUser):
         db_table = 'users'
 
     def __str__(self):
-        return self.full_name
+        return self.username
 
 
 class AgentFarmer(AbstractTimeStamp):
@@ -88,6 +90,27 @@ class AgentFarmer(AbstractTimeStamp):
         return self.agent.full_name
 
 
+class OTPModel(AbstractTimeStamp):
+    """OTPModel to save otp value
+    Args:
+        contact_number: CharField
+        otp_number: IntegerField
+        expired_time: DateTimeField
+
+    """
+    contact_number = models.CharField(_('Contact Number'), max_length=20, null=False, blank=False)
+    otp_number = models.IntegerField(_('OTP Number'), null=False, blank=False)
+    verified_phone = models.BooleanField(default=False)
+    user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="user_otp")
+    expired_time = models.DateTimeField(_('Expired Time'), null=False, blank=False)
+
+    def __str__(self):
+        return self.user.full_name
+
+    class Meta:
+        verbose_name = "OTPModel"
+        verbose_name_plural = "OTPModels"
+        db_table = 'otp_models'
 
 # phone_regex = RegexValidator(regex='^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\./0-9]*$',message='invalid phone number')
 # class User(AbstractBaseUser,PermissionsMixin):

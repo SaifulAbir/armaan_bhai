@@ -23,6 +23,17 @@ class UserRegApi(CreateAPIView):
     serializer_class = UserRegSerializer
     permission_classes = [AllowAny]
 
+
+class CreateCustomerAPI(CreateAPIView):
+    serializer_class = CreateCustomerSerializer
+    permission_classes = [AllowAny]
+
+
+class CustomerLoginAPI(CreateAPIView):
+    serializer_class = CustomerLoginSerializer
+    permission_classes = [AllowAny]
+
+
 class CustomTokenObtainPairView(TokenObtainPairView):
     # Replace the serializer with your custom
     serializer_class = CustomTokenObtainPairSerializer

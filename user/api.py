@@ -14,6 +14,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from user.serializers import *
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.exceptions import ValidationError
 # from user.utils import profile_view_count
 
@@ -34,10 +35,54 @@ class CustomerLoginAPI(CreateAPIView):
     permission_classes = [AllowAny]
 
 
+class CustomerReSendOTPAPIView(CreateAPIView):
+    serializer_class = CustomerOTPReSendSerializer
+    permission_classes = [AllowAny]
+
+
 class CustomTokenObtainPairView(TokenObtainPairView):
     # Replace the serializer with your custom
     serializer_class = CustomTokenObtainPairSerializer
 
+
+class OTPVerifyAPIVIEW(CreateAPIView):
+    """
+       Get OTP from user, and verify it
+    """
+    serializer_class = OTPVerifySerializer
+    permission_classes = [AllowAny, ]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        otp_obj = OTPModel.objects.filter(contact_number=serializer.data["contact_number"]).last()
+        if otp_obj.otp_number == serializer.data["otp_number"]:
+            # OTP matched
+            otp_obj.verified_phone = True
+            otp_sent_time = otp_obj.expired_time
+            timediff = datetime.now(pytz.timezone('Asia/Dhaka')) - otp_sent_time
+            time_in_seconds = timediff.total_seconds()
+
+            if time_in_seconds > 120:
+                return Response({
+                    'details': 'time expired'
+                }, status=status.HTTP_408_REQUEST_TIMEOUT)
+            try:
+                user = User.objects.get(phone_number=serializer.data["contact_number"])
+                user.is_active = True
+                user.save()
+                token = RefreshToken.for_user(user)
+            except User.DoesNotExist:
+                user = None
+                token = None
+
+            otp_obj.save()
+            return Response(
+                {"user_id": user.id, "user_type": user.user_type, "full_name": user.full_name, "phone_number": user.phone_number, 'details': 'Verified',
+                 "access_token": str(token.access_token) if token else None,
+                 "refresh_token": str(token) if token else None}, status=status.HTTP_200_OK)
+        else:
+            return Response({'details': "Incorrect OTP"}, status=status.HTTP_400_BAD_REQUEST)
 
 # class SocialSignupAPIView(CreateAPIView):
 #     permission_classes = [AllowAny]

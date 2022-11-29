@@ -9,6 +9,8 @@ urlpatterns = [
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('create/customer/', CreateCustomerAPI.as_view(), name='create_customer'),
     path('customer/login/', CustomerLoginAPI.as_view(), name='customer_login'),
+    path('customer/resend-otp/', CustomerReSendOTPAPIView.as_view(), name='customer_resend_otp'),
+    path('otp/verify/', OTPVerifyAPIVIEW.as_view(), name='otp_verification'),
     path('create-user/', csrf_exempt(UserRegApi.as_view())),
     # path('update-user/', UserUpdateAPIView.as_view()),
     # path('user-detail/', UserUpdateAPIView.as_view()),

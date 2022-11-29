@@ -151,6 +151,43 @@ class CustomerLoginSerializer(serializers.ModelSerializer):
         )
         otp_model.save()
         return user
+
+
+class CustomerOTPReSendSerializer(serializers.ModelSerializer):
+    class Meta:
+        extra_kwargs = {'contact_number': {'required': True},
+                        'otp_number': {'read_only': True},
+                        }
+        fields = ('contact_number', 'otp_number')
+        model = OTPModel
+
+    def create(self, validated_data):
+        try:
+            user = User.objects.get(phone_number=validated_data["contact_number"])
+        except User.DoesNotExist:
+            user = None
+            raise serializers.ValidationError("User doesn't exists.")
+        # Generate OTP
+        sent_otp = OTPManager().initialize_otp_and_sms_otp(validated_data['contact_number'])
+        otp_sending_time = datetime.now(pytz.timezone('Asia/Dhaka'))
+        otp_model = OTPModel.objects.create(
+            contact_number=validated_data['contact_number'],
+            otp_number=sent_otp,
+            expired_time=otp_sending_time,
+            user=user
+        )
+        otp_model.save()
+        return otp_model
+
+
+class OTPVerifySerializer(serializers.ModelSerializer):
+    class Meta:
+        extra_kwargs = {'contact_number': {'required': True},
+                        'otp_number': {'required': True}}
+        fields = ('contact_number', 'otp_number')
+        model = OTPModel
+
+
 # class UserSocialRegSerializer(serializers.ModelSerializer):
 #
 #     email = serializers.EmailField(required=True, validators=[UniqueValidator(queryset=User.objects.all())])

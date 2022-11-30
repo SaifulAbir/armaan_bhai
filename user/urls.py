@@ -11,6 +11,8 @@ urlpatterns = [
     path('customer/login/', CustomerLoginAPI.as_view(), name='customer_login'),
     path('customer/resend-otp/', CustomerReSendOTPAPIView.as_view(), name='customer_resend_otp'),
     path('otp/verify/', OTPVerifyAPIVIEW.as_view(), name='otp_verification'),
+    path('customer/profile/', CustomerRetrieveAPIView.as_view(), name='customer_profile'),
+    path('customer/edit-profile/', CustomerUpdateAPIView.as_view(), name='customer_edit_profile'),
     path('create-user/', csrf_exempt(UserRegApi.as_view())),
     # path('update-user/', UserUpdateAPIView.as_view()),
     # path('user-detail/', UserUpdateAPIView.as_view()),

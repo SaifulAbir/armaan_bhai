@@ -84,6 +84,22 @@ class OTPVerifyAPIVIEW(CreateAPIView):
         else:
             return Response({'details': "Incorrect OTP"}, status=status.HTTP_400_BAD_REQUEST)
 
+
+class CustomerUpdateAPIView(UpdateAPIView):
+    serializer_class = CustomerProfileUpdateSerializer
+
+    def get_object(self):
+        customer = User.objects.get(id=self.request.user.id, user_type="CUSTOMER")
+        return customer
+
+
+class CustomerRetrieveAPIView(RetrieveAPIView):
+    serializer_class = CustomerProfileDetailSerializer
+
+    def get_object(self):
+        customer = User.objects.get(id=self.request.user.id, user_type="CUSTOMER")
+        return customer
+
 # class SocialSignupAPIView(CreateAPIView):
 #     permission_classes = [AllowAny]
 #     serializer_class = UserSocialRegSerializer

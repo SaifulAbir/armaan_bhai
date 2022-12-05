@@ -12,7 +12,7 @@ def unique_slug_generator(instance, new_slug=None):
         slug = new_slug
     else:
         p_title = str(instance.title)
-        l = [s[0] for s in p_title.split()]
+        l = [s for s in p_title.split()]
         text = '-'.join(l)
         slug = slugify(text)
 

@@ -116,6 +116,115 @@ class ProductListSerializer(serializers.ModelSerializer):
         ]
 
 
+class ProductViewSerializer(serializers.ModelSerializer):
+    production_steps = ProductionStepSerializer(many=True, read_only=True)
+    product_images = ProductImageSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Product
+        fields = [
+            'id',
+            'title',
+            'category',
+            'sub_category',
+            'unit',
+            'product_images',
+            'thumbnail',
+            'price_per_unit',
+            'full_description',
+            'quantity',
+            'user',
+            'possible_productions_date',
+            'production_steps'
+        ]
+
+
+class ProductUpdateSerializer(serializers.ModelSerializer):
+    new_product_images = serializers.ListField(
+        child=serializers.FileField(), write_only=True, required=False)
+    deleted_product_images = serializers.ListField(
+        child=serializers.IntegerField(), write_only=True, required=False)
+    production_steps = ProductionStepSerializer(many=True, required=True)
+    product_images = ProductImageSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Product
+        fields = [
+            'id',
+            'title',
+            'category',
+            'sub_category',
+            'unit',
+            'new_product_images',
+            'deleted_product_images',
+            'product_images',
+            'thumbnail',
+            'price_per_unit',
+            'full_description',
+            'quantity',
+            'possible_productions_date',
+            'production_steps'
+        ]
+
+    def update(self, instance, validated_data):
+        # new product images
+        try:
+            new_product_images = validated_data.pop('new_product_images')
+        except:
+            new_product_images = None
+
+        # deleted product images
+        try:
+            deleted_product_images = validated_data.pop('deleted_product_images')
+        except:
+            deleted_product_images = None
+
+        # production steps
+        try:
+            production_steps = validated_data.pop('production_steps')
+        except:
+            production_steps = None
+
+        if not self.context['request'].user.user_type == 'FARMER':
+            raise serializers.ValidationError("Product only will be updated by farmers")
+
+        # product inventory
+        try:
+            quantity = validated_data["quantity"]
+        except:
+            quantity = None
+
+        if quantity:
+            last_inventory = Inventory.objects.filter(product=instance).last()
+            initial_quantity = quantity - last_inventory.current_quantity
+            Inventory.objects.create(initial_quantity=initial_quantity, current_quantity=quantity, product=instance)
+            total_quantity = Inventory.objects.filter(product=instance).aggregate(total_quantity=sum('initial_quantity'))
+            validated_data.update({"total_quantity": total_quantity})
+
+        # new product_images
+        if new_product_images:
+            for image in new_product_images:
+                ProductImage.objects.create(
+                    product=instance, file=image)
+
+        # deleted product_images
+        if deleted_product_images:
+            for image_id in deleted_product_images:
+                ProductImage.objects.filter(id=image_id, product=instance).delete()
+
+        # production steps
+        if production_steps:
+            for step in production_steps:
+                try:
+                    production_steps = ProductionStep.objects.get(product=instance, step=step['step'])
+                    production_steps.image = step['image']
+                    production_steps.step_date = step['step_date']
+                    production_steps.save()
+                except ProductionStep.DoesNotExist:
+                    ProductionStep.objects.create(product=instance, step=step['step'], image=step['image'], step_date=step['step_date'])
+        return super().update(instance, validated_data)
+
+
 
 
 

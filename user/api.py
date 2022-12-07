@@ -11,6 +11,8 @@ from rest_framework.generics import RetrieveUpdateAPIView, CreateAPIView, ListAP
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
+
+from armaan_bhai.pagination import CustomPagination
 from user.serializers import *
 from rest_framework.response import Response
 from rest_framework import status
@@ -99,6 +101,16 @@ class CustomerRetrieveAPIView(RetrieveAPIView):
     def get_object(self):
         customer = User.objects.get(id=self.request.user.id, user_type="CUSTOMER")
         return customer
+
+
+class FarmerListAPI(ListAPIView):
+    serializer_class = FarmerListSerializer
+    pagination_class = CustomPagination
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = User.objects.filter(agent_farmer__agent = user)
+        return queryset
 
 # class SocialSignupAPIView(CreateAPIView):
 #     permission_classes = [AllowAny]

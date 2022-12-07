@@ -9,6 +9,8 @@ from django.db.models.signals import pre_save
 class Category(AbstractTimeStamp):
     title = models.CharField(
         max_length=100, null=False, blank=False, default="", help_text="name")
+    logo = models.ImageField(
+        upload_to='category', blank=True, null=True)
     is_active = models.BooleanField(null=False, blank=False, default=True)
 
     class Meta:

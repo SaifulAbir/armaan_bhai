@@ -225,6 +225,18 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 
+class CategoryListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['id', 'title', 'is_active']
+
+
+class SubCategoryListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubCategory
+        fields = ['id', 'title', 'category']
+
+
 
 
 

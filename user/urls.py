@@ -14,6 +14,8 @@ urlpatterns = [
     path('customer/profile/', CustomerRetrieveAPIView.as_view(), name='customer_profile'),
     path('customer/edit-profile/', CustomerUpdateAPIView.as_view(), name='customer_edit_profile'),
     path('create-user/', csrf_exempt(UserRegApi.as_view())),
+    path('admin/farmer/list/', FarmerListAPI.as_view(), name='farmer_list'),
+
     # path('update-user/', UserUpdateAPIView.as_view()),
     # path('user-detail/', UserUpdateAPIView.as_view()),
     # path('donor-profile/<int:pk>/', DonorProfileAPIView.as_view()),

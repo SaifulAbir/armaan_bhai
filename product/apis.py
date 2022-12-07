@@ -3,6 +3,7 @@ from rest_framework.generics import CreateAPIView, ListAPIView, RetrieveAPIView,
 from rest_framework.permissions import AllowAny
 from armaan_bhai.pagination import ProductCustomPagination
 from product.serializers import *
+from django.db.models import Q
 
 
 class ProductCreateAPIView(CreateAPIView):
@@ -12,13 +13,41 @@ class ProductCreateAPIView(CreateAPIView):
         return super(ProductCreateAPIView, self).post(request, *args, **kwargs)
 
 
-class ProductListAPI(ListAPIView):
+class CustomerProductListAPI(ListAPIView):
     permission_classes = [AllowAny]
     serializer_class = ProductListSerializer
     pagination_class = ProductCustomPagination
 
     def get_queryset(self):
-        queryset = Product.objects.filter().order_by('-created_at')
+        request = self.request
+        query = request.GET.get('search')
+        category = request.GET.get('category_id')
+        sub_category = request.GET.get('sub_category_id')
+
+        queryset = Product.objects.all().order_by('-created_at')
+
+        if query:
+            queryset = queryset.filter(
+                Q(title__icontains=query) | Q(full_description__icontains=query)
+            )
+
+        if category:
+            queryset = queryset.filter(category__id=category)
+
+        if sub_category:
+            queryset = queryset.filter(sub_category__id=sub_category)
+
+        return queryset
+
+
+class FarmerProductListAPI(ListAPIView):
+    serializer_class = ProductListSerializer
+    lookup_field = 'fid'
+    lookup_url_kwarg = "fid"
+
+    def get_queryset(self):
+        farmer_id = self.kwargs['fid']
+        queryset = Product.objects.filter(user=farmer_id).order_by('-created_at')
         return queryset
 
 
@@ -43,3 +72,24 @@ class ProductUpdateAPIView(UpdateAPIView):
         slug = self.kwargs['slug']
         query = Product.objects.filter(slug=slug)
         return query
+
+
+class CategoryListAPIView(ListAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = CategoryListSerializer
+
+    def get_queryset(self):
+        queryset = Category.objects.filter(is_active=True)
+        return queryset
+
+
+class SubCategoryListAPIView(ListAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = SubCategoryListSerializer
+    lookup_field = 'cid'
+    lookup_url_kwarg = "cid"
+
+    def get_queryset(self):
+        cid = self.kwargs['cid']
+        queryset = SubCategory.objects.filter(category=cid, is_active=True).order_by('-created_at')
+        return queryset

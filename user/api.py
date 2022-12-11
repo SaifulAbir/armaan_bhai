@@ -13,6 +13,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from armaan_bhai.pagination import CustomPagination
+from product.serializers import DivisionListSerializer, DistrictListSerializer, UpazillaListSerializer
 from user.serializers import *
 from rest_framework.response import Response
 from rest_framework import status
@@ -111,6 +112,38 @@ class FarmerListAPI(ListAPIView):
         user = self.request.user
         queryset = User.objects.filter(agent_farmer__agent = user)
         return queryset
+
+
+class DivisionListAPI(ListAPIView):
+    permission_classes = (AllowAny,)
+    serializer_class = DivisionListSerializer
+    pagination_class = CustomPagination
+
+
+class DistrictListAPI(ListAPIView):
+    permission_classes = (AllowAny, )
+    serializer_class = DistrictListSerializer
+    pagination_class = CustomPagination
+    lookup_field = 'division_id'
+    lookup_url_kwarg = "division_id"
+
+    def get_object(self):
+        division_id = self.kwargs['division_id']
+        query = District.objects.get(division=division_id)
+        return query
+
+
+class UpazillaListAPI(ListAPIView):
+    permission_classes = (AllowAny, )
+    serializer_class = UpazillaListSerializer
+    pagination_class = CustomPagination
+    lookup_field = 'district_id'
+    lookup_url_kwarg = "district_id"
+
+    def get_object(self):
+        district_id = self.kwargs['district_id']
+        query = Upazilla.objects.get(district=district_id)
+        return query
 
 # class SocialSignupAPIView(CreateAPIView):
 #     permission_classes = [AllowAny]

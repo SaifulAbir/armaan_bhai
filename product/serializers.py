@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from product.models import Product, Category, SubCategory, Units, Inventory, ProductImage, ProductionStep
-from user.models import User
+from user.models import User, Division, District, Upazilla
+from user.serializers import FarmerListSerializer
 
 
 class ProductionStepSerializer(serializers.ModelSerializer):
@@ -96,6 +97,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
 class ProductListSerializer(serializers.ModelSerializer):
     production_steps = ProductionStepSerializer(many=True, read_only=True)
     product_images = ProductImageSerializer(many=True, read_only=True)
+    user = FarmerListSerializer(many=False, read_only=True)
 
     class Meta:
         model = Product
@@ -119,6 +121,7 @@ class ProductListSerializer(serializers.ModelSerializer):
 class ProductViewSerializer(serializers.ModelSerializer):
     production_steps = ProductionStepSerializer(many=True, read_only=True)
     product_images = ProductImageSerializer(many=True, read_only=True)
+    user = FarmerListSerializer(many=False, read_only=True)
 
     class Meta:
         model = Product
@@ -228,13 +231,31 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
 class CategoryListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ['id', 'title', 'is_active']
+        fields = ['id', 'title', 'is_active', 'logo']
 
 
 class SubCategoryListSerializer(serializers.ModelSerializer):
     class Meta:
         model = SubCategory
-        fields = ['id', 'title', 'category']
+        fields = ['id', 'title', 'category', 'logo']
+
+
+class DivisionListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Division
+        fields = ['id', 'name']
+
+
+class DistrictListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = District
+        fields = ['id', 'name', 'division']
+
+
+class UpazillaListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Upazilla
+        fields = ['id', 'name', 'district']
 
 
 

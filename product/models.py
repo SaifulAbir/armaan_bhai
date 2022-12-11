@@ -24,6 +24,8 @@ class Category(AbstractTimeStamp):
 class SubCategory(AbstractTimeStamp):
     title = models.CharField(
         max_length=100, null=False, blank=False, default="", help_text="name")
+    logo = models.ImageField(
+        upload_to='sub_category', blank=True, null=True)
     is_active = models.BooleanField(null=False, blank=False, default=True)
     category = models.ForeignKey(
         Category, on_delete=models.PROTECT, related_name='sub_category_category')

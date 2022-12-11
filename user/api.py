@@ -117,6 +117,7 @@ class FarmerListAPI(ListAPIView):
 class DivisionListAPI(ListAPIView):
     permission_classes = (AllowAny,)
     serializer_class = DivisionListSerializer
+    queryset = Division.objects.all()
     pagination_class = CustomPagination
 
 

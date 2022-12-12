@@ -104,6 +104,7 @@ class ProductListSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'title',
+            'slug',
             'category',
             'sub_category',
             'unit',
@@ -128,6 +129,7 @@ class ProductViewSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'title',
+            'slug'
             'category',
             'sub_category',
             'unit',

@@ -110,7 +110,12 @@ class FarmerListAPI(ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = User.objects.filter(agent_farmer__agent = user)
+        if user.user_type == "AGENT":
+            queryset = User.objects.filter(agent_farmer__agent = user)
+        elif user.is_superuser:
+            queryset = User.objects.filter(user_type="FARMER")
+        else:
+            queryset = None
         return queryset
 
 

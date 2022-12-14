@@ -246,7 +246,7 @@ class FarmerListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'full_name', 'gender', 'organization_name', 'address', 'division', 'district', 'upazilla',
+        fields = ['id', 'full_name', 'username', 'gender', 'organization_name', 'address', 'division', 'district', 'upazilla',
                   'village', 'postcode', 'phone_number', 'image', 'gender_display_value']
 
 

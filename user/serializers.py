@@ -4,6 +4,7 @@ from rest_framework.validators import UniqueValidator
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from datetime import datetime
 from configs.SMSConfig import OTPManager
+from product.models import Product
 from .models import *
 from .utils import UserIDManager
 
@@ -236,7 +237,41 @@ class CustomerProfileDetailSerializer(serializers.ModelSerializer):
                   'village', 'postcode', 'phone_number', 'image', 'gender_display_value']
 
 
+class ProductSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Product
+        fields = [
+            'id',
+            'title',
+            'slug',
+            'category',
+            'sub_category',
+            'unit',
+            'thumbnail',
+            'price_per_unit',
+            'full_description',
+            'quantity',
+            'possible_productions_date',
+        ]
+
+
 class FarmerListSerializer(serializers.ModelSerializer):
+    gender_display_value = serializers.CharField(
+        source='get_gender_display', read_only=True
+    )
+    division = DivisionSerializer(many=False, read_only=True)
+    district = DistrictSerializer(many=False, read_only=True)
+    upazilla = UpazillaSerializer(many=False, read_only=True)
+    product_seller = ProductSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = User
+        fields = ['id', 'full_name', 'username', 'gender', 'user_type', 'organization_name', 'address', 'division', 'district', 'upazilla',
+                  'village', 'postcode', 'phone_number', 'image', 'gender_display_value', 'product_seller']
+
+
+class AgentListSerializer(serializers.ModelSerializer):
     gender_display_value = serializers.CharField(
         source='get_gender_display', read_only=True
     )

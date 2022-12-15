@@ -15,6 +15,7 @@ urlpatterns = [
     path('customer/edit-profile/', CustomerUpdateAPIView.as_view(), name='customer_edit_profile'),
     path('create-user/', csrf_exempt(UserRegApi.as_view())),
     path('admin/farmer/list/', FarmerListAPI.as_view(), name='farmer_list'),
+    path('admin/agent/list/', AgentListAPI.as_view(), name='agent_list'),
     path('division/list/', DivisionListAPI.as_view(), name='division_list'),
     path('district/list/<int:division_id>/', DistrictListAPI.as_view(), name='district_list'),
     path('upazilla/list/<int:district_id>/', UpazillaListAPI.as_view(), name='upazilla_list'),

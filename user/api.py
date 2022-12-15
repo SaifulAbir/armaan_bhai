@@ -147,9 +147,9 @@ class DistrictListAPI(ListAPIView):
     lookup_field = 'division_id'
     lookup_url_kwarg = "division_id"
 
-    def get_object(self):
+    def get_queryset(self):
         division_id = self.kwargs['division_id']
-        query = District.objects.get(division=division_id)
+        query = District.objects.filter(division=division_id)
         return query
 
 
@@ -160,9 +160,9 @@ class UpazillaListAPI(ListAPIView):
     lookup_field = 'district_id'
     lookup_url_kwarg = "district_id"
 
-    def get_object(self):
+    def get_queryset(self):
         district_id = self.kwargs['district_id']
-        query = Upazilla.objects.get(district=district_id)
+        query = Upazilla.objects.filter(district=district_id)
         return query
 
 # class SocialSignupAPIView(CreateAPIView):

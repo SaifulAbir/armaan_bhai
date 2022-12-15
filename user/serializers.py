@@ -31,7 +31,7 @@ class UserRegSerializer(serializers.ModelSerializer):
                         "address": {"required": True},
                         "postcode": {"required": False},
                         "terms_and_conditions": {"required": True},
-                        "image": {"required": True},
+                        "image": {"required": False},
                         "user_type": {"required": True},
                         "phone_number": {"required": True},
                         'username': {'read_only': True}

@@ -93,3 +93,21 @@ class SubCategoryListAPIView(ListAPIView):
         cid = self.kwargs['cid']
         queryset = SubCategory.objects.filter(category=cid, is_active=True).order_by('-created_at')
         return queryset
+
+
+class CategoryListAPIView(ListAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = CategoryListSerializer
+
+    def get_queryset(self):
+        queryset = Category.objects.filter(is_active=True)
+        return queryset
+
+
+class UnitListAPIView(ListAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = UnitListSerializer
+
+    def get_queryset(self):
+        queryset = Units.objects.filter(is_active=True)
+        return queryset

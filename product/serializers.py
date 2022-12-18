@@ -260,6 +260,12 @@ class UpazillaListSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'district']
 
 
+class UnitListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Units
+        fields = ['id', 'title', 'is_active']
+
+
 
 
 

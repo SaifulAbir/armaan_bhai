@@ -644,7 +644,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         # Custom data you want to include
         refresh = self.get_token(self.user)
         data.update({'username': self.user.username, 'user_id': self.user.id,
-                    'full_name': self.user.full_name, 'image': self.user.image,
+                    'full_name': self.user.full_name, 'image': self.user.image.url if self.user.image else None,
                      'address': self.user.address, 'phone_number': self.user.phone_number,
                      'user_type': self.user.user_type, 'is_active': self.user.is_active,
                      'lifetime': int(refresh.access_token.lifetime.total_seconds())})

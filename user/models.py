@@ -61,8 +61,8 @@ class User(AbstractUser):
     postcode = models.IntegerField(null=True, blank=True)
     phone_number = models.CharField(max_length=255, validators=[phone_regex], null=True)
     terms_and_conditions = models.BooleanField(default=False)
-    image = models.ImageField(upload_to='images/user', null=True)
-    user_type = models.CharField(max_length=50, choices=USER_CHOICES, null=True)
+    image = models.ImageField(upload_to='images/user', null=True, blank=True)
+    user_type = models.CharField(max_length=50, choices=USER_CHOICES, null=True, blank=True)
     is_admin = models.BooleanField(default=False)
     agent_user_id = models.CharField(max_length=50, null=True, blank=True)
     first_name = None

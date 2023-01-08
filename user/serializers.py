@@ -38,20 +38,17 @@ class UserRegSerializer(serializers.ModelSerializer):
                         }
 
     def create(self, validated_data):
-        agents = None
-        if validated_data["user_type"] == 'FARMER':
-            agents = User.objects.filter(user_type="AGENT", upazilla=validated_data["upazilla"])
-            if not agents:
-                raise serializers.ValidationError("No agent is available in your upazilla")
+        if validated_data["user_type"] == 'FARMER' and not self.context['request'].user.is_authenticated:
+            raise serializers.ValidationError("Only Agent is Possible")
 
         user = super().create(validated_data)
         user.set_password(validated_data['password'])
         user.is_active = True
         user.username = UserIDManager().generate_user_id()
+        if user.user_type == 'FARMER' and self.context['request'].user.is_authenticated:
+            user.agent_user_id = self.context['request'].user.id
+
         user.save()
-        if user.user_type == 'FARMER' and agents:
-            for agent in agents:
-                AgentFarmer.objects.create(farmer=user, agent=agent)
         # email_list = validated_data['email']
         # subject = "Account Verification"
         # code = user.verification_id

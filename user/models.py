@@ -59,7 +59,7 @@ class User(AbstractUser):
     upazilla = models.ForeignKey(Upazilla, on_delete=models.PROTECT, null=True)
     village = models.CharField(max_length=255, null=True, blank=True)
     postcode = models.IntegerField(null=True, blank=True)
-    phone_number = models.CharField(max_length=255, validators=[phone_regex], null=True)
+    phone_number = models.CharField(max_length=255, validators=[phone_regex], unique=True)
     terms_and_conditions = models.BooleanField(default=False)
     image = models.ImageField(upload_to='images/user', null=True, blank=True)
     user_type = models.CharField(max_length=50, choices=USER_CHOICES, null=True, blank=True)
@@ -67,6 +67,8 @@ class User(AbstractUser):
     agent_user_id = models.CharField(max_length=50, null=True, blank=True)
     first_name = None
     last_name = None
+
+    USERNAME_FIELD = 'phone_number'
 
     class Meta:
         verbose_name = 'User'

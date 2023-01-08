@@ -28,6 +28,11 @@ class UserRegApi(CreateAPIView):
     permission_classes = [AllowAny]
 
 
+class FarmerCreateApi(CreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserRegSerializer
+
+
 class CreateCustomerAPI(CreateAPIView):
     serializer_class = CreateCustomerSerializer
     permission_classes = [AllowAny]

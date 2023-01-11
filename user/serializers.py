@@ -43,7 +43,7 @@ class UserRegSerializer(serializers.ModelSerializer):
 
         user = super().create(validated_data)
         user.set_password(validated_data['password'])
-        user.is_active = True
+        user.is_active = False
         user.username = UserIDManager().generate_user_id()
         if user.user_type == 'FARMER' and self.context['request'].user.is_authenticated:
             user.agent_user_id = self.context['request'].user.id
@@ -81,15 +81,8 @@ class CreateCustomerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'full_name', 'address', 'division', 'district', 'upazilla',
-                'village', 'postcode', 'phone_number', 'otp']
+        fields = ['id', 'full_name', 'phone_number', 'otp']
         extra_kwargs = {"full_name": {"required": True},
-                        "division": {"required": True},
-                        "district": {"required": True},
-                        "upazilla": {"required": True},
-                        "village": {"required": True},
-                        "address": {"required": True},
-                        "postcode": {"required": True},
                         "phone_number": {"required": True},
                         'username': {'read_only': True}
                         }
@@ -218,6 +211,15 @@ class CustomerProfileUpdateSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         return super().update(instance, validated_data)
+
+
+class AgentUpdateSerializer(serializers.ModelSerializer):
+    phone_number = serializers.CharField(required=True,
+                                         validators=[UniqueValidator(queryset=User.objects.all())])
+
+    class Meta:
+        model = User
+        fields = ['id', 'full_name', 'is_active', 'phone_number']
 
 
 class CustomerProfileDetailSerializer(serializers.ModelSerializer):

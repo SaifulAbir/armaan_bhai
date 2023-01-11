@@ -28,6 +28,16 @@ class UserRegApi(CreateAPIView):
     permission_classes = [AllowAny]
 
 
+class AgentUpdateAPIView(UpdateAPIView):
+    serializer_class = AgentUpdateSerializer
+    lookup_field = 'pk'
+
+    def get_object(self):
+        pk = self.kwargs['pk']
+        agent = User.objects.get(id=pk, user_type="CUSTOMER")
+        return agent
+
+
 class FarmerCreateApi(CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserRegSerializer

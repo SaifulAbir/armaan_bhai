@@ -23,6 +23,7 @@ class CustomerProductListAPI(ListAPIView):
         query = request.GET.get('search')
         category = request.GET.get('category_id')
         sub_category = request.GET.get('sub_category_id')
+        status = request.GET.get('status')
 
         queryset = Product.objects.all().order_by('-created_at')
 
@@ -36,6 +37,9 @@ class CustomerProductListAPI(ListAPIView):
 
         if sub_category:
             queryset = queryset.filter(sub_category__id=sub_category)
+
+        if status:
+            queryset = queryset.filter(status=status)
 
         return queryset
 
@@ -65,6 +69,17 @@ class ProductViewAPI(RetrieveAPIView):
 
 class ProductUpdateAPIView(UpdateAPIView):
     serializer_class = ProductUpdateSerializer
+    lookup_field = 'slug'
+    lookup_url_kwarg = "slug"
+
+    def get_queryset(self):
+        slug = self.kwargs['slug']
+        query = Product.objects.filter(slug=slug)
+        return query
+
+
+class PublishProductUpdateAPIView(UpdateAPIView):
+    serializer_class = PublishProductSerializer
     lookup_field = 'slug'
     lookup_url_kwarg = "slug"
 

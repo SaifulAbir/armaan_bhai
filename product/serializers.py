@@ -230,6 +230,17 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 
+class PublishProductSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Product
+        fields = [
+            'id',
+            'sell_price_per_unit',
+            'status'
+        ]
+
+
 class CategoryListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Category

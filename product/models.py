@@ -53,6 +53,10 @@ class Units(AbstractTimeStamp):
 
 
 class Product(AbstractTimeStamp):
+    PRODUCT_STATUSES = [
+        ('UNPUBLISH', 'UnPublish'),
+        ('PUBLISH', 'Publish')
+    ]
     title = models.CharField(max_length=800)
     slug = models.SlugField(
         null=False, allow_unicode=True, blank=True, max_length=255)
@@ -67,12 +71,15 @@ class Product(AbstractTimeStamp):
     full_description = models.TextField(null=False, blank=False)
     price_per_unit = models.FloatField(
         max_length=255, null=False, blank=False, default=0, help_text="Unit price")
+    sell_price_per_unit = models.FloatField(
+        max_length=255, null=False, blank=False, default=0, help_text="Unit price")
     quantity = models.IntegerField(null=True, blank=True, default=0)
     total_quantity = models.IntegerField(null=False, blank=False, default=0)
     thumbnail = models.FileField(upload_to='products', blank=True, null=True)
     possible_productions_date = models.DateField(
         null=True, blank=True, help_text="Possible production date")
-    status = models.BooleanField(default=True)
+    status = models.CharField(
+        max_length=20, choices=PRODUCT_STATUSES, default=PRODUCT_STATUSES[0][0])
 
 
     class Meta:

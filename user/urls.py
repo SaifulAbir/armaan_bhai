@@ -5,18 +5,32 @@ from .views import *
 from django.views.decorators.csrf import csrf_exempt
 
 urlpatterns = [
+    # agent and farmer login
     path('token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    path('create/customer/', CreateCustomerAPI.as_view(), name='create_customer'),
-    path('customer/login/', CustomerLoginAPI.as_view(), name='customer_login'),
-    path('customer/resend-otp/', CustomerReSendOTPAPIView.as_view(), name='customer_resend_otp'),
-    path('otp/verify/', OTPVerifyAPIVIEW.as_view(), name='otp_verification'),
-    path('customer/profile/', CustomerRetrieveAPIView.as_view(), name='customer_profile'),
-    path('customer/edit-profile/', CustomerUpdateAPIView.as_view(), name='customer_edit_profile'),
+    # agent create api
     path('create-user/', csrf_exempt(UserRegApi.as_view())),
+    # farmer create api
     path('create/farmer/', csrf_exempt(FarmerCreateApi.as_view())),
+    # active/inactive agent
+    path('agent/update/<int:pk>/', AgentUpdateAPIView.as_view(), name='update_agent'),
+    # create customer
+    path('create/customer/', CreateCustomerAPI.as_view(), name='create_customer'),
+    # customer login
+    path('customer/login/', CustomerLoginAPI.as_view(), name='customer_login'),
+    # customer resend otp
+    path('customer/resend-otp/', CustomerReSendOTPAPIView.as_view(), name='customer_resend_otp'),
+    # verify otp of customer
+    path('otp/verify/', OTPVerifyAPIVIEW.as_view(), name='otp_verification'),
+    # customer profile
+    path('customer/profile/', CustomerRetrieveAPIView.as_view(), name='customer_profile'),
+    # customer profile update
+    path('customer/edit-profile/', CustomerUpdateAPIView.as_view(), name='customer_edit_profile'),
+    # farmer list for agent
     path('admin/farmer/list/', FarmerListAPI.as_view(), name='farmer_list'),
+    # agent list for superadmin
     path('admin/agent/list/', AgentListAPI.as_view(), name='agent_list'),
+    # division, district and upazilla list api
     path('division/list/', DivisionListAPI.as_view(), name='division_list'),
     path('district/list/<int:division_id>/', DistrictListAPI.as_view(), name='district_list'),
     path('upazilla/list/<int:district_id>/', UpazillaListAPI.as_view(), name='upazilla_list'),

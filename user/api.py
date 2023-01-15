@@ -33,8 +33,9 @@ class AgentUpdateAPIView(UpdateAPIView):
     lookup_field = 'pk'
 
     def get_object(self):
+        # TODO sent sms to agent
         pk = self.kwargs['pk']
-        agent = User.objects.get(id=pk, user_type="CUSTOMER")
+        agent = User.objects.get(id=pk, user_type="AGENT")
         return agent
 
 

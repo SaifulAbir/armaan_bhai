@@ -78,6 +78,8 @@ class Product(AbstractTimeStamp):
     thumbnail = models.FileField(upload_to='products', blank=True, null=True)
     possible_productions_date = models.DateField(
         null=True, blank=True, help_text="Possible production date")
+    possible_delivery_date = models.DateField(
+        null=True, blank=True, help_text="Possible delivery date")
     status = models.CharField(
         max_length=20, choices=PRODUCT_STATUSES, default=PRODUCT_STATUSES[0][0])
 

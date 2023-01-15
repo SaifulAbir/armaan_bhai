@@ -42,11 +42,13 @@ class ProductCreateSerializer(serializers.ModelSerializer):
             'unit',
             'product_images',
             'images',
+            'user',
             'thumbnail',
             'price_per_unit',
             'full_description',
             'quantity',
             'possible_productions_date',
+            'possible_delivery_date',
             'production_steps'
         ]
 
@@ -63,11 +65,17 @@ class ProductCreateSerializer(serializers.ModelSerializer):
         except:
             production_steps = None
 
-        if not self.context['request'].user.user_type == 'FARMER':
-            raise serializers.ValidationError("Product only will be uploaded by farmers")
-
-        #create product
-        product_instance = Product.objects.create(**validated_data, user=self.context['request'].user)
+        # create product
+        if not (self.context['request'].user.user_type == 'FARMER' or self.context['request'].user.user_type == 'AGENT'):
+            raise serializers.ValidationError("Product only will be uploaded by agent or farmer")
+        elif self.context['request'].user.user_type == 'FARMER':
+            product_instance = Product.objects.create(**validated_data, user=self.context['request'].user)
+        else:
+            farmer = validated_data.get('user')
+            if farmer:
+                product_instance = Product.objects.create(**validated_data, user=farmer)
+            else:
+                raise serializers.ValidationError("Farmer id is missing")
 
         # product inventory
         try:
@@ -115,6 +123,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             'quantity',
             'user',
             'possible_productions_date',
+            'possible_delivery_date',
             'production_steps'
         ]
 
@@ -140,6 +149,7 @@ class ProductViewSerializer(serializers.ModelSerializer):
             'quantity',
             'user',
             'possible_productions_date',
+            'possible_delivery_date',
             'production_steps'
         ]
 
@@ -168,6 +178,7 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
             'full_description',
             'quantity',
             'possible_productions_date',
+            'possible_delivery_date',
             'production_steps'
         ]
 

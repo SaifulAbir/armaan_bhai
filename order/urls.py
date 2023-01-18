@@ -8,5 +8,5 @@ urlpatterns = [
     path('delete-delivery-address/<int:id>/', DeliveryAddressDeleteAPIView.as_view()),
     # checkout
     path('checkout/', CheckoutAPIView.as_view()),
-    path('checkout-details/<str:o_id>/', CheckoutDetailsAPIView.as_view()),
+    path('checkout-details/<str:id>/', CheckoutDetailsAPIView.as_view()),
 ]

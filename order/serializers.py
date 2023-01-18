@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from order.models import DeliveryAddress, OrderItem, Order, CouponStat, Coupon
 from product.models import Inventory, Product
+from user.serializers import CustomerProfileDetailSerializer
 
 
 class DeliveryAddressSerializer(serializers.ModelSerializer):
@@ -41,7 +42,7 @@ class CheckoutSerializer(serializers.ModelSerializer):
                 **validated_data, user=self.context['request'].user, payment_status='PAID', order_status='ON_PROCESS')
         else:
             order_instance = Order.objects.create(
-            **validated_data, user=self.context['request'].user, payment_status='DUE', order_status='ON_PROCESS')
+                **validated_data, user=self.context['request'].user, payment_status='DUE', order_status='ON_PROCESS')
 
         if order_items:
             for order_item in order_items:
@@ -84,3 +85,13 @@ class CheckoutSerializer(serializers.ModelSerializer):
             else:
                 raise serializers.ValidationError("Usage limit exceeded")
         return order_instance
+
+
+class CheckoutDetailsSerializer(serializers.ModelSerializer):
+    user = CustomerProfileDetailSerializer(many=False, read_only=True)
+    order_item_order = ProductItemCheckoutSerializer(many=True, read_only=True)
+    delivery_address = DeliveryAddressSerializer(many=False, read_only=True)
+    class Meta:
+        model = Order
+        fields = ['id', 'user', 'order_id', 'order_date', 'delivery_date', 'order_status', 'order_item_order', 'delivery_address', 'payment_type',
+        'coupon_discount_amount', 'total_price']

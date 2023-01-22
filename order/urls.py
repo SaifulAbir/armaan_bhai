@@ -9,4 +9,5 @@ urlpatterns = [
     # checkout
     path('checkout/', CheckoutAPIView.as_view()),
     path('checkout-details/<str:id>/', CheckoutDetailsAPIView.as_view()),
+    path('customer-order-list/', CustomerOrderList.as_view()),
 ]

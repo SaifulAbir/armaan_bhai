@@ -1,5 +1,7 @@
 from rest_framework.generics import CreateAPIView, RetrieveUpdateAPIView, ListAPIView, DestroyAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
+
+from armaan_bhai.pagination import CustomPagination
 from order.serializers import *
 
 
@@ -61,3 +63,23 @@ class CheckoutDetailsAPIView(RetrieveAPIView):
         id = self.kwargs['id']
         query = Order.objects.get(id=id)
         return query
+
+
+class CustomerOrderList(ListAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = CustomerOrderListSerializer
+    pagination_class = CustomPagination
+
+    def get_queryset(self):
+        queryset = Order.objects.filter(user=self.request.user).order_by('-created_at')
+        return queryset
+
+
+class AgentOrderList(ListAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = AgentOrderListSerializer
+    pagination_class = CustomPagination
+
+    def get_queryset(self):
+        queryset = Order.objects.filter(order_item_order__product__user__agent_user_id=self.request.user.id).order_by('-created_at')
+        return queryset

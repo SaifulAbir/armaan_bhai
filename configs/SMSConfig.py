@@ -2,10 +2,12 @@
 sms_gateway_url = 'https://api2.onnorokomsms.com/sendsms.asmx?WSDL'
 sms_gateway_api_key = '5b03ead3-131d-495b-bce0-12d12a75a6ea'
 """
-
+from twilio.rest import Client
 from zeep import Client
 import math
 from random import randint
+
+from armaan_bhai import settings
 
 otp_number_max_length = 6
 
@@ -62,8 +64,8 @@ class OTPManager(object):
         return result
 
     def initialize_otp_and_sms_otp(self, contact_number):
-        mobile = contact_number
         otp_number = self.initialize_otp(contact_number)
+        # self.send_twilio_message(contact_number, "Hello From Saiful")
         #
         # if int(otp_number):
         #
@@ -73,3 +75,13 @@ class OTPManager(object):
         # else:
         #     pass
         return str(otp_number)
+
+    def send_twilio_message(self, to_number, body):
+        client = Client(
+            settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+
+        return client.messages.create(
+            body=body,
+            to=to_number,
+            from_=settings.TWILIO_PHONE_NUMBER
+        )

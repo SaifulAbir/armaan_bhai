@@ -26,6 +26,42 @@ class ProductImageSerializer(serializers.ModelSerializer):
                   ]
 
 
+class CategoryListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['id', 'title', 'is_active', 'logo']
+
+
+class SubCategoryListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubCategory
+        fields = ['id', 'title', 'category', 'logo']
+
+
+class DivisionListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Division
+        fields = ['id', 'name']
+
+
+class DistrictListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = District
+        fields = ['id', 'name', 'division']
+
+
+class UpazillaListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Upazilla
+        fields = ['id', 'name', 'district']
+
+
+class UnitListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Units
+        fields = ['id', 'title', 'is_active']
+
+
 class ProductCreateSerializer(serializers.ModelSerializer):
     images = serializers.ListField(
         child=serializers.FileField(), write_only=True, required=False)
@@ -73,7 +109,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
         else:
             farmer = validated_data.get('user')
             if farmer:
-                product_instance = Product.objects.create(**validated_data, user=farmer)
+                product_instance = Product.objects.create(**validated_data)
             else:
                 raise serializers.ValidationError("Farmer id is missing")
 
@@ -106,6 +142,9 @@ class ProductListSerializer(serializers.ModelSerializer):
     production_steps = ProductionStepSerializer(many=True, read_only=True)
     product_images = ProductImageSerializer(many=True, read_only=True)
     user = FarmerListSerializer(many=False, read_only=True)
+    category = CategoryListSerializer(many=False, read_only=True)
+    sub_category = SubCategoryListSerializer(many=False, read_only=True)
+    unit = UnitListSerializer(many=False, read_only=True)
 
     class Meta:
         model = Product
@@ -250,42 +289,6 @@ class PublishProductSerializer(serializers.ModelSerializer):
             'sell_price_per_unit',
             'status'
         ]
-
-
-class CategoryListSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Category
-        fields = ['id', 'title', 'is_active', 'logo']
-
-
-class SubCategoryListSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = SubCategory
-        fields = ['id', 'title', 'category', 'logo']
-
-
-class DivisionListSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Division
-        fields = ['id', 'name']
-
-
-class DistrictListSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = District
-        fields = ['id', 'name', 'division']
-
-
-class UpazillaListSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Upazilla
-        fields = ['id', 'name', 'district']
-
-
-class UnitListSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Units
-        fields = ['id', 'title', 'is_active']
 
 
 

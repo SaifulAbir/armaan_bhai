@@ -113,6 +113,7 @@ class CreateCustomerSerializer(serializers.ModelSerializer):
 
 
 class CustomerLoginSerializer(serializers.ModelSerializer):
+    phone_number = serializers.CharField()
     otp = serializers.SerializerMethodField()
 
     def get_otp(self, obj):
@@ -126,16 +127,18 @@ class CustomerLoginSerializer(serializers.ModelSerializer):
                         "full_name": {"read_only": True}}
 
     def create(self, validated_data):
+        request = self.context['request']
+        phone_number = request.data.get('phone_number')
         try:
-            user = User.objects.get(phone_number=validated_data['phone_number'], user_type="CUSTOMER")
+            user = User.objects.get(phone_number=phone_number, user_type="CUSTOMER")
         except User.DoesNotExist:
             user = None
             raise serializers.ValidationError("User doesn't exists.")
         # Generate OTP
-        sent_otp = OTPManager().initialize_otp_and_sms_otp(validated_data['phone_number'])
+        sent_otp = OTPManager().initialize_otp_and_sms_otp(phone_number)
         otp_sending_time = datetime.now(pytz.timezone('Asia/Dhaka'))
         otp_model = OTPModel.objects.create(
-            contact_number=validated_data['phone_number'],
+            contact_number=phone_number,
             otp_number=sent_otp,
             expired_time=otp_sending_time,
             user=user

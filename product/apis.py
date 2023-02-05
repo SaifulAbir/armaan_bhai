@@ -56,6 +56,17 @@ class FarmerProductListAPI(ListAPIView):
 
 
 class ProductViewAPI(RetrieveAPIView):
+    serializer_class = ProductViewSerializer
+    lookup_field = 'slug'
+    lookup_url_kwarg = "slug"
+
+    def get_object(self):
+        slug = self.kwargs['slug']
+        query = Product.objects.get(slug=slug)
+        return query
+
+
+class CustomerProductViewAPI(RetrieveAPIView):
     permission_classes = [AllowAny]
     serializer_class = ProductViewSerializer
     lookup_field = 'slug'

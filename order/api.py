@@ -1,4 +1,5 @@
-from rest_framework.generics import CreateAPIView, RetrieveUpdateAPIView, ListAPIView, DestroyAPIView, RetrieveAPIView
+from rest_framework.generics import CreateAPIView, RetrieveUpdateAPIView, ListAPIView, DestroyAPIView, RetrieveAPIView, \
+    UpdateAPIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
 from armaan_bhai.pagination import CustomPagination
@@ -76,10 +77,43 @@ class CustomerOrderList(ListAPIView):
 
 
 class AgentOrderList(ListAPIView):
-    permission_classes = [AllowAny]
     serializer_class = AgentOrderListSerializer
     pagination_class = CustomPagination
 
     def get_queryset(self):
         queryset = Order.objects.filter(order_item_order__product__user__agent_user_id=self.request.user.id).order_by('-created_at')
         return queryset
+
+
+class PickupLocationCreateAPIView(CreateAPIView):
+    serializer_class = PickupLocationSerializer
+
+
+class PickupLocationListAPIView(ListAPIView):
+    serializer_class = PickupLocationListSerializer
+
+    def get_queryset(self):
+        queryset = PickupLocation.objects.filter(status=True)
+        return queryset
+
+
+class PickupLocationUpdateAPIView(UpdateAPIView):
+    serializer_class = PickupLocationSerializer
+    queryset = PickupLocation.objects.all()
+
+
+class AgentPickupLocationCreateAPIView(CreateAPIView):
+    serializer_class = AgentPickupLocationSerializer
+
+
+class AgentPickupLocationListAPIView(ListAPIView):
+    serializer_class = AgentPickupLocationListSerializer
+
+    def get_queryset(self):
+        queryset = AgentPickupLocation.objects.filter(status=True)
+        return queryset
+
+
+class AgentPickupLocationUpdateAPIView(UpdateAPIView):
+    serializer_class = AgentPickupLocationSerializer
+    queryset = AgentPickupLocation.objects.all()

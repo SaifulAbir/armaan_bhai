@@ -10,4 +10,13 @@ urlpatterns = [
     path('checkout/', CheckoutAPIView.as_view()),
     path('checkout-details/<str:id>/', CheckoutDetailsAPIView.as_view()),
     path('customer-order-list/', CustomerOrderList.as_view()),
+    path('agent-order-list/', AgentOrderList.as_view()),
+    # pickup location
+    path('create/pickup-location/', PickupLocationCreateAPIView.as_view()),
+    path('pickup-location/list/', PickupLocationListAPIView.as_view()),
+    path('update/pickup-location/<int:pk>/', PickupLocationUpdateAPIView.as_view()),
+    # agent pickup location
+    path('create/agent-pickup-location/', AgentPickupLocationCreateAPIView.as_view()),
+    path('agent-pickup-location/list/', AgentPickupLocationListAPIView.as_view()),
+    path('update/agent-pickup-location/<int:pk>/', AgentPickupLocationUpdateAPIView.as_view()),
 ]

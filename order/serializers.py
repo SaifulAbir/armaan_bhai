@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from order.models import DeliveryAddress, OrderItem, Order, CouponStat, Coupon
+from order.models import DeliveryAddress, OrderItem, Order, CouponStat, Coupon, PickupLocation, AgentPickupLocation
 from product.models import Inventory, Product
 from user.serializers import CustomerProfileDetailSerializer
 
@@ -25,16 +25,26 @@ class ProductItemCheckoutSerializer(serializers.ModelSerializer):
 
 
 class CheckoutSerializer(serializers.ModelSerializer):
-    order_items = ProductItemCheckoutSerializer(many=True, required=False)
+    order_item_order = ProductItemCheckoutSerializer(many=True, required=True)
     coupon_status = serializers.BooleanField(write_only=True, required=False)
+    delivery_address_obj = serializers.SerializerMethodField('get_delivery_address')
 
     class Meta:
         model = Order
         fields = ['id', 'product_count', 'total_price', 'coupon', 'coupon_status',
-                  'coupon_discount_amount', 'vat_amount', 'vat_percentage', 'payment_type', 'order_items', 'delivery_address', 'comment']
+                  'coupon_discount_amount', 'vat_amount', 'vat_percentage', 'payment_type', 'order_item_order', 'delivery_address',
+                  'comment', 'delivery_address_obj']
+
+    def get_delivery_address(self, obj):
+        delivery_address = DeliveryAddressSerializer(instance=obj.delivery_address, many=False)
+        return delivery_address.data
 
     def create(self, validated_data):
-        order_items = validated_data.pop('order_items')
+        try:
+            order_items = validated_data.pop('order_item_order')
+        except KeyError:
+            raise serializers.ValidationError('Order items are missing')
+
         payment_type = validated_data.get('payment_type')
 
         if payment_type == 'PG':
@@ -67,7 +77,10 @@ class CheckoutSerializer(serializers.ModelSerializer):
                     product_obj.update(sell_count=sell_count)
 
         # apply coupon
-        coupon_status = validated_data.pop('coupon_status')
+        try:
+            coupon_status = validated_data.pop('coupon_status')
+        except KeyError:
+            coupon_status = None
 
         if coupon_status == True:
             coupon = validated_data.pop('coupon')
@@ -115,3 +128,29 @@ class AgentOrderListSerializer(serializers.ModelSerializer):
         model = Order
         fields = ['id', 'user', 'order_id', 'order_date', 'delivery_date', 'order_status', 'order_item_order', 'delivery_address', 'payment_type',
         'coupon_discount_amount', 'total_price']
+
+
+# Pickup Location
+class PickupLocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PickupLocation
+        fields = ['address', 'division', 'district', 'upazilla']
+
+
+class PickupLocationListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PickupLocation
+        fields = ['id', 'address', 'division', 'district', 'upazilla', 'created_at']
+
+
+# Agent Pickup Location
+class AgentPickupLocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AgentPickupLocation
+        fields = ['user', 'pickup_location']
+
+
+class AgentPickupLocationListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AgentPickupLocation
+        fields = ['id', 'user', 'pickup_location', 'created_at']

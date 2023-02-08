@@ -82,6 +82,7 @@ class Product(AbstractTimeStamp):
         null=True, blank=True, help_text="Possible delivery date")
     status = models.CharField(
         max_length=20, choices=PRODUCT_STATUSES, default=PRODUCT_STATUSES[0][0])
+    sell_count = models.IntegerField(default=0)
 
 
     class Meta:

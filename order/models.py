@@ -5,7 +5,7 @@ from django.utils import timezone
 from armaan_bhai.models import AbstractTimeStamp
 from order.utils import unique_order_id_generator_for_order
 from product.models import Product
-from user.models import User
+from user.models import User, Division, District, Upazilla
 
 
 class DeliveryAddress(AbstractTimeStamp):
@@ -27,7 +27,7 @@ class DeliveryAddress(AbstractTimeStamp):
         db_table = 'delivery_addresses'
 
     def __str__(self):
-        return f"{self.pk}"
+        return f"{self.name}"
 
 #
 # class PaymentType(AbstractTimeStamp):
@@ -98,11 +98,10 @@ class Order(AbstractTimeStamp):
     order_id = models.SlugField(null=False, blank=False, allow_unicode=True)
     user = models.ForeignKey(User, on_delete=models.PROTECT,
                              related_name='order_user', blank=True, null=True)
-    product_count = models.IntegerField(blank=True, null=True)
+    product_count = models.IntegerField()
     farmer = models.ForeignKey(
         User, on_delete=models.PROTECT, related_name='order_farmer', blank=True, null=True)
-    total_price = models.FloatField(
-        max_length=255, null=False, blank=False, default=0)
+    total_price = models.DecimalField(max_digits=19, decimal_places=2)
     refund = models.BooleanField(default=False)
     order_date = models.DateField(auto_now_add=True)
     coupon = models.ForeignKey(
@@ -121,11 +120,11 @@ class Order(AbstractTimeStamp):
     cash_on_delivery = models.BooleanField(default=False)
     order_status = models.CharField(
         max_length=20, null=False, blank=False, choices=ORDER_CHOICES, default=ORDER_CHOICES[0][0])
-    delivery_address = models.ForeignKey(
-        DeliveryAddress, on_delete=models.CASCADE, blank=True, null=True)
+    delivery_address = models.ForeignKey(DeliveryAddress, on_delete=models.CASCADE)
     # delivery_agent = models.CharField(max_length=100, null=True, blank=True)
     delivery_date = models.DateTimeField(null=True, blank=True)
     comment = models.TextField(null=True, blank=True)
+    is_qc_passed = models.BooleanField(default=False)
 
 
     class Meta:
@@ -139,7 +138,7 @@ class Order(AbstractTimeStamp):
 
 def pre_save_order(sender, instance, *args, **kwargs):
     if not instance.order_id:
-        instance.order_id = 'orid-' + \
+        instance.order_id = 'ar-' + \
             str(unique_order_id_generator_for_order(instance))
 
 
@@ -189,3 +188,34 @@ class CouponStat(AbstractTimeStamp):
 
     def __str__(self):
         return f"{self.pk}"
+
+
+class PickupLocation(AbstractTimeStamp):
+    address = models.TextField()
+    division = models.ForeignKey(Division, on_delete=models.PROTECT)
+    district = models.ForeignKey(District, on_delete=models.PROTECT)
+    upazilla = models.ForeignKey(Upazilla, on_delete=models.PROTECT)
+    status = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = 'PickupLocation'
+        verbose_name_plural = 'PickupLocations'
+        db_table = 'pickup_locations'
+
+    def __str__(self):
+        return self.address
+
+
+class AgentPickupLocation(AbstractTimeStamp):
+    user = models.ForeignKey(
+        User, on_delete=models.PROTECT, related_name='agent_pickup_location')
+    pickup_location = models.ForeignKey(
+        PickupLocation, on_delete=models.PROTECT, related_name='pickup_location_agent')
+
+    class Meta:
+        verbose_name = 'AgentPickupLocation'
+        verbose_name_plural = 'AgentPickupLocations'
+        db_table = 'agent_pickup_locations'
+
+    def __str__(self):
+        return self.user.phone_number

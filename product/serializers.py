@@ -171,6 +171,7 @@ class ProductViewSerializer(serializers.ModelSerializer):
     production_steps = ProductionStepSerializer(many=True, read_only=True)
     product_images = ProductImageSerializer(many=True, read_only=True)
     user = FarmerListSerializer(many=False, read_only=True)
+    category_title = serializers.CharField(source="category.title", read_only=True)
 
     class Meta:
         model = Product
@@ -179,6 +180,7 @@ class ProductViewSerializer(serializers.ModelSerializer):
             'title',
             'slug',
             'category',
+            'category_title',
             'sub_category',
             'unit',
             'product_images',
@@ -240,8 +242,8 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
         except:
             production_steps = None
 
-        if not self.context['request'].user.user_type == 'FARMER':
-            raise serializers.ValidationError("Product only will be updated by farmers")
+        if self.context['request'].user.user_type == 'CUSTOMER':
+            raise serializers.ValidationError("Product only will be updated by farmers and agents")
 
         # product inventory
         try:

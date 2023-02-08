@@ -178,6 +178,59 @@ class UpazillaListAPI(ListAPIView):
         query = Upazilla.objects.filter(district=district_id)
         return query
 
+class DivisionCreateAPIView(CreateAPIView):
+    serializer_class = DivisionListSerializer
+
+
+class DivisionListAPIView(ListAPIView):
+    serializer_class = DivisionListSerializer
+    pagination_class = CustomPagination
+
+    def get_queryset(self):
+        queryset = Division.objects.all()
+        return queryset
+
+
+class DivisionUpdateAPIView(UpdateAPIView):
+    serializer_class = DivisionListSerializer
+    queryset = Division.objects.all()
+
+
+class DistrictCreateAPIView(CreateAPIView):
+    serializer_class = DistrictListSerializer
+
+
+class DistrictListAPIView(ListAPIView):
+    serializer_class = DistrictListSerializer
+    pagination_class = CustomPagination
+
+    def get_queryset(self):
+        queryset = Division.objects.all()
+        return queryset
+
+
+class DistrictUpdateAPIView(UpdateAPIView):
+    serializer_class = DistrictListSerializer
+    queryset = Division.objects.all()
+
+
+class UpazillaCreateAPIView(CreateAPIView):
+    serializer_class = UpazillaListSerializer
+
+
+class UpazillaListAPIView(ListAPIView):
+    serializer_class = UpazillaListSerializer
+    pagination_class = CustomPagination
+
+    def get_queryset(self):
+        queryset = Division.objects.all()
+        return queryset
+
+
+class UpazillaUpdateAPIView(UpdateAPIView):
+    serializer_class = UpazillaListSerializer
+    queryset = Division.objects.all()
+
 # class SocialSignupAPIView(CreateAPIView):
 #     permission_classes = [AllowAny]
 #     serializer_class = UserSocialRegSerializer

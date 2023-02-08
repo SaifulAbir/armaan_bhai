@@ -30,10 +30,20 @@ urlpatterns = [
     path('admin/farmer/list/', FarmerListAPI.as_view(), name='farmer_list'),
     # agent list for superadmin
     path('admin/agent/list/', AgentListAPI.as_view(), name='agent_list'),
-    # division, district and upazilla list api
+    # division, district and upazilla list api for storefront
     path('division/list/', DivisionListAPI.as_view(), name='division_list'),
     path('district/list/<int:division_id>/', DistrictListAPI.as_view(), name='district_list'),
     path('upazilla/list/<int:district_id>/', UpazillaListAPI.as_view(), name='upazilla_list'),
+    # crud of division, district and upazilla
+    path('admin/create/division/', DivisionCreateAPIView.as_view()),
+    path('admin/division/list/', DivisionListAPIView.as_view()),
+    path('admin/update/division/<int:pk>/', DivisionUpdateAPIView.as_view()),
+    path('admin/create/district/', DistrictCreateAPIView.as_view()),
+    path('admin/district/list/', DistrictListAPIView.as_view()),
+    path('admin/update/district/<int:pk>/', DistrictUpdateAPIView.as_view()),
+    path('admin/create/upazilla/', UpazillaCreateAPIView.as_view()),
+    path('admin/upazilla/list/', UpazillaListAPIView.as_view()),
+    path('admin/update/upazilla/<int:pk>/', UpazillaUpdateAPIView.as_view()),
     # path('update-user/', UserUpdateAPIView.as_view()),
     # path('user-detail/', UserUpdateAPIView.as_view()),
     # path('donor-profile/<int:pk>/', DonorProfileAPIView.as_view()),

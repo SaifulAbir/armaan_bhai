@@ -153,13 +153,11 @@ class DivisionListAPI(ListAPIView):
     permission_classes = (AllowAny,)
     serializer_class = DivisionListSerializer
     queryset = Division.objects.all()
-    pagination_class = CustomPagination
 
 
 class DistrictListAPI(ListAPIView):
     permission_classes = (AllowAny, )
     serializer_class = DistrictListSerializer
-    pagination_class = CustomPagination
     lookup_field = 'division_id'
     lookup_url_kwarg = "division_id"
 
@@ -172,7 +170,6 @@ class DistrictListAPI(ListAPIView):
 class UpazillaListAPI(ListAPIView):
     permission_classes = (AllowAny, )
     serializer_class = UpazillaListSerializer
-    pagination_class = CustomPagination
     lookup_field = 'district_id'
     lookup_url_kwarg = "district_id"
 

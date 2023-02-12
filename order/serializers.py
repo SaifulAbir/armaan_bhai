@@ -107,7 +107,16 @@ class CheckoutDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = ['id', 'user', 'order_id', 'order_date', 'delivery_date', 'order_status', 'order_item_order', 'delivery_address', 'payment_type',
-        'coupon_discount_amount', 'total_price']
+        'coupon_discount_amount', 'total_price', 'is_qc_passed']
+
+
+class OrderUpdateSerializer(serializers.ModelSerializer):
+    user = CustomerProfileDetailSerializer(many=False, read_only=True)
+    order_item_order = ProductItemCheckoutSerializer(many=True, read_only=True)
+    delivery_address = DeliveryAddressSerializer(many=False, read_only=True)
+    class Meta:
+        model = Order
+        fields = ['is_qc_passed', 'delivery_address', 'order_item_order', 'user']
 
 
 class CustomerOrderListSerializer(serializers.ModelSerializer):
@@ -127,7 +136,7 @@ class AgentOrderListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = ['id', 'user', 'order_id', 'order_date', 'delivery_date', 'order_status', 'order_item_order', 'delivery_address', 'payment_type',
-        'coupon_discount_amount', 'total_price']
+        'coupon_discount_amount', 'total_price', 'is_qc_passed']
 
 
 # Pickup Location

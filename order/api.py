@@ -117,3 +117,14 @@ class AgentPickupLocationListAPIView(ListAPIView):
 class AgentPickupLocationUpdateAPIView(UpdateAPIView):
     serializer_class = AgentPickupLocationSerializer
     queryset = AgentPickupLocation.objects.all()
+
+
+class OrderUpdateAPIView(UpdateAPIView):
+    serializer_class = OrderUpdateSerializer
+    lookup_field = 'id'
+    lookup_url_kwarg = 'id'
+
+    def get_object(self):
+        id = self.kwargs['id']
+        query = Order.objects.get(id=id)
+        return query

@@ -9,6 +9,7 @@ urlpatterns = [
     # checkout
     path('checkout/', CheckoutAPIView.as_view()),
     path('checkout-details/<str:id>/', CheckoutDetailsAPIView.as_view()),
+    path('admin/order-update/<str:id>/', OrderUpdateAPIView.as_view()),
     path('customer-order-list/', CustomerOrderList.as_view()),
     path('agent-order-list/', AgentOrderList.as_view()),
     # pickup location

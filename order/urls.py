@@ -12,6 +12,7 @@ urlpatterns = [
     path('admin/order-update/<str:id>/', OrderUpdateAPIView.as_view()),
     path('customer-order-list/', CustomerOrderList.as_view()),
     path('agent-order-list/', AgentOrderList.as_view()),
+    # path('admin/collect-order-list/', CollectOrderList.as_view()),
     # pickup location
     path('create/pickup-location/', PickupLocationCreateAPIView.as_view()),
     path('pickup-location/list/', PickupLocationListAPIView.as_view()),

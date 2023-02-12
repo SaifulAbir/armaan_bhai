@@ -1,7 +1,7 @@
 from rest_framework.generics import CreateAPIView, RetrieveUpdateAPIView, ListAPIView, DestroyAPIView, RetrieveAPIView, \
     UpdateAPIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
-
+from datetime import datetime, timedelta
 from armaan_bhai.pagination import CustomPagination
 from order.serializers import *
 
@@ -81,8 +81,21 @@ class AgentOrderList(ListAPIView):
     pagination_class = CustomPagination
 
     def get_queryset(self):
+        tomorrow = datetime.today() + timedelta(days=1)
+        deliver_to_mukam = self.request.GET.get('deliver_to_mukam')
         queryset = Order.objects.filter(order_item_order__product__user__agent_user_id=self.request.user.id).order_by('-created_at')
+        if deliver_to_mukam == "true":
+            queryset = queryset.filter(delivery_date__date=tomorrow)
         return queryset
+
+#
+# class CollectOrderList(ListAPIView):
+#     serializer_class = AgentOrderListSerializer
+#     pagination_class = CustomPagination
+#
+#     def get_queryset(self):
+#         queryset = Order.objects.filter(order_date__lt=datetime.today()).order_by('-created_at')
+#         return queryset
 
 
 class PickupLocationCreateAPIView(CreateAPIView):

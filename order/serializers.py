@@ -63,6 +63,10 @@ class CheckoutSerializer(serializers.ModelSerializer):
                 OrderItem.objects.create(order=order_instance, product=product, quantity=int(
                     quantity), unit_price=unit_price, total_price=total_price)
 
+                # delivery date
+                order_instance.delivery_date = product.possible_delivery_date
+                order_instance.save()
+
                 # update inventory
                 if order_instance:
                     product_obj = Product.objects.filter(id=product.id)

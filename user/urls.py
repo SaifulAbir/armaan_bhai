@@ -26,6 +26,8 @@ urlpatterns = [
     path('customer/profile/', CustomerRetrieveAPIView.as_view(), name='customer_profile'),
     # customer profile update
     path('customer/edit-profile/', CustomerUpdateAPIView.as_view(), name='customer_edit_profile'),
+    # customer profile
+    path('user/profile/', UserRetrieveAPIView.as_view(), name='user_profile'),
     # farmer list for agent
     path('admin/farmer/list/', FarmerListAPI.as_view(), name='farmer_list'),
     # agent list for superadmin

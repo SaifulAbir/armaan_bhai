@@ -11,7 +11,7 @@ from rest_framework.generics import RetrieveUpdateAPIView, CreateAPIView, ListAP
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
-
+from django.db.models import Q
 from armaan_bhai.pagination import CustomPagination
 from product.serializers import DivisionListSerializer, DistrictListSerializer, UpazillaListSerializer
 from user.serializers import *
@@ -118,6 +118,14 @@ class CustomerRetrieveAPIView(RetrieveAPIView):
     def get_object(self):
         customer = User.objects.get(id=self.request.user.id, user_type="CUSTOMER")
         return customer
+
+
+class UserRetrieveAPIView(RetrieveAPIView):
+    serializer_class = UserProfileDetailSerializer
+
+    def get_object(self):
+        user = User.objects.get(Q(id=self.request.user.id), Q(user_type='AGENT') | Q(user_type='FARMER'))
+        return user
 
 
 class FarmerListAPI(ListAPIView):

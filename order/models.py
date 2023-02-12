@@ -125,6 +125,7 @@ class Order(AbstractTimeStamp):
     delivery_date = models.DateTimeField(null=True, blank=True)
     comment = models.TextField(null=True, blank=True)
     is_qc_passed = models.BooleanField(default=False)
+    pickup_request = models.BooleanField(default=False)
 
 
     class Meta:

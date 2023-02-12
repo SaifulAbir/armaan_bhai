@@ -85,7 +85,7 @@ class AgentOrderList(ListAPIView):
         deliver_to_mukam = self.request.GET.get('deliver_to_mukam')
         queryset = Order.objects.filter(order_item_order__product__user__agent_user_id=self.request.user.id).order_by('-created_at')
         if deliver_to_mukam == "true":
-            queryset = queryset.filter(delivery_date__date=tomorrow)
+            queryset = queryset.filter(delivery_date__date=tomorrow, is_qc_passed=True)
         return queryset
 
 #

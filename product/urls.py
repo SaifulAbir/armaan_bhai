@@ -7,6 +7,8 @@ urlpatterns = [
     # customer product list
     path('customer/product/list/', CustomerProductListAPI.as_view(), name='product_list'),
     path('admin/farmer-product-list/<int:fid>/', FarmerProductListAPI.as_view()),
+    # agent product list
+    path('agent/product-list/', AgentProductListAPI.as_view()),
     path('admin/product/view/<str:slug>/', ProductViewAPI.as_view(), name='product_view'),
     path('customer/product/view/<str:slug>/', CustomerProductViewAPI.as_view(), name='customer_product_view'),
     path('admin/product/update/<str:slug>/', ProductUpdateAPIView.as_view(), name='product_view'),

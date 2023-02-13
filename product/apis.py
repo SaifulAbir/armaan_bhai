@@ -55,6 +55,19 @@ class FarmerProductListAPI(ListAPIView):
         return queryset
 
 
+class AgentProductListAPI(ListAPIView):
+    serializer_class = ProductListSerializer
+    pagination_class = ProductCustomPagination
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.user_type == "AGENT":
+            queryset = Product.objects.filter(user__agent_user_id=user.id).order_by('-created_at')
+        else:
+            queryset = None
+        return queryset
+
+
 class ProductViewAPI(RetrieveAPIView):
     serializer_class = ProductViewSerializer
     lookup_field = 'slug'

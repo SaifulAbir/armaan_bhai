@@ -30,6 +30,8 @@ urlpatterns = [
     path('user/profile/', UserRetrieveAPIView.as_view(), name='user_profile'),
     # farmer list for agent
     path('admin/farmer/list/', FarmerListAPI.as_view(), name='farmer_list'),
+    # farmer list for agent to create product
+    path('agent/farmer/list/', AgentFarmerListAPI.as_view(), name='agent_farmer_list'),
     # agent list for superadmin
     path('admin/agent/list/', AgentListAPI.as_view(), name='agent_list'),
     # division, district and upazilla list api for storefront

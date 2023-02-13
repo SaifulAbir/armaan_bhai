@@ -287,6 +287,16 @@ class FarmerListSerializer(serializers.ModelSerializer):
                   'village', 'postcode', 'phone_number', 'image', 'gender_display_value', 'product_seller']
 
 
+class AgentFarmerListSerializer(serializers.ModelSerializer):
+    gender_display_value = serializers.CharField(
+        source='get_gender_display', read_only=True
+    )
+
+    class Meta:
+        model = User
+        fields = ['id', 'full_name', 'username', 'gender_display_value', 'user_type']
+
+
 class AgentListSerializer(serializers.ModelSerializer):
     gender_display_value = serializers.CharField(
         source='get_gender_display', read_only=True

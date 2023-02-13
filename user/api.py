@@ -144,6 +144,18 @@ class FarmerListAPI(ListAPIView):
         return queryset
 
 
+class AgentFarmerListAPI(ListAPIView):
+    serializer_class = AgentFarmerListSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.user_type == "AGENT":
+            queryset = User.objects.filter(agent_user_id=user.id, user_type="FARMER")
+        else:
+            queryset = None
+        return queryset
+
+
 class AgentListAPI(ListAPIView):
     serializer_class = AgentListSerializer
     pagination_class = CustomPagination

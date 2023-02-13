@@ -250,7 +250,7 @@ class UserProfileDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'full_name', 'gender', 'organization_name', 'address', 'division', 'district', 'upazilla',
-                  'village', 'postcode', 'phone_number', 'image', 'gender_display_value']
+                  'village', 'postcode', 'phone_number', 'image', 'gender_display_value', 'user_type']
 
 
 class ProductSerializer(serializers.ModelSerializer):

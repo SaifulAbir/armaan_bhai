@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from order.models import DeliveryAddress, OrderItem, Order, CouponStat, Coupon, PickupLocation, AgentPickupLocation
+from order.models import DeliveryAddress, OrderItem, Order, CouponStat, Coupon, PickupLocation, AgentPickupLocation, \
+    FarmerAccountInfo
 from product.models import Inventory, Product
 from user.serializers import CustomerProfileDetailSerializer
 
@@ -173,3 +174,15 @@ class AgentPickupLocationListSerializer(serializers.ModelSerializer):
     class Meta:
         model = AgentPickupLocation
         fields = ['id', 'user', 'pickup_location', 'created_at']
+
+
+# payment method
+class PaymentMethodSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FarmerAccountInfo
+        fields = ['id', 'account_type', 'account_number', 'account_holder', 'bank_name', 'brunch_name', 'Mobile_number',
+                  'farmer', 'created_by']
+
+    def create(self, validated_data):
+        farmer_account_info = FarmerAccountInfo.objects.create(**validated_data, user=self.context['request'].user)
+        return farmer_account_info

@@ -145,3 +145,10 @@ class OrderUpdateAPIView(UpdateAPIView):
         id = self.kwargs['id']
         query = Order.objects.get(id=id)
         return query
+
+
+class PaymentMethodCreateAPIView(CreateAPIView):
+    serializer_class = PaymentMethodSerializer
+
+    def post(self, request, *args, **kwargs):
+        return super(PaymentMethodCreateAPIView, self).post(request, *args, **kwargs)

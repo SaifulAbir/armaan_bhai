@@ -21,4 +21,6 @@ urlpatterns = [
     path('create/agent-pickup-location/', AgentPickupLocationCreateAPIView.as_view()),
     path('agent-pickup-location/list/', AgentPickupLocationListAPIView.as_view()),
     path('update/agent-pickup-location/<int:pk>/', AgentPickupLocationUpdateAPIView.as_view()),
+    # add payment method
+    path('agent/create-payment-method/', PaymentMethodCreateAPIView.as_view()),
 ]

@@ -232,6 +232,12 @@ class FarmerAccountInfo(AbstractTimeStamp):
     account_number = models.CharField(max_length=100, null=True, blank=True)
     account_holder = models.CharField(max_length=100, null=True, blank=True)
     bank_name = models.CharField(max_length=100, null=True, blank=True)
+    brunch_name = models.CharField(max_length=100, null=True, blank=True)
+    Mobile_number = models.CharField(max_length=100, null=True, blank=True)
+    farmer = models.ForeignKey(
+        User, on_delete=models.PROTECT, related_name='farmer_account_info')
+    created_by = models.ForeignKey(
+        User, on_delete=models.PROTECT, related_name='agent_account_info')
 
     class Meta:
         verbose_name = 'Farmer Account Info'

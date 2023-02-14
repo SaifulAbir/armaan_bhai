@@ -72,7 +72,11 @@ class CustomerOrderList(ListAPIView):
     pagination_class = CustomPagination
 
     def get_queryset(self):
+        request = self.request
+        order_status = request.GET.get('order_status')
         queryset = Order.objects.filter(user=self.request.user).order_by('-created_at')
+        if order_status:
+            queryset = queryset.filter(order_status = order_status)
         return queryset
 
 

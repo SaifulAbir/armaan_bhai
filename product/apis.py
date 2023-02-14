@@ -61,11 +61,18 @@ class AgentProductListAPI(ListAPIView):
     pagination_class = ProductCustomPagination
 
     def get_queryset(self):
+        request = self.request
+        status = request.GET.get('status')
         user = self.request.user
         if user.user_type == "AGENT":
             queryset = Product.objects.filter(user__agent_user_id=user.id).order_by('-created_at')
+        elif user.user_type == "FARMER":
+            queryset = Product.objects.filter(user=user).order_by('-created_at')
         else:
-            queryset = None
+            queryset = Product.objects.all().order_by('-created_at')
+
+        if status:
+            queryset = queryset.filter(status=status)
         return queryset
 
 

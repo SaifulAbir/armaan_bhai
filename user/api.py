@@ -135,8 +135,7 @@ class FarmerListAPI(ListAPIView):
     def get_queryset(self):
         user = self.request.user
         if user.user_type == "AGENT":
-            farmers = AgentFarmer.objects.filter(agent=user).values_list('farmer_id', flat=True)
-            queryset = User.objects.filter(id__in = farmers, user_type="FARMER")
+            queryset = User.objects.filter(agent_user_id=user.id, user_type="FARMER")
         elif user.is_superuser:
             queryset = User.objects.filter(user_type="FARMER")
         else:

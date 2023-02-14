@@ -220,3 +220,23 @@ class AgentPickupLocation(AbstractTimeStamp):
 
     def __str__(self):
         return self.user.phone_number
+
+
+class FarmerAccountInfo(AbstractTimeStamp):
+    PAYMENT_CHOICES = [
+        ('BANK_ACCOUNT', 'Bank Account'),
+        ('MFS', 'Mobile Financial Services'),
+    ]
+    account_type = models.CharField(
+        max_length=20, null=False, blank=False, choices=PAYMENT_CHOICES)
+    account_number = models.CharField(max_length=100, null=True, blank=True)
+    account_holder = models.CharField(max_length=100, null=True, blank=True)
+    bank_name = models.CharField(max_length=100, null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Farmer Account Info'
+        verbose_name_plural = 'Farmer Account Info'
+        db_table = 'farmer_account_info'
+
+    def __str__(self):
+        return self.account_type

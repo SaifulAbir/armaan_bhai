@@ -163,7 +163,8 @@ class ProductListSerializer(serializers.ModelSerializer):
             'user',
             'possible_productions_date',
             'possible_delivery_date',
-            'production_steps'
+            'production_steps',
+            'status'
         ]
 
 

@@ -2,6 +2,7 @@ from rest_framework import serializers
 from order.models import DeliveryAddress, OrderItem, Order, CouponStat, Coupon, PickupLocation, AgentPickupLocation, \
     FarmerAccountInfo
 from product.models import Inventory, Product
+from product.serializers import ProductViewSerializer
 from user.serializers import CustomerProfileDetailSerializer
 
 
@@ -16,6 +17,7 @@ class DeliveryAddressSerializer(serializers.ModelSerializer):
 
 
 class ProductItemCheckoutSerializer(serializers.ModelSerializer):
+    product = ProductViewSerializer(many=False, read_only=True)
     class Meta:
         model = OrderItem
         fields = ['id',

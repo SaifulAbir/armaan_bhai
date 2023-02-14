@@ -46,6 +46,7 @@ class CustomerProductListAPI(ListAPIView):
 
 class FarmerProductListAPI(ListAPIView):
     serializer_class = ProductListSerializer
+    pagination_class = ProductCustomPagination
     lookup_field = 'fid'
     lookup_url_kwarg = "fid"
 

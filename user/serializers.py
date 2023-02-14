@@ -308,7 +308,7 @@ class AgentListSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'full_name', 'username', 'gender', 'organization_name', 'address', 'division', 'district', 'upazilla',
-                  'village', 'postcode', 'phone_number', 'image', 'gender_display_value']
+                  'village', 'postcode', 'phone_number', 'image', 'gender_display_value', 'is_active']
 
 
 # class UserSocialRegSerializer(serializers.ModelSerializer):

@@ -89,6 +89,8 @@ class AgentOrderList(ListAPIView):
         deliver_to_mukam = self.request.GET.get('deliver_to_mukam')
         if self.request.user.user_type == "AGENT":
             queryset = Order.objects.filter(order_item_order__product__user__agent_user_id=self.request.user.id).order_by('-created_at')
+        elif self.request.user.user_type == "FARMER":
+            queryset = Order.objects.all(order_item_order__product__user = self.request.user).order_by('-created_at')
         else:
             queryset = Order.objects.all().order_by('-created_at')
         if deliver_to_mukam == "true":

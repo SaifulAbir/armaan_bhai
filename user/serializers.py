@@ -285,7 +285,7 @@ class FarmerListSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'full_name', 'username', 'gender', 'user_type', 'organization_name', 'address', 'division', 'district', 'upazilla',
-                  'village', 'postcode', 'phone_number', 'image', 'gender_display_value', 'product_seller']
+                  'village', 'postcode', 'phone_number', 'image', 'gender_display_value', 'product_seller', 'agent_full_name']
 
     def get_agent_full_name(self, instance):
         full_name = User.objects.get(id=instance.agent_user_id).full_name

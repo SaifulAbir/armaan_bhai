@@ -288,7 +288,10 @@ class FarmerListSerializer(serializers.ModelSerializer):
                   'village', 'postcode', 'phone_number', 'image', 'gender_display_value', 'product_seller', 'agent_full_name']
 
     def get_agent_full_name(self, instance):
-        full_name = User.objects.get(id=instance.agent_user_id).full_name
+        try:
+            full_name = User.objects.get(id=instance.agent_user_id).full_name
+        except User.DoesNotExist:
+            full_name = None
         return full_name
 
 

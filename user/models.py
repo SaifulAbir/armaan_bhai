@@ -76,7 +76,7 @@ class User(AbstractUser):
         db_table = 'users'
 
     def __str__(self):
-        return self.username + "-" + str(self.id) + "-" + self.agent_user_id
+        return self.username + "-" + str(self.id) + "-" + (self.agent_user_id if self.agent_user_id else "No Agent")
 
 
 class AgentFarmer(AbstractTimeStamp):

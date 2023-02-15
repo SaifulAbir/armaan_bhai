@@ -146,6 +146,77 @@ def pre_save_order(sender, instance, *args, **kwargs):
 pre_save.connect(pre_save_order, sender=Order)
 
 
+class SubOrder(AbstractTimeStamp):
+    ORDER_CHOICES = [
+        ('ON_PROCESS', 'On Process'),
+        ('CANCELED', 'Canceled'),
+        ('ON_TRANSIT', 'On Transit'),
+        ('DELIVERED', 'Delivered'),
+    ]
+
+    PAYMENT_STATUSES = [
+        ('DUE', 'Due'),
+        ('PAID', 'Paid'),
+        ('REFUNDED', 'Refunded'),
+    ]
+
+    PAYMENT_TYPES = [
+        ('COD', 'Cash on Delivery'),
+        ('PG', 'Payment Gateway'),
+    ]
+    order = models.ForeignKey(Order, on_delete=models.PROTECT,
+                             related_name='order_suborder', blank=True, null=True)
+    suborder_id = models.SlugField(null=False, blank=False, allow_unicode=True)
+    user = models.ForeignKey(User, on_delete=models.PROTECT,
+                             related_name='suborder_user', blank=True, null=True)
+    product_count = models.IntegerField()
+    farmer = models.ForeignKey(
+        User, on_delete=models.PROTECT, related_name='suborder_farmer', blank=True, null=True)
+    total_price = models.DecimalField(max_digits=19, decimal_places=2)
+    refund = models.BooleanField(default=False)
+    order_date = models.DateField(auto_now_add=True)
+    coupon = models.ForeignKey(
+        Coupon, on_delete=models.SET_NULL, blank=True, null=True)
+    coupon_discount_amount = models.FloatField(max_length=255, null=True, blank=True)
+    coupon_status = models.BooleanField(default=False)
+    vat_amount = models.FloatField(max_length=255, null=True, blank=True)
+    vat_percentage = models.FloatField(max_length=255, null=True, blank=True)
+    # shipping_cost = models.FloatField(max_length=255, null=True, blank=True)
+    # shipping_class = models.ForeignKey(
+    #     ShippingClass, on_delete=models.SET_NULL, blank=True, null=True)
+    payment_status = models.CharField(
+        max_length=20, null=False, blank=False, choices=PAYMENT_STATUSES, default=PAYMENT_STATUSES[0][0])
+    payment_type = models.CharField(
+        max_length=20, null=False, blank=False, choices=PAYMENT_STATUSES, default=PAYMENT_TYPES[0][0])
+    cash_on_delivery = models.BooleanField(default=False)
+    order_status = models.CharField(
+        max_length=20, null=False, blank=False, choices=ORDER_CHOICES, default=ORDER_CHOICES[0][0])
+    delivery_address = models.ForeignKey(DeliveryAddress, on_delete=models.CASCADE)
+    # delivery_agent = models.CharField(max_length=100, null=True, blank=True)
+    delivery_date = models.DateTimeField(null=True, blank=True)
+    comment = models.TextField(null=True, blank=True)
+    is_qc_passed = models.BooleanField(default=False)
+    pickup_request = models.BooleanField(default=False)
+
+
+    class Meta:
+        verbose_name = 'Sub Order'
+        verbose_name_plural = 'Sub Orders'
+        db_table = 'sub_orders'
+
+    def __str__(self):
+        return self.order_id
+
+
+def pre_save_order(sender, instance, *args, **kwargs):
+    if not instance.order_id:
+        instance.order_id = 'ar-so-' + \
+            str(unique_order_id_generator_for_order(instance))
+
+
+pre_save.connect(pre_save_order, sender=SubOrder)
+
+
 class OrderItem(AbstractTimeStamp):
     order = models.ForeignKey(
         Order, on_delete=models.CASCADE, related_name='order_item_order', blank=True, null=True)

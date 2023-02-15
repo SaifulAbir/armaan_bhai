@@ -17,11 +17,12 @@ class DeliveryAddressSerializer(serializers.ModelSerializer):
 
 
 class ProductItemCheckoutSerializer(serializers.ModelSerializer):
-    product = ProductViewSerializer(many=False, read_only=True)
+    product_title = serializers.CharField(source='product.title', read_only=True)
     class Meta:
         model = OrderItem
         fields = ['id',
                   'product',
+                  'product_title',
                   'quantity',
                   'unit_price'
                   ]

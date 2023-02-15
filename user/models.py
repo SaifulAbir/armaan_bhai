@@ -49,6 +49,7 @@ class User(AbstractUser):
         ('FARMER', 'Farmer'),
         ('AGENT', 'Agent'),
         ('CUSTOMER', 'Customer'),
+        ('ADMIN', 'Admin'),
     )
     full_name = models.CharField(max_length=255, null=True)
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, null=True)

@@ -25,7 +25,7 @@ class CustomerProductListAPI(ListAPIView):
         sub_category = request.GET.get('sub_category_id')
         status = request.GET.get('status')
 
-        queryset = Product.objects.all().order_by('-created_at')
+        queryset = Product.objects.filter(status="PUBLISH").order_by('-created_at')
 
         if query:
             queryset = queryset.filter(

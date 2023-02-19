@@ -165,7 +165,8 @@ class ProductListSerializer(serializers.ModelSerializer):
             'possible_delivery_date',
             'production_steps',
             'sell_price_per_unit',
-            'status'
+            'status',
+            'sell_count'
         ]
 
 

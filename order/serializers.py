@@ -1,3 +1,5 @@
+import decimal
+
 from rest_framework import serializers
 from order.models import DeliveryAddress, OrderItem, Order, CouponStat, Coupon, PickupLocation, AgentPickupLocation, \
     FarmerAccountInfo, SubOrder
@@ -117,11 +119,11 @@ class CheckoutSerializer(serializers.ModelSerializer):
                         sell_count = product_obj[0].sell_count + 1
                         product_obj.update(sell_count=sell_count)
                 else:
-                    suborder_objects = SubOrder.objects.all().order_by('-id')[:suborder_instance_count]
+                    suborder_objects = SubOrder.objects.all().order_by('-created_at')[:suborder_instance_count]
                     for suborder_object in suborder_objects:
-                        if suborder_object.delivery_date == product.possible_delivery_date and suborder_object.user == self.context['request'].user:
+                        if suborder_object.delivery_date.date() == product.possible_delivery_date and suborder_object.user == self.context['request'].user:
                             suborder_object.product_count += 1
-                            suborder_object.total_price += total_price
+                            suborder_object.total_price += decimal.Decimal(total_price)
                             suborder_object.save()
                             if order_instance:
                                 product_obj = Product.objects.filter(id=product.id)
@@ -134,6 +136,7 @@ class CheckoutSerializer(serializers.ModelSerializer):
                                 # product sell count
                                 sell_count = product_obj[0].sell_count + 1
                                 product_obj.update(sell_count=sell_count)
+                            break
                         else:
                             if payment_type == 'PG':
                                 SubOrder.objects.create(order=order_instance, user=self.context['request'].user,
@@ -163,8 +166,7 @@ class CheckoutSerializer(serializers.ModelSerializer):
                                 # product sell count
                                 sell_count = product_obj[0].sell_count + 1
                                 product_obj.update(sell_count=sell_count)
-
-
+                            break
 
         # apply coupon
         try:

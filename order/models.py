@@ -3,7 +3,7 @@ from django.db import models
 from django.db.models.signals import pre_save
 from django.utils import timezone
 from armaan_bhai.models import AbstractTimeStamp
-from order.utils import unique_order_id_generator_for_order
+from order.utils import unique_order_id_generator_for_order, unique_order_id_generator_for_suborder
 from product.models import Product
 from user.models import User, Division, District, Upazilla
 
@@ -166,7 +166,7 @@ class SubOrder(AbstractTimeStamp):
     ]
     order = models.ForeignKey(Order, on_delete=models.PROTECT,
                              related_name='order_suborder', blank=True, null=True)
-    suborder_id = models.SlugField(null=False, blank=False, allow_unicode=True)
+    suborder_number = models.SlugField(null=False, blank=False, allow_unicode=True)
     user = models.ForeignKey(User, on_delete=models.PROTECT,
                              related_name='suborder_user', blank=True, null=True)
     product_count = models.IntegerField()
@@ -205,16 +205,16 @@ class SubOrder(AbstractTimeStamp):
         db_table = 'sub_orders'
 
     def __str__(self):
-        return self.order_id
+        return self.suborder_number
 
 
-def pre_save_order(sender, instance, *args, **kwargs):
-    if not instance.order_id:
-        instance.order_id = 'ar-so-' + \
-            str(unique_order_id_generator_for_order(instance))
+def pre_save_suborder(sender, instance, *args, **kwargs):
+    if not instance.suborder_number:
+        instance.suborder_number = 'ar-so-' + \
+            str(unique_order_id_generator_for_suborder(instance))
 
 
-pre_save.connect(pre_save_order, sender=SubOrder)
+pre_save.connect(pre_save_suborder, sender=SubOrder)
 
 
 class OrderItem(AbstractTimeStamp):

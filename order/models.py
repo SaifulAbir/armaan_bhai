@@ -220,6 +220,8 @@ pre_save.connect(pre_save_suborder, sender=SubOrder)
 class OrderItem(AbstractTimeStamp):
     order = models.ForeignKey(
         Order, on_delete=models.CASCADE, related_name='order_item_order', blank=True, null=True)
+    suborder = models.ForeignKey(
+        SubOrder, on_delete=models.CASCADE, related_name='order_item_suborder', blank=True, null=True)
     product = models.ForeignKey(
         Product, on_delete=models.CASCADE, null=False, blank=False, related_name='order_item_product')
     quantity = models.IntegerField(default=1)

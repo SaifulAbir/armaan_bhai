@@ -95,17 +95,19 @@ class CheckoutSerializer(serializers.ModelSerializer):
                 total_price = float(unit_price) * float(quantity)
                 if suborder_instance_count == 0:
                     if payment_type == 'PG':
-                        SubOrder.objects.create(order=order_instance, user=self.context['request'].user, product_count=1,
+                        suborder_obj = SubOrder.objects.create(order=order_instance, user=self.context['request'].user, product_count=1,
                                             total_price=total_price, delivery_address=validated_data.get('delivery_address'),
                                             delivery_date=product.possible_delivery_date, payment_status='PAID',
                                                 order_status='ON_PROCESS')
                     else:
-                        SubOrder.objects.create(order=order_instance, user=self.context['request'].user,
+                        suborder_obj = SubOrder.objects.create(order=order_instance, user=self.context['request'].user,
                                                 product_count=1,
                                                 total_price=total_price,
                                                 delivery_address=validated_data.get('delivery_address'),
                                                 delivery_date=product.possible_delivery_date, payment_status='DUE',
                                                 order_status='ON_PROCESS')
+                    OrderItem.objects.create(order=order_instance, suborder=suborder_obj, product=product, quantity=int(
+                                     quantity), unit_price=unit_price, total_price=total_price)
                     suborder_instance_count += 1
                     if order_instance:
                         product_obj = Product.objects.filter(id=product.id)
@@ -127,6 +129,9 @@ class CheckoutSerializer(serializers.ModelSerializer):
                             suborder_object.product_count += 1
                             suborder_object.total_price += decimal.Decimal(total_price)
                             suborder_object.save()
+                            OrderItem.objects.create(order=order_instance, suborder=suborder_object, product=product,
+                                                     quantity=int(
+                                                         quantity), unit_price=unit_price, total_price=total_price)
                             if order_instance:
                                 product_obj = Product.objects.filter(id=product.id)
                                 inventory_obj = Inventory.objects.filter(product=product).latest('created_at')
@@ -142,7 +147,7 @@ class CheckoutSerializer(serializers.ModelSerializer):
 
                         if count == suborder_objects.count():
                             if payment_type == 'PG':
-                                SubOrder.objects.create(order=order_instance, user=self.context['request'].user,
+                                suborder_obj = SubOrder.objects.create(order=order_instance, user=self.context['request'].user,
                                                         product_count=1,
                                                         total_price=total_price,
                                                         delivery_address=validated_data.get('delivery_address'),
@@ -150,13 +155,16 @@ class CheckoutSerializer(serializers.ModelSerializer):
                                                         payment_status='PAID',
                                                         order_status='ON_PROCESS')
                             else:
-                                SubOrder.objects.create(order=order_instance, user=self.context['request'].user,
+                                suborder_obj = SubOrder.objects.create(order=order_instance, user=self.context['request'].user,
                                                         product_count=1,
                                                         total_price=total_price,
                                                         delivery_address=validated_data.get('delivery_address'),
                                                         delivery_date=product.possible_delivery_date,
                                                         payment_status='DUE',
                                                         order_status='ON_PROCESS')
+                            OrderItem.objects.create(order=order_instance, suborder=suborder_obj, product=product,
+                                                     quantity=int(
+                                                         quantity), unit_price=unit_price, total_price=total_price)
                             suborder_instance_count += 1
                             if order_instance:
                                 product_obj = Product.objects.filter(id=product.id)

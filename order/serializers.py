@@ -214,23 +214,23 @@ class CheckoutDetailsSerializer(serializers.ModelSerializer):
 
 class OrderUpdateSerializer(serializers.ModelSerializer):
     user = CustomerProfileDetailSerializer(many=False, read_only=True)
-    order_item_order = ProductItemCheckoutSerializer(many=True, read_only=True)
+    order_item_suborder = ProductItemCheckoutSerializer(many=True, read_only=True)
     delivery_address = DeliveryAddressSerializer(many=False, read_only=True)
     class Meta:
-        model = Order
-        fields = ['is_qc_passed', 'delivery_address', 'order_item_order', 'user']
+        model = SubOrder
+        fields = ['is_qc_passed', 'delivery_address', 'order_item_suborder', 'user']
 
 
 class CustomerOrderListSerializer(serializers.ModelSerializer):
     user = CustomerProfileDetailSerializer(many=False, read_only=True)
-    order_item_order = ProductItemCheckoutSerializer(many=True, read_only=True)
+    order_item_suborder = ProductItemCheckoutSerializer(many=True, read_only=True)
     delivery_address = DeliveryAddressSerializer(many=False, read_only=True)
     order_status_value = serializers.CharField(
         source='get_order_status_display', read_only=True
     )
     class Meta:
-        model = Order
-        fields = ['id', 'user', 'order_id', 'order_date', 'delivery_date', 'order_status', 'order_status_value', 'order_item_order', 'delivery_address', 'payment_type',
+        model = SubOrder
+        fields = ['id', 'user', 'order', 'suborder_number', 'order_date', 'delivery_date', 'order_status', 'order_status_value', 'order_item_suborder', 'delivery_address', 'payment_type',
         'coupon_discount_amount', 'total_price']
 
 
@@ -239,11 +239,11 @@ class AgentOrderListSerializer(serializers.ModelSerializer):
         source='get_order_status_display', read_only=True
     )
     user = CustomerProfileDetailSerializer(many=False, read_only=True)
-    order_item_order = ProductItemCheckoutSerializer(many=True, read_only=True)
+    order_item_suborder = ProductItemCheckoutSerializer(many=True, read_only=True)
     delivery_address = DeliveryAddressSerializer(many=False, read_only=True)
     class Meta:
-        model = Order
-        fields = ['id', 'user', 'order_id', 'order_date', 'delivery_date', 'order_status', 'order_status_value', 'order_item_order', 'delivery_address', 'payment_type',
+        model = SubOrder
+        fields = ['id', 'user', 'order', 'suborder_number', 'order_date', 'delivery_date', 'order_status', 'order_status_value', 'order_item_suborder', 'delivery_address', 'payment_type',
         'coupon_discount_amount', 'total_price', 'is_qc_passed']
 
 

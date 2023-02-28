@@ -74,7 +74,7 @@ class CustomerOrderList(ListAPIView):
     def get_queryset(self):
         request = self.request
         order_status = request.GET.get('order_status')
-        queryset = Order.objects.filter(user=self.request.user).order_by('-created_at')
+        queryset = SubOrder.objects.filter(user=self.request.user).order_by('-created_at')
         if order_status:
             queryset = queryset.filter(order_status = order_status)
         return queryset
@@ -88,11 +88,11 @@ class AgentOrderList(ListAPIView):
         tomorrow = datetime.today() + timedelta(days=1)
         deliver_to_mukam = self.request.GET.get('deliver_to_mukam')
         if self.request.user.user_type == "AGENT":
-            queryset = Order.objects.filter(order_item_order__product__user__agent_user_id=self.request.user.id).order_by('-created_at')
+            queryset = SubOrder.objects.filter(order_item_suborder__product__user__agent_user_id=self.request.user.id).order_by('-created_at')
         elif self.request.user.user_type == "FARMER":
-            queryset = Order.objects.filter(order_item_order__product__user = self.request.user).order_by('-created_at')
+            queryset = SubOrder.objects.filter(order_item_suborder__product__user = self.request.user).order_by('-created_at')
         else:
-            queryset = Order.objects.all().order_by('-created_at')
+            queryset = SubOrder.objects.all().order_by('-created_at')
         if deliver_to_mukam == "true":
             queryset = queryset.filter(delivery_date__date=tomorrow, is_qc_passed=True)
         return queryset
@@ -148,7 +148,7 @@ class OrderUpdateAPIView(UpdateAPIView):
 
     def get_object(self):
         id = self.kwargs['id']
-        query = Order.objects.get(id=id)
+        query = SubOrder.objects.get(id=id)
         return query
 
 

@@ -113,6 +113,7 @@ class PickupLocationCreateAPIView(CreateAPIView):
 
 class PickupLocationListAPIView(ListAPIView):
     serializer_class = PickupLocationListSerializer
+    pagination_class = CustomPagination
 
     def get_queryset(self):
         queryset = PickupLocation.objects.filter(status=True)

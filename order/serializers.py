@@ -120,7 +120,9 @@ class CheckoutSerializer(serializers.ModelSerializer):
                         product_obj.update(sell_count=sell_count)
                 else:
                     suborder_objects = SubOrder.objects.all().order_by('-created_at')[:suborder_instance_count]
+                    count = 0
                     for suborder_object in suborder_objects:
+                        count += 1
                         if suborder_object.delivery_date.date() == product.possible_delivery_date and suborder_object.user == self.context['request'].user:
                             suborder_object.product_count += 1
                             suborder_object.total_price += decimal.Decimal(total_price)
@@ -137,7 +139,8 @@ class CheckoutSerializer(serializers.ModelSerializer):
                                 sell_count = product_obj[0].sell_count + 1
                                 product_obj.update(sell_count=sell_count)
                             break
-                        else:
+
+                        if count == suborder_objects.count():
                             if payment_type == 'PG':
                                 SubOrder.objects.create(order=order_instance, user=self.context['request'].user,
                                                         product_count=1,
@@ -166,7 +169,6 @@ class CheckoutSerializer(serializers.ModelSerializer):
                                 # product sell count
                                 sell_count = product_obj[0].sell_count + 1
                                 product_obj.update(sell_count=sell_count)
-                            break
 
         # apply coupon
         try:

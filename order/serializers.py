@@ -257,7 +257,7 @@ class PickupLocationSerializer(serializers.ModelSerializer):
 class PickupLocationListSerializer(serializers.ModelSerializer):
     class Meta:
         model = PickupLocation
-        fields = ['id', 'address', 'division', 'district', 'upazilla', 'created_at']
+        fields = ['id', 'address', 'division', 'district', 'upazilla', 'created_at', 'status']
 
 
 # Agent Pickup Location

@@ -122,13 +122,7 @@ class PickupLocationListAPIView(ListAPIView):
     pagination_class = CustomPagination
 
     def get_queryset(self):
-        queryset = PickupLocation.objects.filter(status=True)
-        if queryset:
-            for pickup_location in queryset:
-                # pick the district name value from the foreign key
-                pickup_location.district_name = pickup_location.district.name
-                pickup_location.save()
-        
+        queryset = PickupLocation.objects.filter(status=True)    
         return queryset
 
 

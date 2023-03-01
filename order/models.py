@@ -17,7 +17,9 @@ class DeliveryAddress(AbstractTimeStamp):
         max_length=100, null=False, blank=False, default='')
     phone = models.CharField(max_length=255, null=True, blank=True, default='')
     email = models.CharField(max_length=255, null=True, blank=True, default='')
-    city = models.CharField(max_length=100, blank=True, null=True, default='')
+    division = models.ForeignKey(Division, on_delete=models.PROTECT)
+    district = models.ForeignKey(District, on_delete=models.PROTECT)
+    upazilla = models.ForeignKey(Upazilla, on_delete=models.PROTECT)
     default = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
 

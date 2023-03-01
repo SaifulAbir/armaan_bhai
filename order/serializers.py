@@ -11,7 +11,7 @@ from user.serializers import CustomerProfileDetailSerializer
 class DeliveryAddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = DeliveryAddress
-        fields = ['id', 'user', 'name', 'address', 'phone', 'email', 'city']
+        fields = ['id', 'user', 'name', 'address', 'phone', 'email', 'district', 'division', 'upazilla']
 
     def create(self, validated_data):
         address_instance = DeliveryAddress.objects.create(**validated_data, user=self.context['request'].user)

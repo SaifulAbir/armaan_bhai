@@ -265,9 +265,14 @@ class PickupLocationSerializer(serializers.ModelSerializer):
 
 
 class PickupLocationListSerializer(serializers.ModelSerializer):
+    district_name = serializers.CharField(source='district.name', read_only=True)
+    division_name = serializers.CharField(source='division.name', read_only=True)
+    upazilla_name = serializers.CharField(source='upazilla.name', read_only=True)
+
     class Meta:
         model = PickupLocation
-        fields = ['id', 'address', 'division', 'district', 'upazilla', 'created_at', 'status']
+        fields = ['id', 'address', 'division', 'division_name', 'district','district_name', 'upazilla','upazilla_name', 'created_at', 'status']
+        
 
 
 # Agent Pickup Location

@@ -28,7 +28,7 @@ class DeliveryAddressUpdateAPIView(RetrieveUpdateAPIView):
 
 class DeliveryAddressListAPIView(ListAPIView):
     permission_classes = [IsAuthenticated]
-    serializer_class = DeliveryAddressSerializer
+    serializer_class = DeliveryAddressListSerializer
 
     def get_queryset(self):
         queryset = DeliveryAddress.objects.filter(user=self.request.user)

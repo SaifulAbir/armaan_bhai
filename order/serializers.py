@@ -5,7 +5,7 @@ from order.models import DeliveryAddress, OrderItem, Order, CouponStat, Coupon, 
     FarmerAccountInfo, SubOrder
 from product.models import Inventory, Product
 from product.serializers import ProductViewSerializer
-from user.serializers import CustomerProfileDetailSerializer
+from user.serializers import CustomerProfileDetailSerializer, DivisionSerializer, DistrictSerializer, UpazillaSerializer
 
 
 class DeliveryAddressSerializer(serializers.ModelSerializer):
@@ -16,6 +16,16 @@ class DeliveryAddressSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         address_instance = DeliveryAddress.objects.create(**validated_data, user=self.context['request'].user)
         return address_instance
+
+
+class DeliveryAddressListSerializer(serializers.ModelSerializer):
+    division = DivisionSerializer(many=False, read_only=True)
+    district = DistrictSerializer(many=False, read_only=True)
+    upazilla = UpazillaSerializer(many=False, read_only=True)
+
+    class Meta:
+        model = DeliveryAddress
+        fields = ['id', 'user', 'name', 'address', 'phone', 'email', 'district', 'division', 'upazilla']
 
 
 class ProductItemCheckoutSerializer(serializers.ModelSerializer):

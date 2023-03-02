@@ -303,7 +303,7 @@ class FarmerAccountInfo(AbstractTimeStamp):
         ('MFS', 'Mobile Financial Services'),
     ]
     account_type = models.CharField(
-        max_length=20, null=False, blank=False, choices=PAYMENT_CHOICES)
+        max_length=20, null=True, blank=True, choices=PAYMENT_CHOICES)
     account_number = models.CharField(max_length=100, null=True, blank=True)
     account_holder = models.CharField(max_length=100, null=True, blank=True)
     bank_name = models.CharField(max_length=100, null=True, blank=True)

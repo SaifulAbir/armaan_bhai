@@ -3,6 +3,8 @@ from rest_framework.generics import CreateAPIView, RetrieveUpdateAPIView, ListAP
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from datetime import datetime, timedelta
 from armaan_bhai.pagination import CustomPagination
+from rest_framework.response import Response
+from rest_framework.exceptions import NotFound
 from order.serializers import *
 from order.models import *
 from user.models import *
@@ -122,8 +124,22 @@ class PickupLocationListAPIView(ListAPIView):
     pagination_class = CustomPagination
 
     def get_queryset(self):
-        queryset = PickupLocation.objects.filter(status=True)    
+        queryset = PickupLocation.objects.filter(status=True)
         return queryset
+
+
+class PickupLocationDetailsAPIView(RetrieveAPIView):
+    serializer_class = PickupLocationListSerializer
+    lookup_field = 'pid'
+    lookup_url_kwarg = 'pid'
+
+    def get_object(self):
+        id = self.kwargs['pid']
+        try:
+            query = PickupLocation.objects.get(id=id, status=True)
+            return query
+        except PickupLocation.DoesNotExist:
+            raise NotFound("Pickup Location not found")
 
 
 class PickupLocationUpdateAPIView(UpdateAPIView):
@@ -164,3 +180,34 @@ class PaymentMethodCreateAPIView(CreateAPIView):
 
     def post(self, request, *args, **kwargs):
         return super(PaymentMethodCreateAPIView, self).post(request, *args, **kwargs)
+    
+
+class PaymentDetailsAPIView(RetrieveAPIView):
+    serializer_class = PaymentDetailsSerializer
+    lookup_field = 'farmer_id'
+    lookup_url_kwarg = 'farmer_id'
+    lookup_field = 'farmerinfo_id'
+    lookup_url_kwarg = 'farmerinfo_id'
+
+
+    def get_object(self):
+        id = self.kwargs['farmerinfo_id']
+        farmer_id = self.kwargs['farmer_id']
+        try:
+            query = FarmerAccountInfo.objects.get(id=id, farmer=farmer_id)
+            return query
+        except FarmerAccountInfo.DoesNotExist:
+            raise NotFound("Payment Details not found")
+        
+        
+class PaymentDetailsUpdateAPIView(UpdateAPIView):
+    serializer_class = PaymentDetailsUpdateSerializer
+    queryset = FarmerAccountInfo.objects.all()
+    lookup_field = 'id'
+    lookup_url_kwarg = 'id'
+
+
+   
+
+
+

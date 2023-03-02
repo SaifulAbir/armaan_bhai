@@ -146,6 +146,38 @@ def pre_save_order(sender, instance, *args, **kwargs):
 pre_save.connect(pre_save_order, sender=Order)
 
 
+class PickupLocation(AbstractTimeStamp):
+    address = models.TextField()
+    division = models.ForeignKey(Division, on_delete=models.PROTECT)
+    district = models.ForeignKey(District, on_delete=models.PROTECT)
+    upazilla = models.ForeignKey(Upazilla, on_delete=models.PROTECT)
+    status = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = 'PickupLocation'
+        verbose_name_plural = 'PickupLocations'
+        db_table = 'pickup_locations'
+
+    def __str__(self):
+        return self.address
+
+
+class AgentPickupLocation(AbstractTimeStamp):
+    user = models.ForeignKey(
+        User, on_delete=models.PROTECT, related_name='agent_pickup_location')
+    pickup_location = models.ForeignKey(
+        PickupLocation, on_delete=models.PROTECT, related_name='pickup_location_agent')
+    status = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = 'AgentPickupLocation'
+        verbose_name_plural = 'AgentPickupLocations'
+        db_table = 'agent_pickup_locations'
+
+    def __str__(self):
+        return self.pickup_location.address
+
+
 class SubOrder(AbstractTimeStamp):
     ORDER_CHOICES = [
         ('ON_PROCESS', 'On Process'),
@@ -229,6 +261,8 @@ class OrderItem(AbstractTimeStamp):
         max_length=255, null=False, blank=False, default=0)
     total_price = models.FloatField(
         max_length=255, null=False, blank=False, default=0)
+    is_qc_passed = models.BooleanField(default=False)
+    pickup_location = models.ForeignKey(AgentPickupLocation, on_delete=models.CASCADE, null=True, blank=True, related_name='order_item_pickup_location')
 
     @property
     def subtotal(self):
@@ -262,37 +296,6 @@ class CouponStat(AbstractTimeStamp):
 
     def __str__(self):
         return f"{self.pk}"
-
-
-class PickupLocation(AbstractTimeStamp):
-    address = models.TextField()
-    division = models.ForeignKey(Division, on_delete=models.PROTECT)
-    district = models.ForeignKey(District, on_delete=models.PROTECT)
-    upazilla = models.ForeignKey(Upazilla, on_delete=models.PROTECT)
-    status = models.BooleanField(default=True)
-
-    class Meta:
-        verbose_name = 'PickupLocation'
-        verbose_name_plural = 'PickupLocations'
-        db_table = 'pickup_locations'
-
-    def __str__(self):
-        return self.address
-
-
-class AgentPickupLocation(AbstractTimeStamp):
-    user = models.ForeignKey(
-        User, on_delete=models.PROTECT, related_name='agent_pickup_location')
-    pickup_location = models.ForeignKey(
-        PickupLocation, on_delete=models.PROTECT, related_name='pickup_location_agent')
-
-    class Meta:
-        verbose_name = 'AgentPickupLocation'
-        verbose_name_plural = 'AgentPickupLocations'
-        db_table = 'agent_pickup_locations'
-
-    def __str__(self):
-        return self.user.phone_number
 
 
 class FarmerAccountInfo(AbstractTimeStamp):

@@ -296,11 +296,14 @@ class PickupLocationQcPassedInfoUpdateSerializer(serializers.ModelSerializer):
         fields = ['id', 'pickup_location', 'is_qc_passed']
 
     def update(self, instance, validated_data):
-        # permission_modules
+        # is_qc_passed
         try:
             is_qc_passed = validated_data.pop('is_qc_passed')
         except:
             is_qc_passed = 'NEUTRAL'
+
+        print("is_qc_passed")
+        print(is_qc_passed)
 
         # try:
         # is_qc_passed
@@ -318,9 +321,10 @@ class PickupLocationQcPassedInfoUpdateSerializer(serializers.ModelSerializer):
         # else:
         #     RolePermissions.objects.filter(role=instance).delete()
 
-        order_id = instance.order
-        print("order_id")
-        print(order_id)
+        OrderItem.objects.filter(id=instance.suborder.id).update(is_qc_passed=is_qc_passed)
+
+        # print("order_id")
+        # print(order_id)
 
         validated_data.update({"agent": self.context['request'].user })
         return super().update(instance, validated_data)

@@ -244,15 +244,12 @@ class PaymentDetailsAPIView(RetrieveAPIView):
     serializer_class = PaymentDetailsSerializer
     lookup_field = 'farmer_id'
     lookup_url_kwarg = 'farmer_id'
-    lookup_field = 'farmerinfo_id'
-    lookup_url_kwarg = 'farmerinfo_id'
 
 
-    def get_object(self):
-        id = self.kwargs['farmerinfo_id']
+    def get_queryset(self):
         farmer_id = self.kwargs['farmer_id']
         try:
-            query = FarmerAccountInfo.objects.get(id=id, farmer=farmer_id)
+            query = FarmerAccountInfo.objects.filter(farmer=farmer_id)
             return query
         except FarmerAccountInfo.DoesNotExist:
             raise NotFound("Payment Details not found")

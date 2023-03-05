@@ -265,11 +265,11 @@ class PaymentDetailsUpdateAPIView(UpdateAPIView):
 
 
 class AdminOrdersListByPickupPointsListAPIView(ListAPIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     # pagination_class = Pro
     serializer_class = AdminOrdersListByPickupPointsListSerializer
 
     def get_queryset(self):
-        query = SubOrder.objects.filter(order_status='ON_PROCESS')
+        query = SubOrder.objects.filter(order_status='ON_PROCESS', order_item_suborder__is_qc_passed='PASS')
         return query
 

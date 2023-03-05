@@ -186,7 +186,8 @@ class AgentPickupLocationListOfAgentAPIView(ListAPIView):
     def get_queryset(self):
         user = self.request.user
         if self.request.user.user_type == "AGENT":
-            queryset = AgentPickupLocation.objects.filter(user=user.id ,status=True)
+            # queryset = AgentPickupLocation.objects.filter(user=user.id ,status=True)
+            queryset = PickupLocation.objects.filter(user=user.id ,status=True)
         else:
             queryset = None
         return queryset

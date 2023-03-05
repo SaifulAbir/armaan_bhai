@@ -295,6 +295,40 @@ class PickupLocationQcPassedInfoUpdateSerializer(serializers.ModelSerializer):
         model = OrderItem
         fields = ['id', 'pickup_location', 'is_qc_passed']
 
+    def update(self, instance, validated_data):
+        # permission_modules
+        try:
+            is_qc_passed = validated_data.pop('is_qc_passed')
+        except:
+            is_qc_passed = 'NEUTRAL'
+
+        # try:
+        # is_qc_passed
+        # if is_qc_passed:
+        #     RolePermissions.objects.filter(role=instance).delete()
+        #     for permission_module_id in permission_modules:
+        #         if PermissionModules.objects.filter(id=permission_module_id).exists():
+        #             permission_obj = PermissionModules.objects.get(id=permission_module_id)
+        #             try:
+        #                 RolePermissions.objects.create(role=instance, permission_module = permission_obj)
+        #             except:
+        #                 pass
+        #         else:
+        #             pass
+        # else:
+        #     RolePermissions.objects.filter(role=instance).delete()
+
+        order_id = instance.order
+        print("order_id")
+        print(order_id)
+
+        validated_data.update({"agent": self.context['request'].user })
+        return super().update(instance, validated_data)
+
+        # except:
+        #     validated_data.update({"updated_at": timezone.now()})
+        #     return super().update(instance, validated_data)
+
 
 # payment method
 class PaymentMethodSerializer(serializers.ModelSerializer):

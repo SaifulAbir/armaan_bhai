@@ -17,7 +17,9 @@ class DeliveryAddress(AbstractTimeStamp):
         max_length=100, null=False, blank=False, default='')
     phone = models.CharField(max_length=255, null=True, blank=True, default='')
     email = models.CharField(max_length=255, null=True, blank=True, default='')
-    city = models.CharField(max_length=100, blank=True, null=True, default='')
+    division = models.ForeignKey(Division, on_delete=models.PROTECT)
+    district = models.ForeignKey(District, on_delete=models.PROTECT)
+    upazilla = models.ForeignKey(Upazilla, on_delete=models.PROTECT)
     default = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
 
@@ -304,7 +306,7 @@ class FarmerAccountInfo(AbstractTimeStamp):
         ('MFS', 'Mobile Financial Services'),
     ]
     account_type = models.CharField(
-        max_length=20, null=False, blank=False, choices=PAYMENT_CHOICES)
+        max_length=20, null=True, blank=True, choices=PAYMENT_CHOICES)
     account_number = models.CharField(max_length=100, null=True, blank=True)
     account_holder = models.CharField(max_length=100, null=True, blank=True)
     bank_name = models.CharField(max_length=100, null=True, blank=True)

@@ -5,19 +5,29 @@ from order.models import DeliveryAddress, OrderItem, Order, CouponStat, Coupon, 
     FarmerAccountInfo, SubOrder
 from product.models import Inventory, Product
 from product.serializers import ProductViewSerializer
-from user.serializers import CustomerProfileDetailSerializer
 from user.models import User
 from datetime import datetime, timedelta
+from user.serializers import CustomerProfileDetailSerializer, DivisionSerializer, DistrictSerializer, UpazillaSerializer
 
 
 class DeliveryAddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = DeliveryAddress
-        fields = ['id', 'user', 'name', 'address', 'phone', 'email', 'city']
+        fields = ['id', 'user', 'name', 'address', 'phone', 'email', 'district', 'division', 'upazilla']
 
     def create(self, validated_data):
         address_instance = DeliveryAddress.objects.create(**validated_data, user=self.context['request'].user)
         return address_instance
+
+
+class DeliveryAddressListSerializer(serializers.ModelSerializer):
+    division = DivisionSerializer(many=False, read_only=True)
+    district = DistrictSerializer(many=False, read_only=True)
+    upazilla = UpazillaSerializer(many=False, read_only=True)
+
+    class Meta:
+        model = DeliveryAddress
+        fields = ['id', 'user', 'name', 'address', 'phone', 'email', 'district', 'division', 'upazilla']
 
 
 class ProductItemCheckoutSerializer(serializers.ModelSerializer):
@@ -257,9 +267,14 @@ class PickupLocationSerializer(serializers.ModelSerializer):
 
 
 class PickupLocationListSerializer(serializers.ModelSerializer):
+    district_name = serializers.CharField(source='district.name', read_only=True)
+    division_name = serializers.CharField(source='division.name', read_only=True)
+    upazilla_name = serializers.CharField(source='upazilla.name', read_only=True)
+
     class Meta:
         model = PickupLocation
-        fields = ['id', 'address', 'division', 'district', 'upazilla', 'created_at']
+        fields = ['id', 'address', 'division', 'division_name', 'district','district_name', 'upazilla','upazilla_name', 'created_at', 'status']
+        
 
 
 # Agent Pickup Location
@@ -334,3 +349,25 @@ class AgentOrderListForSetupPickupLocationSerializer(serializers.ModelSerializer
         query=OrderItem.objects.filter(product__user__id = obj.id, product__possible_productions_date=tomorrow, suborder__order_status='ON_PROCESS', suborder__is_qc_passed=False)
         serializer = QcPassSerializer(instance=query, many=True)
         return serializer.data
+    
+class PaymentDetailsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FarmerAccountInfo
+        fields = ['id', 'account_type', 'account_number', 'account_holder', 'bank_name', 'brunch_name', 'Mobile_number',
+                  'farmer', 'created_by']
+        
+class PaymentDetailsUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FarmerAccountInfo
+        fields = ['id', 'account_type', 'account_number', 'account_holder', 'bank_name', 'brunch_name', 'Mobile_number', 'farmer', 'created_by']
+        read_only_fields = ['id', 'farmer', 'created_by']
+
+    def update(self, instance, validated_data):
+        instance.account_type = validated_data.get('account_type', instance.account_type)
+        instance.account_number = validated_data.get('account_number', instance.account_number)
+        instance.account_holder = validated_data.get('account_holder', instance.account_holder)
+        instance.bank_name = validated_data.get('bank_name', instance.bank_name)
+        instance.brunch_name = validated_data.get('brunch_name', instance.brunch_name)
+        instance.Mobile_number = validated_data.get('Mobile_number', instance.Mobile_number)
+        instance.save()
+        return instance

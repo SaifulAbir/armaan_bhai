@@ -408,7 +408,8 @@ class PaymentDetailsUpdateSerializer(serializers.ModelSerializer):
 
 
 class AdminOrdersListByPickupPointsListSerializer(serializers.ModelSerializer):
+    order_item_order = ProductItemCheckoutSerializer(many=True, required=True)
 
     class Meta:
         model = SubOrder
-        fields = '__all__'
+        fields = ['id', 'order_item_order']

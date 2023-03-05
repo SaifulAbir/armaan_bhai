@@ -267,7 +267,7 @@ class PaymentDetailsUpdateAPIView(UpdateAPIView):
 class AdminOrdersListByPickupPointsListAPIView(ListAPIView):
     permission_classes = [AllowAny]
     # pagination_class = Pro
-    serializer_class = AgentPickupLocationListSerializer
+    serializer_class = AdminOrdersListByPickupPointsListSerializer
 
     def get_queryset(self):
         query = SubOrder.objects.filter(order_status='ON_PROCESS')

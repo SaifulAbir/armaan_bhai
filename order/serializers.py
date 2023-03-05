@@ -416,4 +416,6 @@ class AdminOrdersListByPickupPointsListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SubOrder
-        fields = ['id', 'order_item_order']
+        fields = [
+            'id', 'order_item_order'
+        ]

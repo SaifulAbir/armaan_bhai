@@ -298,3 +298,25 @@ class PaymentMethodSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         farmer_account_info = FarmerAccountInfo.objects.create(**validated_data, user=self.context['request'].user)
         return farmer_account_info
+    
+class PaymentDetailsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FarmerAccountInfo
+        fields = ['id', 'account_type', 'account_number', 'account_holder', 'bank_name', 'brunch_name', 'Mobile_number',
+                  'farmer', 'created_by']
+        
+class PaymentDetailsUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FarmerAccountInfo
+        fields = ['id', 'account_type', 'account_number', 'account_holder', 'bank_name', 'brunch_name', 'Mobile_number', 'farmer', 'created_by']
+        read_only_fields = ['id', 'farmer', 'created_by']
+
+    def update(self, instance, validated_data):
+        instance.account_type = validated_data.get('account_type', instance.account_type)
+        instance.account_number = validated_data.get('account_number', instance.account_number)
+        instance.account_holder = validated_data.get('account_holder', instance.account_holder)
+        instance.bank_name = validated_data.get('bank_name', instance.bank_name)
+        instance.brunch_name = validated_data.get('brunch_name', instance.brunch_name)
+        instance.Mobile_number = validated_data.get('Mobile_number', instance.Mobile_number)
+        instance.save()
+        return instance

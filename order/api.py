@@ -155,3 +155,9 @@ class PaymentMethodCreateAPIView(CreateAPIView):
 
     def post(self, request, *args, **kwargs):
         return super(PaymentMethodCreateAPIView, self).post(request, *args, **kwargs)
+
+
+class OrdersListByPickupPointsListAPIView(ListAPIView):
+    permission_classes = [IsAuthenticated]
+    # pagination_class = Pro
+    # serializer_class = AgentOrderListSerializer

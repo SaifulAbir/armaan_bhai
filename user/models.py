@@ -49,6 +49,7 @@ class User(AbstractUser):
         ('FARMER', 'Farmer'),
         ('AGENT', 'Agent'),
         ('CUSTOMER', 'Customer'),
+        ('ADMIN', 'Admin'),
     )
     full_name = models.CharField(max_length=255, null=True)
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, null=True)
@@ -76,7 +77,7 @@ class User(AbstractUser):
         db_table = 'users'
 
     def __str__(self):
-        return self.username + "-" + str(self.id)
+        return self.username + "-" + str(self.id) + "-" + (self.agent_user_id if self.agent_user_id else "No Agent") + "-" + str(self.phone_number)
 
 
 class AgentFarmer(AbstractTimeStamp):

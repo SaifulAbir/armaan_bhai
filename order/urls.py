@@ -16,11 +16,21 @@ urlpatterns = [
     # pickup location
     path('create/pickup-location/', PickupLocationCreateAPIView.as_view()),
     path('pickup-location/list/', PickupLocationListAPIView.as_view()),
+    path('pickup-location-details/<int:pid>/', PickupLocationDetailsAPIView.as_view()),
     path('update/pickup-location/<int:pk>/', PickupLocationUpdateAPIView.as_view()),
     # agent pickup location
     path('create/agent-pickup-location/', AgentPickupLocationCreateAPIView.as_view()),
     path('agent-pickup-location/list/', AgentPickupLocationListAPIView.as_view()),
     path('update/agent-pickup-location/<int:pk>/', AgentPickupLocationUpdateAPIView.as_view()),
+    # set pickup / Mukam location
+    path('agent/agent-set-pickup-location-on-order/list/', AgentSetPickupLocationOnOrderListAPIView.as_view()),
+    path('agent/agent-pickup-location/list/', AgentPickupLocationListOfAgentAPIView.as_view()),
+    path('agent/update-pickup-location-qc-passed-info/<str:id>/', PickupLocationQcPassedInfoUpdateAPIView.as_view()),
     # add payment method
     path('agent/create-payment-method/', PaymentMethodCreateAPIView.as_view()),
+    path('agent/payment-details/<int:farmer_id>/<int:farmerinfo_id>/', PaymentDetailsAPIView.as_view()),
+    path('agent/payment-details-update/<int:id>/', PaymentDetailsUpdateAPIView.as_view()),
+
+    # Pickup Api
+    path('admin/order_list_by_pickup_point/', AdminOrdersListByPickupPointsListAPIView.as_view())
 ]

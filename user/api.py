@@ -29,10 +29,12 @@ class UserRegApi(CreateAPIView):
 
 
 class AgentUpdateAPIView(UpdateAPIView):
+    queryset = User.objects.all()
     serializer_class = AgentUpdateSerializer
     lookup_field = 'pk'
 
     def get_object(self):
+    # def get_queryset(self):
         # TODO sent sms to agent
         pk = self.kwargs['pk']
         agent = User.objects.get(id=pk, user_type="AGENT")

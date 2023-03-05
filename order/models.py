@@ -3,7 +3,7 @@ from django.db import models
 from django.db.models.signals import pre_save
 from django.utils import timezone
 from armaan_bhai.models import AbstractTimeStamp
-from order.utils import unique_order_id_generator_for_order
+from order.utils import unique_order_id_generator_for_order, unique_order_id_generator_for_suborder
 from product.models import Product
 from user.models import User, Division, District, Upazilla
 
@@ -17,7 +17,9 @@ class DeliveryAddress(AbstractTimeStamp):
         max_length=100, null=False, blank=False, default='')
     phone = models.CharField(max_length=255, null=True, blank=True, default='')
     email = models.CharField(max_length=255, null=True, blank=True, default='')
-    city = models.CharField(max_length=100, blank=True, null=True, default='')
+    division = models.ForeignKey(Division, on_delete=models.PROTECT)
+    district = models.ForeignKey(District, on_delete=models.PROTECT)
+    upazilla = models.ForeignKey(Upazilla, on_delete=models.PROTECT)
     default = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
 
@@ -146,6 +148,38 @@ def pre_save_order(sender, instance, *args, **kwargs):
 pre_save.connect(pre_save_order, sender=Order)
 
 
+class PickupLocation(AbstractTimeStamp):
+    address = models.TextField()
+    division = models.ForeignKey(Division, on_delete=models.PROTECT)
+    district = models.ForeignKey(District, on_delete=models.PROTECT)
+    upazilla = models.ForeignKey(Upazilla, on_delete=models.PROTECT)
+    status = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = 'PickupLocation'
+        verbose_name_plural = 'PickupLocations'
+        db_table = 'pickup_locations'
+
+    def __str__(self):
+        return self.address
+
+
+class AgentPickupLocation(AbstractTimeStamp):
+    user = models.ForeignKey(
+        User, on_delete=models.PROTECT, related_name='agent_pickup_location')
+    pickup_location = models.ForeignKey(
+        PickupLocation, on_delete=models.PROTECT, related_name='pickup_location_agent')
+    status = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = 'AgentPickupLocation'
+        verbose_name_plural = 'AgentPickupLocations'
+        db_table = 'agent_pickup_locations'
+
+    def __str__(self):
+        return self.pickup_location.address
+
+
 class SubOrder(AbstractTimeStamp):
     ORDER_CHOICES = [
         ('ON_PROCESS', 'On Process'),
@@ -166,7 +200,7 @@ class SubOrder(AbstractTimeStamp):
     ]
     order = models.ForeignKey(Order, on_delete=models.PROTECT,
                              related_name='order_suborder', blank=True, null=True)
-    suborder_id = models.SlugField(null=False, blank=False, allow_unicode=True)
+    suborder_number = models.SlugField(null=False, blank=False, allow_unicode=True)
     user = models.ForeignKey(User, on_delete=models.PROTECT,
                              related_name='suborder_user', blank=True, null=True)
     product_count = models.IntegerField()
@@ -205,21 +239,23 @@ class SubOrder(AbstractTimeStamp):
         db_table = 'sub_orders'
 
     def __str__(self):
-        return self.order_id
+        return self.suborder_number
 
 
-def pre_save_order(sender, instance, *args, **kwargs):
-    if not instance.order_id:
-        instance.order_id = 'ar-so-' + \
-            str(unique_order_id_generator_for_order(instance))
+def pre_save_suborder(sender, instance, *args, **kwargs):
+    if not instance.suborder_number:
+        instance.suborder_number = 'ar-so-' + \
+            str(unique_order_id_generator_for_suborder(instance))
 
 
-pre_save.connect(pre_save_order, sender=SubOrder)
+pre_save.connect(pre_save_suborder, sender=SubOrder)
 
 
 class OrderItem(AbstractTimeStamp):
     order = models.ForeignKey(
         Order, on_delete=models.CASCADE, related_name='order_item_order', blank=True, null=True)
+    suborder = models.ForeignKey(
+        SubOrder, on_delete=models.CASCADE, related_name='order_item_suborder', blank=True, null=True)
     product = models.ForeignKey(
         Product, on_delete=models.CASCADE, null=False, blank=False, related_name='order_item_product')
     quantity = models.IntegerField(default=1)
@@ -227,6 +263,8 @@ class OrderItem(AbstractTimeStamp):
         max_length=255, null=False, blank=False, default=0)
     total_price = models.FloatField(
         max_length=255, null=False, blank=False, default=0)
+    is_qc_passed = models.BooleanField(default=False)
+    pickup_location = models.ForeignKey(AgentPickupLocation, on_delete=models.CASCADE, null=True, blank=True, related_name='order_item_pickup_location')
 
     @property
     def subtotal(self):
@@ -262,44 +300,13 @@ class CouponStat(AbstractTimeStamp):
         return f"{self.pk}"
 
 
-class PickupLocation(AbstractTimeStamp):
-    address = models.TextField()
-    division = models.ForeignKey(Division, on_delete=models.PROTECT)
-    district = models.ForeignKey(District, on_delete=models.PROTECT)
-    upazilla = models.ForeignKey(Upazilla, on_delete=models.PROTECT)
-    status = models.BooleanField(default=True)
-
-    class Meta:
-        verbose_name = 'PickupLocation'
-        verbose_name_plural = 'PickupLocations'
-        db_table = 'pickup_locations'
-
-    def __str__(self):
-        return self.address
-
-
-class AgentPickupLocation(AbstractTimeStamp):
-    user = models.ForeignKey(
-        User, on_delete=models.PROTECT, related_name='agent_pickup_location')
-    pickup_location = models.ForeignKey(
-        PickupLocation, on_delete=models.PROTECT, related_name='pickup_location_agent')
-
-    class Meta:
-        verbose_name = 'AgentPickupLocation'
-        verbose_name_plural = 'AgentPickupLocations'
-        db_table = 'agent_pickup_locations'
-
-    def __str__(self):
-        return self.user.phone_number
-
-
 class FarmerAccountInfo(AbstractTimeStamp):
     PAYMENT_CHOICES = [
         ('BANK_ACCOUNT', 'Bank Account'),
         ('MFS', 'Mobile Financial Services'),
     ]
     account_type = models.CharField(
-        max_length=20, null=False, blank=False, choices=PAYMENT_CHOICES)
+        max_length=20, null=True, blank=True, choices=PAYMENT_CHOICES)
     account_number = models.CharField(max_length=100, null=True, blank=True)
     account_holder = models.CharField(max_length=100, null=True, blank=True)
     bank_name = models.CharField(max_length=100, null=True, blank=True)

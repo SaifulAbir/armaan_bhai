@@ -280,11 +280,19 @@ class FarmerListSerializer(serializers.ModelSerializer):
     district = DistrictSerializer(many=False, read_only=True)
     upazilla = UpazillaSerializer(many=False, read_only=True)
     product_seller = ProductSerializer(many=True, read_only=True)
+    agent_full_name = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = ['id', 'full_name', 'username', 'gender', 'user_type', 'organization_name', 'address', 'division', 'district', 'upazilla',
-                  'village', 'postcode', 'phone_number', 'image', 'gender_display_value', 'product_seller']
+                  'village', 'postcode', 'phone_number', 'image', 'gender_display_value', 'product_seller', 'agent_full_name']
+
+    def get_agent_full_name(self, instance):
+        try:
+            full_name = User.objects.get(id=instance.agent_user_id).full_name
+        except User.DoesNotExist:
+            full_name = None
+        return full_name
 
 
 class AgentFarmerListSerializer(serializers.ModelSerializer):

@@ -283,7 +283,7 @@ class OrderItem(AbstractTimeStamp):
     total_price = models.FloatField(
         max_length=255, null=False, blank=False, default=0)
     is_qc_passed = models.CharField(max_length=20, choices=QC_TYPES, default=QC_TYPES[0][0])
-    pickup_location = models.ForeignKey(AgentPickupLocation, on_delete=models.CASCADE, null=True, blank=True, related_name='order_item_pickup_location')
+    pickup_location = models.ForeignKey(PickupLocation, on_delete=models.CASCADE, null=True, blank=True, related_name='order_item_pickup_location')
     agent = models.ForeignKey(User, on_delete=models.CASCADE, related_name='order_item_agent', null=True, blank=True)
 
     @property

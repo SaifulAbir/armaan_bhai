@@ -293,10 +293,10 @@ class PaymentMethodSerializer(serializers.ModelSerializer):
     class Meta:
         model = FarmerAccountInfo
         fields = ['id', 'account_type', 'account_number', 'account_holder', 'bank_name', 'brunch_name', 'Mobile_number',
-                  'farmer', 'created_by']
+                  'farmer']
 
     def create(self, validated_data):
-        farmer_account_info = FarmerAccountInfo.objects.create(**validated_data, user=self.context['request'].user)
+        farmer_account_info = FarmerAccountInfo.objects.create(**validated_data, created_by=self.context['request'].user)
         return farmer_account_info
     
 class PaymentDetailsSerializer(serializers.ModelSerializer):

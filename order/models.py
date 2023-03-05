@@ -132,7 +132,7 @@ class Order(AbstractTimeStamp):
     # delivery_agent = models.CharField(max_length=100, null=True, blank=True)
     delivery_date = models.DateTimeField(null=True, blank=True)
     comment = models.TextField(null=True, blank=True)
-    is_qc_passed = models.BooleanField(default=QC_TYPES[0][0])
+    is_qc_passed = models.CharField(max_length=20, choices=QC_TYPES, default=QC_TYPES[0][0])
     pickup_request = models.BooleanField(default=False)
 
 
@@ -242,7 +242,7 @@ class SubOrder(AbstractTimeStamp):
     # delivery_agent = models.CharField(max_length=100, null=True, blank=True)
     delivery_date = models.DateTimeField(null=True, blank=True)
     comment = models.TextField(null=True, blank=True)
-    is_qc_passed = models.BooleanField(default=QC_TYPES[0][0])
+    is_qc_passed = models.CharField(max_length=20, choices=QC_TYPES, default=QC_TYPES[0][0])
     pickup_request = models.BooleanField(default=False)
 
 
@@ -282,7 +282,7 @@ class OrderItem(AbstractTimeStamp):
         max_length=255, null=False, blank=False, default=0)
     total_price = models.FloatField(
         max_length=255, null=False, blank=False, default=0)
-    is_qc_passed = models.BooleanField(default=QC_TYPES[0][0])
+    is_qc_passed = models.CharField(max_length=20, choices=QC_TYPES, default=QC_TYPES[0][0])
     pickup_location = models.ForeignKey(AgentPickupLocation, on_delete=models.CASCADE, null=True, blank=True, related_name='order_item_pickup_location')
     agent = models.ForeignKey(User, on_delete=models.CASCADE, related_name='order_item_agent', null=True, blank=True)
 

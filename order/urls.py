@@ -30,4 +30,7 @@ urlpatterns = [
     path('agent/create-payment-method/', PaymentMethodCreateAPIView.as_view()),
     path('agent/payment-details/<int:farmer_id>/<int:farmerinfo_id>/', PaymentDetailsAPIView.as_view()),
     path('agent/payment-details-update/<int:id>/', PaymentDetailsUpdateAPIView.as_view()),
+
+    # Pickup Api
+    path('admin/order_list_by_pickup_point/', AdminOrdersListByPickupPointsListAPIView.as_view())
 ]

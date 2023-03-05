@@ -229,7 +229,7 @@ class OrderUpdateAPIView(UpdateAPIView):
 
     def get_object(self):
         id = self.kwargs['id']
-        query = SubOrder.objects.get(id=id)
+        query = Order.objects.get(id=id)
         return query
 
 
@@ -238,7 +238,7 @@ class PaymentMethodCreateAPIView(CreateAPIView):
 
     def post(self, request, *args, **kwargs):
         return super(PaymentMethodCreateAPIView, self).post(request, *args, **kwargs)
-    
+
 
 class PaymentDetailsAPIView(RetrieveAPIView):
     serializer_class = PaymentDetailsSerializer
@@ -256,8 +256,8 @@ class PaymentDetailsAPIView(RetrieveAPIView):
             return query
         except FarmerAccountInfo.DoesNotExist:
             raise NotFound("Payment Details not found")
-        
-        
+
+
 class PaymentDetailsUpdateAPIView(UpdateAPIView):
     serializer_class = PaymentDetailsUpdateSerializer
     queryset = FarmerAccountInfo.objects.all()
@@ -265,7 +265,12 @@ class PaymentDetailsUpdateAPIView(UpdateAPIView):
     lookup_url_kwarg = 'id'
 
 
-   
+class AdminOrdersListByPickupPointsListAPIView(ListAPIView):
+    permission_classes = [IsAuthenticated]
+    # pagination_class = Pro
+    serializer_class = AdminOrdersListByPickupPointsListSerializer
 
-
+    def get_queryset(self):
+        query = SubOrder.objects.filter(order_status='ON_PROCESS', order_item_suborder__is_qc_passed='PASS')
+        return query
 

@@ -32,13 +32,17 @@ class DeliveryAddressListSerializer(serializers.ModelSerializer):
 
 class ProductItemCheckoutSerializer(serializers.ModelSerializer):
     product_title = serializers.CharField(source='product.title', read_only=True)
+    pickup_location_title = serializers.CharField(source='pickup_location.address', read_only=True)
     class Meta:
         model = OrderItem
         fields = ['id',
                   'product',
                   'product_title',
                   'quantity',
-                  'unit_price'
+                  'unit_price',
+                  'pickup_location',
+                  'pickup_location_title',
+                  'is_qc_passed'
                   ]
 
 
@@ -394,3 +398,13 @@ class PaymentDetailsUpdateSerializer(serializers.ModelSerializer):
         instance.Mobile_number = validated_data.get('Mobile_number', instance.Mobile_number)
         instance.save()
         return instance
+
+
+class AdminOrdersListByPickupPointsListSerializer(serializers.ModelSerializer):
+    order_item_suborder = ProductItemCheckoutSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = SubOrder
+        fields = [
+            'id', 'order_item_suborder', 'user', 'farmer', 'order_status'
+        ]

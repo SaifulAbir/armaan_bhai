@@ -31,13 +31,13 @@ class DeliveryAddressListSerializer(serializers.ModelSerializer):
 
 
 class ProductItemCheckoutSerializer(serializers.ModelSerializer):
-    product_title = serializers.CharField(source='product.title', read_only=True)
+    product_obj = ProductViewSerializer(source='product', read_only=True)
     pickup_location_title = serializers.CharField(source='pickup_location.address', read_only=True)
     class Meta:
         model = OrderItem
         fields = ['id',
                   'product',
-                  'product_title',
+                  'product_obj',
                   'quantity',
                   'unit_price',
                   'pickup_location',

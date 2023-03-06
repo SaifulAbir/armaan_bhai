@@ -72,7 +72,6 @@ class CheckoutDetailsAPIView(RetrieveAPIView):
 
 
 class CustomerOrderList(ListAPIView):
-    permission_classes = [AllowAny]
     serializer_class = CustomerOrderListSerializer
     pagination_class = CustomPagination
 

@@ -32,6 +32,7 @@ class DeliveryAddressListSerializer(serializers.ModelSerializer):
 
 class ProductItemCheckoutSerializer(serializers.ModelSerializer):
     product_title = serializers.CharField(source='product.title', read_only=True)
+    possible_production_date = serializers.CharField(source='product.possible_productions_date', read_only=True)
     pickup_location_title = serializers.CharField(source='pickup_location.address', read_only=True)
     class Meta:
         model = OrderItem
@@ -42,8 +43,10 @@ class ProductItemCheckoutSerializer(serializers.ModelSerializer):
                   'unit_price',
                   'pickup_location',
                   'pickup_location_title',
-                  'is_qc_passed'
+                  'is_qc_passed',
+                  'possible_production_date'
                   ]
+        queryset = OrderItem.objects.filter(is_qc_passed='PASS')
 
 
 class CheckoutSerializer(serializers.ModelSerializer):
@@ -417,9 +420,14 @@ class PaymentDetailsUpdateSerializer(serializers.ModelSerializer):
 
 class AdminOrdersListByPickupPointsListSerializer(serializers.ModelSerializer):
     order_item_suborder = ProductItemCheckoutSerializer(many=True, read_only=True)
+    farmer_name = serializers.CharField(source='user.full_name')
+    farmer_phone = serializers.CharField(source='user.phone_number')
+    # print(farmer_name)
 
     class Meta:
         model = SubOrder
         fields = [
-            'id', 'order_item_suborder', 'user', 'farmer', 'order_status'
+            'id', 'order_item_suborder', 'user', 'farmer_name',
+            'farmer_phone', 'order_status', 'order_id'
         ]
+        queryset = SubOrder.objects.filter(order_item_suborder__is_qc_passed='PASS')

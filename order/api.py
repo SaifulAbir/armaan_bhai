@@ -1,3 +1,5 @@
+import itertools
+
 from rest_framework.generics import CreateAPIView, RetrieveUpdateAPIView, ListAPIView, DestroyAPIView, RetrieveAPIView, \
     UpdateAPIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -9,6 +11,7 @@ from order.serializers import *
 from django.db.models import Q
 from order.models import *
 from user.models import *
+from itertools import groupby
 
 
 class DeliveryAddressCreateAPIView(CreateAPIView):
@@ -265,11 +268,23 @@ class PaymentDetailsUpdateAPIView(UpdateAPIView):
 
 
 class AdminOrdersListByPickupPointsListAPIView(ListAPIView):
-    permission_classes = [IsAuthenticated]
-    # pagination_class = Pro
-    serializer_class = AdminOrdersListByPickupPointsListSerializer
+    permission_classes = [AllowAny]
+    serializer_class = ProductItemCheckoutSerializer
 
     def get_queryset(self):
-        query = SubOrder.objects.filter(order_status='ON_PROCESS', order_item_suborder__is_qc_passed='PASS')
-        return query
+        # pickup_point = self.request.query_params.get('pickup_point', None)
+        current_date = timezone.now().date()
+        # print(current_date)
+        # pickup_point = self.request.query_params.get('pickup_location')
+        queryset = OrderItem.objects.filter(
+            is_qc_passed='PASS',
+            product__possible_productions_date=current_date
+            )
+        # sorted_item = itertools.groupby(
+        #     queryset, key=lambda item: item.pickup_location)
+        # item_by_location = []
+        # for location, items in sorted_item:
+        #     item_by_location[location] = list(items)
+        # return item_by_location
+        return queryset
 

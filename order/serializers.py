@@ -5,6 +5,8 @@ from order.models import DeliveryAddress, OrderItem, Order, CouponStat, Coupon, 
     FarmerAccountInfo, SubOrder
 from product.models import Inventory, Product
 from product.serializers import ProductViewSerializer
+from user.models import User
+from datetime import datetime, timedelta
 from user.serializers import CustomerProfileDetailSerializer, DivisionSerializer, DistrictSerializer, UpazillaSerializer
 
 
@@ -288,6 +290,50 @@ class AgentPickupLocationListSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'pickup_location', 'created_at']
 
 
+class PickupLocationQcPassedInfoUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderItem
+        fields = ['id', 'pickup_location', 'is_qc_passed']
+
+    def update(self, instance, validated_data):
+        # is_qc_passed
+        try:
+            is_qc_passed = validated_data.pop('is_qc_passed')
+        except:
+            is_qc_passed = 'NEUTRAL'
+
+        print("is_qc_passed")
+        print(is_qc_passed)
+
+        # try:
+        # is_qc_passed
+        # if is_qc_passed:
+        #     RolePermissions.objects.filter(role=instance).delete()
+        #     for permission_module_id in permission_modules:
+        #         if PermissionModules.objects.filter(id=permission_module_id).exists():
+        #             permission_obj = PermissionModules.objects.get(id=permission_module_id)
+        #             try:
+        #                 RolePermissions.objects.create(role=instance, permission_module = permission_obj)
+        #             except:
+        #                 pass
+        #         else:
+        #             pass
+        # else:
+        #     RolePermissions.objects.filter(role=instance).delete()
+
+        OrderItem.objects.filter(id=instance.suborder.id).update(is_qc_passed=is_qc_passed)
+
+        # print("order_id")
+        # print(order_id)
+
+        validated_data.update({"agent": self.context['request'].user })
+        return super().update(instance, validated_data)
+
+        # except:
+        #     validated_data.update({"updated_at": timezone.now()})
+        #     return super().update(instance, validated_data)
+
+
 # payment method
 class PaymentMethodSerializer(serializers.ModelSerializer):
     class Meta:
@@ -298,6 +344,49 @@ class PaymentMethodSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         farmer_account_info = FarmerAccountInfo.objects.create(**validated_data, created_by=self.context['request'].user)
         return farmer_account_info
+
+
+class QcPassSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderItem
+        fields = ['id',
+                  'is_qc_passed'
+                ]
+
+
+class SetPickupPointSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderItem
+        fields = ['id',
+                  'pickup_location'
+                ]
+
+class AgentOrderListForSetupPickupLocationSerializer(serializers.ModelSerializer):
+    order_items = serializers.SerializerMethodField('get_order_items')
+    pickup_location = serializers.SerializerMethodField('get_pickup_location')
+    is_qc_passed = serializers.SerializerMethodField('get_is_qc_passed')
+    class Meta:
+        model = User
+        fields = ['id', 'full_name', 'phone_number', 'order_items', 'pickup_location', 'is_qc_passed']
+
+    def get_order_items(self, obj):
+        tomorrow = datetime.today() + timedelta(days=1)
+        # suborder__delivery_date__date
+        query=OrderItem.objects.filter(product__user__id = obj.id, product__possible_productions_date=tomorrow, suborder__order_status='ON_PROCESS', suborder__is_qc_passed=False)
+        serializer = ProductItemCheckoutSerializer(instance=query, many=True)
+        return serializer.data
+
+    def get_pickup_location(self, obj):
+        tomorrow = datetime.today() + timedelta(days=1)
+        query=OrderItem.objects.filter(product__user__id = obj.id, product__possible_productions_date=tomorrow, suborder__order_status='ON_PROCESS', suborder__is_qc_passed=False)
+        serializer = SetPickupPointSerializer(instance=query, many=True)
+        return serializer.data
+
+    def get_is_qc_passed(self, obj):
+        tomorrow = datetime.today() + timedelta(days=1)
+        query=OrderItem.objects.filter(product__user__id = obj.id, product__possible_productions_date=tomorrow, suborder__order_status='ON_PROCESS', suborder__is_qc_passed=False)
+        serializer = QcPassSerializer(instance=query, many=True)
+        return serializer.data
     
 class PaymentDetailsSerializer(serializers.ModelSerializer):
     class Meta:

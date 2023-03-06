@@ -97,6 +97,12 @@ class Order(AbstractTimeStamp):
         ('PG', 'Payment Gateway'),
     ]
 
+    QC_TYPES = [
+        ('NEUTRAL', 'Neutral'),
+        ('PASS', 'Pass'),
+        ('FAIL', 'Fail'),
+    ]
+
     order_id = models.SlugField(null=False, blank=False, allow_unicode=True)
     user = models.ForeignKey(User, on_delete=models.PROTECT,
                              related_name='order_user', blank=True, null=True)
@@ -126,7 +132,7 @@ class Order(AbstractTimeStamp):
     # delivery_agent = models.CharField(max_length=100, null=True, blank=True)
     delivery_date = models.DateTimeField(null=True, blank=True)
     comment = models.TextField(null=True, blank=True)
-    is_qc_passed = models.BooleanField(default=False)
+    is_qc_passed = models.CharField(max_length=20, choices=QC_TYPES, default=QC_TYPES[0][0])
     pickup_request = models.BooleanField(default=False)
 
 
@@ -148,6 +154,38 @@ def pre_save_order(sender, instance, *args, **kwargs):
 pre_save.connect(pre_save_order, sender=Order)
 
 
+class PickupLocation(AbstractTimeStamp):
+    address = models.TextField()
+    division = models.ForeignKey(Division, on_delete=models.PROTECT)
+    district = models.ForeignKey(District, on_delete=models.PROTECT)
+    upazilla = models.ForeignKey(Upazilla, on_delete=models.PROTECT)
+    status = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = 'PickupLocation'
+        verbose_name_plural = 'PickupLocations'
+        db_table = 'pickup_locations'
+
+    def __str__(self):
+        return self.address
+
+
+class AgentPickupLocation(AbstractTimeStamp):
+    user = models.ForeignKey(
+        User, on_delete=models.PROTECT, related_name='agent_pickup_location')
+    pickup_location = models.ForeignKey(
+        PickupLocation, on_delete=models.PROTECT, related_name='pickup_location_agent')
+    status = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = 'AgentPickupLocation'
+        verbose_name_plural = 'AgentPickupLocations'
+        db_table = 'agent_pickup_locations'
+
+    def __str__(self):
+        return self.pickup_location.address
+
+
 class SubOrder(AbstractTimeStamp):
     ORDER_CHOICES = [
         ('ON_PROCESS', 'On Process'),
@@ -166,6 +204,13 @@ class SubOrder(AbstractTimeStamp):
         ('COD', 'Cash on Delivery'),
         ('PG', 'Payment Gateway'),
     ]
+
+    QC_TYPES = [
+        ('NEUTRAL', 'Neutral'),
+        ('PASS', 'Pass'),
+        ('FAIL', 'Fail'),
+    ]
+
     order = models.ForeignKey(Order, on_delete=models.PROTECT,
                              related_name='order_suborder', blank=True, null=True)
     suborder_number = models.SlugField(null=False, blank=False, allow_unicode=True)
@@ -197,7 +242,7 @@ class SubOrder(AbstractTimeStamp):
     # delivery_agent = models.CharField(max_length=100, null=True, blank=True)
     delivery_date = models.DateTimeField(null=True, blank=True)
     comment = models.TextField(null=True, blank=True)
-    is_qc_passed = models.BooleanField(default=False)
+    is_qc_passed = models.CharField(max_length=20, choices=QC_TYPES, default=QC_TYPES[0][0])
     pickup_request = models.BooleanField(default=False)
 
 
@@ -220,6 +265,12 @@ pre_save.connect(pre_save_suborder, sender=SubOrder)
 
 
 class OrderItem(AbstractTimeStamp):
+    QC_TYPES = [
+        ('NEUTRAL', 'Neutral'),
+        ('PASS', 'Pass'),
+        ('FAIL', 'Fail'),
+    ]
+
     order = models.ForeignKey(
         Order, on_delete=models.CASCADE, related_name='order_item_order', blank=True, null=True)
     suborder = models.ForeignKey(
@@ -231,6 +282,9 @@ class OrderItem(AbstractTimeStamp):
         max_length=255, null=False, blank=False, default=0)
     total_price = models.FloatField(
         max_length=255, null=False, blank=False, default=0)
+    is_qc_passed = models.CharField(max_length=20, choices=QC_TYPES, default=QC_TYPES[0][0])
+    pickup_location = models.ForeignKey(PickupLocation, on_delete=models.CASCADE, null=True, blank=True, related_name='order_item_pickup_location')
+    agent = models.ForeignKey(User, on_delete=models.CASCADE, related_name='order_item_agent', null=True, blank=True)
 
     @property
     def subtotal(self):
@@ -264,37 +318,6 @@ class CouponStat(AbstractTimeStamp):
 
     def __str__(self):
         return f"{self.pk}"
-
-
-class PickupLocation(AbstractTimeStamp):
-    address = models.TextField()
-    division = models.ForeignKey(Division, on_delete=models.PROTECT)
-    district = models.ForeignKey(District, on_delete=models.PROTECT)
-    upazilla = models.ForeignKey(Upazilla, on_delete=models.PROTECT)
-    status = models.BooleanField(default=True)
-
-    class Meta:
-        verbose_name = 'PickupLocation'
-        verbose_name_plural = 'PickupLocations'
-        db_table = 'pickup_locations'
-
-    def __str__(self):
-        return self.address
-
-
-class AgentPickupLocation(AbstractTimeStamp):
-    user = models.ForeignKey(
-        User, on_delete=models.PROTECT, related_name='agent_pickup_location')
-    pickup_location = models.ForeignKey(
-        PickupLocation, on_delete=models.PROTECT, related_name='pickup_location_agent')
-
-    class Meta:
-        verbose_name = 'AgentPickupLocation'
-        verbose_name_plural = 'AgentPickupLocations'
-        db_table = 'agent_pickup_locations'
-
-    def __str__(self):
-        return self.user.phone_number
 
 
 class FarmerAccountInfo(AbstractTimeStamp):

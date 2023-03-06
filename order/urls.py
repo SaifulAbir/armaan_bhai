@@ -11,6 +11,7 @@ urlpatterns = [
     path('checkout-details/<str:id>/', CheckoutDetailsAPIView.as_view()),
     path('admin/order-update/<str:id>/', OrderUpdateAPIView.as_view()),
     path('customer-order-list/', CustomerOrderList.as_view()),
+    path('customer-order-details/<str:id>/', CustomerOrderDetailsAPIView.as_view()),
     path('agent-order-list/', AgentOrderList.as_view()),
     #path('admin/collect-order-list/', CollectOrderList.as_view()),
     # pickup location
@@ -28,9 +29,11 @@ urlpatterns = [
     path('agent/update-pickup-location-qc-passed-info/<str:id>/', PickupLocationQcPassedInfoUpdateAPIView.as_view()),
     # add payment method
     path('agent/create-payment-method/', PaymentMethodCreateAPIView.as_view()),
-    path('agent/payment-details/<int:farmer_id>/<int:farmerinfo_id>/', PaymentDetailsAPIView.as_view()),
+    path('agent/payment-details/<int:farmer_id>/', PaymentDetailsAPIView.as_view()),
     path('agent/payment-details-update/<int:id>/', PaymentDetailsUpdateAPIView.as_view()),
 
     # Pickup Api
-    path('admin/order_list_by_pickup_point/', AdminOrdersListByPickupPointsListAPIView.as_view())
+    path('admin/order_list_by_pickup_point/', AdminOrdersListByPickupPointsListAPIView.as_view()),
+    path('farmer-payment-list/', FarmerPaymentListAPIView.as_view()),
+    path('farmer-payment-status-update/<int:id>/', FarmerPaymentStatusUpdateAPIView.as_view()),
 ]

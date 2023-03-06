@@ -12,6 +12,7 @@ from django.db.models import Q
 from order.models import *
 from user.models import *
 from itertools import groupby
+from rest_framework import status
 
 
 class DeliveryAddressCreateAPIView(CreateAPIView):
@@ -75,7 +76,6 @@ class CheckoutDetailsAPIView(RetrieveAPIView):
 
 
 class CustomerOrderList(ListAPIView):
-    permission_classes = [AllowAny]
     serializer_class = CustomerOrderListSerializer
     pagination_class = CustomPagination
 
@@ -87,6 +87,17 @@ class CustomerOrderList(ListAPIView):
         if order_status:
             queryset = queryset.filter(order_status=order_status)
         return queryset
+
+
+class CustomerOrderDetailsAPIView(RetrieveAPIView):
+    serializer_class = CustomerOrderListSerializer
+    lookup_field = 'id'
+    lookup_url_kwarg = 'id'
+
+    def get_object(self):
+        id = self.kwargs['id']
+        query = SubOrder.objects.get(id=id, user=self.request.user)
+        return query
 
 
 class AgentOrderList(ListAPIView):
@@ -177,7 +188,8 @@ class AgentSetPickupLocationOnOrderListAPIView(ListAPIView):
             tomorrow = datetime.today() + timedelta(days=1)
             # queryset = User.objects.filter(agent_user_id=user.id, user_type="FARMER").exclude(~Q(product_seller__possible_productions_date=tomorrow))
 
-            queryset = User.objects.filter(agent_user_id=user.id, user_type="FARMER").exclude(~Q(product_seller__possible_productions_date=tomorrow))
+            queryset = User.objects.filter(agent_user_id=user.id, user_type="FARMER").exclude(
+                ~Q(product_seller__possible_productions_date=tomorrow))
         else:
             queryset = None
         return queryset
@@ -189,8 +201,10 @@ class AgentPickupLocationListOfAgentAPIView(ListAPIView):
     def get_queryset(self):
         user = self.request.user
         if self.request.user.user_type == "AGENT":
+            agent_district = self.request.user.district
             # queryset = AgentPickupLocation.objects.filter(user=user.id ,status=True)
-            queryset = PickupLocation.objects.filter(user=user.id ,status=True)
+            queryset = PickupLocation.objects.filter(
+                status=True, district=agent_district)
         else:
             queryset = None
         return queryset
@@ -224,6 +238,7 @@ class PickupLocationQcPassedInfoUpdateAPIView(UpdateAPIView):
     # def put(self, request, *args, **kwargs):
     #     return self.update(request, *args, **kwargs)
 
+
 class OrderUpdateAPIView(UpdateAPIView):
     serializer_class = OrderUpdateSerializer
     lookup_field = 'id'
@@ -246,15 +261,11 @@ class PaymentDetailsAPIView(RetrieveAPIView):
     serializer_class = PaymentDetailsSerializer
     lookup_field = 'farmer_id'
     lookup_url_kwarg = 'farmer_id'
-    lookup_field = 'farmerinfo_id'
-    lookup_url_kwarg = 'farmerinfo_id'
 
-
-    def get_object(self):
-        id = self.kwargs['farmerinfo_id']
+    def get_queryset(self):
         farmer_id = self.kwargs['farmer_id']
         try:
-            query = FarmerAccountInfo.objects.get(id=id, farmer=farmer_id)
+            query = FarmerAccountInfo.objects.filter(farmer=farmer_id)
             return query
         except FarmerAccountInfo.DoesNotExist:
             raise NotFound("Payment Details not found")
@@ -287,4 +298,80 @@ class AdminOrdersListByPickupPointsListAPIView(ListAPIView):
         #     item_by_location[location] = list(items)
         # return item_by_location
         return queryset
+
+
+class FarmerPaymentListAPIView(ListAPIView):
+    serializer_class = FarmerPaymentListSerializer
+
+    def get_queryset(self):
+        try:
+            product_list = Product.objects.filter(
+            status='PUBLISH', possible_productions_date=datetime.today())
+            order_list = OrderItem.objects.filter(
+                product__in=product_list, is_qc_passed='PASS', order__order_status='ON_TRANSIT')
+            farmer_dict = {}
+            for order in order_list:
+                farmer_id = order.product.user.id
+                if farmer_id in farmer_dict:
+                    farmer_dict[farmer_id]["total_amount"] += order.total_price
+                    farmer_dict[farmer_id]["item_list"].append({
+                        "product_id": order.id,
+                        "product_name": order.product.title,
+                        "quantity": order.quantity,
+                        "price": order.unit_price,
+                        "total_price": order.total_price
+                    })
+                else:
+                    farmer_dict[farmer_id] = {
+                        "farmer_id": farmer_id,
+                        "total_amount": order.total_price,
+                        "item_list": [
+                            {
+                                "product_id": order.id,
+                                "product_name": order.product.title,
+                                "quantity": order.quantity,
+                                "price": order.unit_price,
+                                "total_price": order.total_price
+                            }
+                        ]
+                    }
+
+            farmer_payments = []
+            for farmer_data in farmer_dict.values():
+                farmer_id = farmer_data['farmer_id']
+                farmer = User.objects.get(id=farmer_id)
+                account_info = FarmerAccountInfo.objects.get(farmer=farmer)
+                payment = PaymentHistory.objects.create(
+                    farmer_account_info=account_info,
+                    amount=farmer_data['total_amount'],
+                )
+                for item_data in farmer_data['item_list']:
+                    order_item = OrderItem.objects.get(id=item_data['product_id'])
+                    payment.order_items.add(order_item)
+                farmer_payments.append(payment)
+
+            return PaymentHistory.objects.filter(id__in=[p.id for p in farmer_payments])
+
+
+        except Exception as e:
+            print(e)
+            raise NotFound("No Farmer List Found to Pay")
+
+
+class FarmerPaymentStatusUpdateAPIView(UpdateAPIView):
+    queryset = PaymentHistory.objects.all()
+    lookup_field = 'id'
+    lookup_url_kwarg = 'id'
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.status == 'PAID':
+            instance.status = 'DUE'
+            instance.save()
+            return Response({"message": "Payment return to due"}, status=status.HTTP_200_OK)
+
+        else:
+            instance.status = 'PAID'
+            instance.save()
+            return Response({"message": "Payment Paid Successfully"}, status=status.HTTP_200_OK)
 

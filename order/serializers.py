@@ -2,7 +2,7 @@ import decimal
 
 from rest_framework import serializers
 from order.models import DeliveryAddress, OrderItem, Order, CouponStat, Coupon, PickupLocation, AgentPickupLocation, \
-    FarmerAccountInfo, SubOrder
+    FarmerAccountInfo, SubOrder, PaymentHistory
 from product.models import Inventory, Product
 from product.serializers import ProductViewSerializer
 from user.models import User
@@ -33,12 +33,13 @@ class DeliveryAddressListSerializer(serializers.ModelSerializer):
 class ProductItemCheckoutSerializer(serializers.ModelSerializer):
     product_title = serializers.CharField(source='product.title', read_only=True)
     possible_production_date = serializers.CharField(source='product.possible_productions_date', read_only=True)
+    product_obj = ProductViewSerializer(source='product', read_only=True)
     pickup_location_title = serializers.CharField(source='pickup_location.address', read_only=True)
     class Meta:
         model = OrderItem
         fields = ['id',
                   'product',
-                  'product_title',
+                  'product_obj',
                   'quantity',
                   'unit_price',
                   'pickup_location',
@@ -243,14 +244,17 @@ class OrderUpdateSerializer(serializers.ModelSerializer):
 class CustomerOrderListSerializer(serializers.ModelSerializer):
     user = CustomerProfileDetailSerializer(many=False, read_only=True)
     order_item_suborder = ProductItemCheckoutSerializer(many=True, read_only=True)
-    delivery_address = DeliveryAddressSerializer(many=False, read_only=True)
+    delivery_address = DeliveryAddressListSerializer(many=False, read_only=True)
     order_status_value = serializers.CharField(
         source='get_order_status_display', read_only=True
+    )
+    payment_status_value = serializers.CharField(
+        source='get_payment_status_display', read_only=True
     )
     class Meta:
         model = SubOrder
         fields = ['id', 'user', 'order', 'suborder_number', 'order_date', 'delivery_date', 'order_status', 'order_status_value', 'order_item_suborder', 'delivery_address', 'payment_type',
-        'coupon_discount_amount', 'total_price']
+        'coupon_discount_amount', 'total_price', 'payment_status_value']
 
 
 class AgentOrderListSerializer(serializers.ModelSerializer):
@@ -309,36 +313,21 @@ class PickupLocationQcPassedInfoUpdateSerializer(serializers.ModelSerializer):
         except:
             is_qc_passed = 'NEUTRAL'
 
-        print("is_qc_passed")
-        print(is_qc_passed)
+        try:
+            if Order.objects.filter(id=instance.order.id).exists():
+                Order.objects.filter(id=instance.order.id).update(is_qc_passed=is_qc_passed)
+                if is_qc_passed == 'PASS':
+                    Order.objects.filter(id=instance.order.id).update(order_status='ON_TRANSIT')
+            if SubOrder.objects.filter(id=instance.suborder.id).exists():
+                SubOrder.objects.filter(id=instance.suborder.id).update(is_qc_passed=is_qc_passed)
+                if is_qc_passed == 'PASS':
+                    SubOrder.objects.filter(id=instance.suborder.id).update(order_status='ON_TRANSIT')
 
-        # try:
-        # is_qc_passed
-        # if is_qc_passed:
-        #     RolePermissions.objects.filter(role=instance).delete()
-        #     for permission_module_id in permission_modules:
-        #         if PermissionModules.objects.filter(id=permission_module_id).exists():
-        #             permission_obj = PermissionModules.objects.get(id=permission_module_id)
-        #             try:
-        #                 RolePermissions.objects.create(role=instance, permission_module = permission_obj)
-        #             except:
-        #                 pass
-        #         else:
-        #             pass
-        # else:
-        #     RolePermissions.objects.filter(role=instance).delete()
-
-        OrderItem.objects.filter(id=instance.suborder.id).update(is_qc_passed=is_qc_passed)
-
-        # print("order_id")
-        # print(order_id)
-
-        validated_data.update({"agent": self.context['request'].user })
-        return super().update(instance, validated_data)
-
-        # except:
-        #     validated_data.update({"updated_at": timezone.now()})
-        #     return super().update(instance, validated_data)
+            validated_data.update({"agent": self.context['request'].user, "is_qc_passed":is_qc_passed })
+            return super().update(instance, validated_data)
+        except:
+            validated_data.update({"updated_at": timezone.now()})
+            return super().update(instance, validated_data)
 
 
 # payment method
@@ -346,10 +335,10 @@ class PaymentMethodSerializer(serializers.ModelSerializer):
     class Meta:
         model = FarmerAccountInfo
         fields = ['id', 'account_type', 'account_number', 'account_holder', 'bank_name', 'brunch_name', 'Mobile_number',
-                  'farmer', 'created_by']
+                  'farmer']
 
     def create(self, validated_data):
-        farmer_account_info = FarmerAccountInfo.objects.create(**validated_data, user=self.context['request'].user)
+        farmer_account_info = FarmerAccountInfo.objects.create(**validated_data, created_by=self.context['request'].user)
         return farmer_account_info
 
 
@@ -431,3 +420,24 @@ class AdminOrdersListByPickupPointsListSerializer(serializers.ModelSerializer):
             'farmer_phone', 'order_status', 'order_id'
         ]
         queryset = SubOrder.objects.filter(order_item_suborder__is_qc_passed='PASS')
+
+class ProductItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderItem
+        fields = ['id', 'product', 'quantity', 'unit_price', 'is_qc_passed']
+
+class FarmerPaymentListSerializer(serializers.ModelSerializer):
+    farmer_account_info = serializers.SerializerMethodField('get_farmer_account_info')
+    order_items = serializers.SerializerMethodField('get_order_items')
+
+    class Meta:
+        model = PaymentHistory
+        fields = ['id', 'farmer_account_info', 'order_items', 'amount', 'status', 'date']
+
+    def get_farmer_account_info(self, obj):
+        serializer = PaymentDetailsSerializer(instance=obj.farmer_account_info, many=False)
+        return serializer.data
+
+    def get_order_items(self, obj):
+        serializer = ProductItemSerializer(instance=obj.order_items, many=True)
+        return serializer.data

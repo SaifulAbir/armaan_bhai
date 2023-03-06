@@ -32,5 +32,7 @@ urlpatterns = [
     path('agent/payment-details-update/<int:id>/', PaymentDetailsUpdateAPIView.as_view()),
 
     # Pickup Api
-    path('admin/order_list_by_pickup_point/', AdminOrdersListByPickupPointsListAPIView.as_view())
+    path('admin/order_list_by_pickup_point/', AdminOrdersListByPickupPointsListAPIView.as_view()),
+    path('farmer-payment-list/', FarmerPaymentListAPIView.as_view()),
+    path('farmer-payment-status-update/<int:id>/', FarmerPaymentStatusUpdateAPIView.as_view()),
 ]

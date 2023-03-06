@@ -32,13 +32,17 @@ class DeliveryAddressListSerializer(serializers.ModelSerializer):
 
 class ProductItemCheckoutSerializer(serializers.ModelSerializer):
     product_title = serializers.CharField(source='product.title', read_only=True)
+    pickup_location_title = serializers.CharField(source='pickup_location.address', read_only=True)
     class Meta:
         model = OrderItem
         fields = ['id',
                   'product',
                   'product_title',
                   'quantity',
-                  'unit_price'
+                  'unit_price',
+                  'pickup_location',
+                  'pickup_location_title',
+                  'is_qc_passed'
                   ]
 
 
@@ -302,36 +306,21 @@ class PickupLocationQcPassedInfoUpdateSerializer(serializers.ModelSerializer):
         except:
             is_qc_passed = 'NEUTRAL'
 
-        print("is_qc_passed")
-        print(is_qc_passed)
+        try:
+            if Order.objects.filter(id=instance.order.id).exists():
+                Order.objects.filter(id=instance.order.id).update(is_qc_passed=is_qc_passed)
+                if is_qc_passed == 'PASS':
+                    Order.objects.filter(id=instance.order.id).update(order_status='ON_TRANSIT')
+            if SubOrder.objects.filter(id=instance.suborder.id).exists():
+                SubOrder.objects.filter(id=instance.suborder.id).update(is_qc_passed=is_qc_passed)
+                if is_qc_passed == 'PASS':
+                    SubOrder.objects.filter(id=instance.suborder.id).update(order_status='ON_TRANSIT')
 
-        # try:
-        # is_qc_passed
-        # if is_qc_passed:
-        #     RolePermissions.objects.filter(role=instance).delete()
-        #     for permission_module_id in permission_modules:
-        #         if PermissionModules.objects.filter(id=permission_module_id).exists():
-        #             permission_obj = PermissionModules.objects.get(id=permission_module_id)
-        #             try:
-        #                 RolePermissions.objects.create(role=instance, permission_module = permission_obj)
-        #             except:
-        #                 pass
-        #         else:
-        #             pass
-        # else:
-        #     RolePermissions.objects.filter(role=instance).delete()
-
-        OrderItem.objects.filter(id=instance.suborder.id).update(is_qc_passed=is_qc_passed)
-
-        # print("order_id")
-        # print(order_id)
-
-        validated_data.update({"agent": self.context['request'].user })
-        return super().update(instance, validated_data)
-
-        # except:
-        #     validated_data.update({"updated_at": timezone.now()})
-        #     return super().update(instance, validated_data)
+            validated_data.update({"agent": self.context['request'].user, "is_qc_passed":is_qc_passed })
+            return super().update(instance, validated_data)
+        except:
+            validated_data.update({"updated_at": timezone.now()})
+            return super().update(instance, validated_data)
 
 
 # payment method
@@ -409,3 +398,13 @@ class PaymentDetailsUpdateSerializer(serializers.ModelSerializer):
         instance.Mobile_number = validated_data.get('Mobile_number', instance.Mobile_number)
         instance.save()
         return instance
+
+
+class AdminOrdersListByPickupPointsListSerializer(serializers.ModelSerializer):
+    order_item_suborder = ProductItemCheckoutSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = SubOrder
+        fields = [
+            'id', 'order_item_suborder', 'user', 'farmer', 'order_status'
+        ]

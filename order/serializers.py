@@ -2,7 +2,7 @@ import decimal
 
 from rest_framework import serializers
 from order.models import DeliveryAddress, OrderItem, Order, CouponStat, Coupon, PickupLocation, AgentPickupLocation, \
-    FarmerAccountInfo, SubOrder
+    FarmerAccountInfo, SubOrder, PaymentHistory
 from product.models import Inventory, Product
 from product.serializers import ProductViewSerializer
 from user.models import User
@@ -411,3 +411,24 @@ class AdminOrdersListByPickupPointsListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'order_item_suborder', 'user', 'farmer', 'order_status'
         ]
+
+class ProductItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderItem
+        fields = ['id', 'product', 'quantity', 'unit_price', 'is_qc_passed']
+
+class FarmerPaymentListSerializer(serializers.ModelSerializer):
+    farmer_account_info = serializers.SerializerMethodField('get_farmer_account_info')
+    order_items = serializers.SerializerMethodField('get_order_items')
+
+    class Meta:
+        model = PaymentHistory
+        fields = ['id', 'farmer_account_info', 'order_items', 'amount', 'status', 'date']
+
+    def get_farmer_account_info(self, obj):
+        serializer = PaymentDetailsSerializer(instance=obj.farmer_account_info, many=False)
+        return serializer.data
+    
+    def get_order_items(self, obj):
+        serializer = ProductItemSerializer(instance=obj.order_items, many=True)
+        return serializer.data

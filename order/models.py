@@ -6,6 +6,8 @@ from armaan_bhai.models import AbstractTimeStamp
 from order.utils import unique_order_id_generator_for_order, unique_order_id_generator_for_suborder
 from product.models import Product
 from user.models import User, Division, District, Upazilla
+from django.utils import timezone
+from django.core.validators import MinValueValidator
 
 
 class DeliveryAddress(AbstractTimeStamp):
@@ -62,7 +64,8 @@ class Coupon(AbstractTimeStamp):
     code = models.CharField(max_length=15)
     coupon_title = models.CharField(max_length=255, null=False, blank=False)
     min_shopping = models.IntegerField(default=0, null=True, blank=True)
-    amount = models.FloatField(max_length=255, null=True, blank=True, default=0, help_text="Amount Coupon")
+    amount = models.FloatField(
+        max_length=255, null=True, blank=True, default=0, help_text="Amount Coupon")
     max_time = models.IntegerField(default=0, null=False, blank=False)
     usage_count = models.IntegerField(default=0, null=True, blank=True)
     start_time = models.DateTimeField(default=timezone.now)
@@ -114,7 +117,8 @@ class Order(AbstractTimeStamp):
     order_date = models.DateField(auto_now_add=True)
     coupon = models.ForeignKey(
         Coupon, on_delete=models.SET_NULL, blank=True, null=True)
-    coupon_discount_amount = models.FloatField(max_length=255, null=True, blank=True)
+    coupon_discount_amount = models.FloatField(
+        max_length=255, null=True, blank=True)
     coupon_status = models.BooleanField(default=False)
     vat_amount = models.FloatField(max_length=255, null=True, blank=True)
     vat_percentage = models.FloatField(max_length=255, null=True, blank=True)
@@ -128,13 +132,14 @@ class Order(AbstractTimeStamp):
     cash_on_delivery = models.BooleanField(default=False)
     order_status = models.CharField(
         max_length=20, null=False, blank=False, choices=ORDER_CHOICES, default=ORDER_CHOICES[0][0])
-    delivery_address = models.ForeignKey(DeliveryAddress, on_delete=models.CASCADE)
+    delivery_address = models.ForeignKey(
+        DeliveryAddress, on_delete=models.CASCADE)
     # delivery_agent = models.CharField(max_length=100, null=True, blank=True)
     delivery_date = models.DateTimeField(null=True, blank=True)
     comment = models.TextField(null=True, blank=True)
-    is_qc_passed = models.CharField(max_length=20, choices=QC_TYPES, default=QC_TYPES[0][0])
+    is_qc_passed = models.CharField(
+        max_length=20, choices=QC_TYPES, default=QC_TYPES[0][0])
     pickup_request = models.BooleanField(default=False)
-
 
     class Meta:
         verbose_name = 'Order'
@@ -212,8 +217,9 @@ class SubOrder(AbstractTimeStamp):
     ]
 
     order = models.ForeignKey(Order, on_delete=models.PROTECT,
-                             related_name='order_suborder', blank=True, null=True)
-    suborder_number = models.SlugField(null=False, blank=False, allow_unicode=True)
+                              related_name='order_suborder', blank=True, null=True)
+    suborder_number = models.SlugField(
+        null=False, blank=False, allow_unicode=True)
     user = models.ForeignKey(User, on_delete=models.PROTECT,
                              related_name='suborder_user', blank=True, null=True)
     product_count = models.IntegerField()
@@ -224,7 +230,8 @@ class SubOrder(AbstractTimeStamp):
     order_date = models.DateField(auto_now_add=True)
     coupon = models.ForeignKey(
         Coupon, on_delete=models.SET_NULL, blank=True, null=True)
-    coupon_discount_amount = models.FloatField(max_length=255, null=True, blank=True)
+    coupon_discount_amount = models.FloatField(
+        max_length=255, null=True, blank=True)
     coupon_status = models.BooleanField(default=False)
     vat_amount = models.FloatField(max_length=255, null=True, blank=True)
     vat_percentage = models.FloatField(max_length=255, null=True, blank=True)
@@ -238,13 +245,14 @@ class SubOrder(AbstractTimeStamp):
     cash_on_delivery = models.BooleanField(default=False)
     order_status = models.CharField(
         max_length=20, null=False, blank=False, choices=ORDER_CHOICES, default=ORDER_CHOICES[0][0])
-    delivery_address = models.ForeignKey(DeliveryAddress, on_delete=models.CASCADE)
+    delivery_address = models.ForeignKey(
+        DeliveryAddress, on_delete=models.CASCADE)
     # delivery_agent = models.CharField(max_length=100, null=True, blank=True)
     delivery_date = models.DateTimeField(null=True, blank=True)
     comment = models.TextField(null=True, blank=True)
-    is_qc_passed = models.CharField(max_length=20, choices=QC_TYPES, default=QC_TYPES[0][0])
+    is_qc_passed = models.CharField(
+        max_length=20, choices=QC_TYPES, default=QC_TYPES[0][0])
     pickup_request = models.BooleanField(default=False)
-
 
     class Meta:
         verbose_name = 'Sub Order'
@@ -282,9 +290,12 @@ class OrderItem(AbstractTimeStamp):
         max_length=255, null=False, blank=False, default=0)
     total_price = models.FloatField(
         max_length=255, null=False, blank=False, default=0)
-    is_qc_passed = models.CharField(max_length=20, choices=QC_TYPES, default=QC_TYPES[0][0])
-    pickup_location = models.ForeignKey(PickupLocation, on_delete=models.CASCADE, null=True, blank=True, related_name='order_item_pickup_location')
-    agent = models.ForeignKey(User, on_delete=models.CASCADE, related_name='order_item_agent', null=True, blank=True)
+    is_qc_passed = models.CharField(
+        max_length=20, choices=QC_TYPES, default=QC_TYPES[0][0])
+    pickup_location = models.ForeignKey(
+        PickupLocation, on_delete=models.CASCADE, null=True, blank=True, related_name='order_item_pickup_location')
+    agent = models.ForeignKey(User, on_delete=models.CASCADE,
+                              related_name='order_item_agent', null=True, blank=True)
 
     @property
     def subtotal(self):
@@ -344,3 +355,34 @@ class FarmerAccountInfo(AbstractTimeStamp):
 
     def __str__(self):
         return self.account_type
+
+
+class PaymentHistory(models.Model):
+    STATUS_CHOICES = [
+        ('DUE', 'Due'),
+        ('PAID', 'Paid'),
+    ]
+    farmer_account_info = models.ForeignKey(
+        FarmerAccountInfo,
+        on_delete=models.CASCADE,
+        related_name='payments',
+    )
+    order_items = models.ManyToManyField(
+        OrderItem,
+        related_name='payments',
+    )
+    amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+    )
+    status = models.CharField(
+        max_length=4,
+        choices=STATUS_CHOICES,
+        default='DUE',
+    )
+    date = models.DateField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Payment_history'
+        verbose_name_plural = 'Payments_history'
+        db_table = 'payments_history'

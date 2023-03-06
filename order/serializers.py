@@ -240,14 +240,17 @@ class OrderUpdateSerializer(serializers.ModelSerializer):
 class CustomerOrderListSerializer(serializers.ModelSerializer):
     user = CustomerProfileDetailSerializer(many=False, read_only=True)
     order_item_suborder = ProductItemCheckoutSerializer(many=True, read_only=True)
-    delivery_address = DeliveryAddressSerializer(many=False, read_only=True)
+    delivery_address = DeliveryAddressListSerializer(many=False, read_only=True)
     order_status_value = serializers.CharField(
         source='get_order_status_display', read_only=True
+    )
+    payment_status_value = serializers.CharField(
+        source='get_payment_status_display', read_only=True
     )
     class Meta:
         model = SubOrder
         fields = ['id', 'user', 'order', 'suborder_number', 'order_date', 'delivery_date', 'order_status', 'order_status_value', 'order_item_suborder', 'delivery_address', 'payment_type',
-        'coupon_discount_amount', 'total_price']
+        'coupon_discount_amount', 'total_price', 'payment_status_value']
 
 
 class AgentOrderListSerializer(serializers.ModelSerializer):

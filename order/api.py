@@ -85,6 +85,17 @@ class CustomerOrderList(ListAPIView):
         return queryset
 
 
+class CustomerOrderDetailsAPIView(RetrieveAPIView):
+    serializer_class = CustomerOrderListSerializer
+    lookup_field = 'id'
+    lookup_url_kwarg = 'id'
+
+    def get_object(self):
+        id = self.kwargs['id']
+        query = SubOrder.objects.get(id=id, user=self.request.user)
+        return query
+
+
 class AgentOrderList(ListAPIView):
     serializer_class = AgentOrderListSerializer
     pagination_class = CustomPagination

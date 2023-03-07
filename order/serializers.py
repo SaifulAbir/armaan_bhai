@@ -408,18 +408,24 @@ class PaymentDetailsUpdateSerializer(serializers.ModelSerializer):
 
 
 class AdminOrdersListByPickupPointsListSerializer(serializers.ModelSerializer):
-    order_item_suborder = ProductItemCheckoutSerializer(many=True, read_only=True)
-    farmer_name = serializers.CharField(source='user.full_name')
-    farmer_phone = serializers.CharField(source='user.phone_number')
-    # print(farmer_name)
+    order_items = serializers.SerializerMethodField('get_order_items')
+    farmer = serializers.SerializerMethodField('get_farmer')
 
     class Meta:
         model = SubOrder
         fields = [
-            'id', 'order_item_suborder', 'user', 'farmer_name',
+            'id', 'order_items', 'farmer',
             'farmer_phone', 'order_status', 'order_id'
         ]
-        queryset = SubOrder.objects.filter(order_item_suborder__is_qc_passed='PASS')
+
+    def get_farmer(self, obj):
+        serializer = UserSerializer(instance=obj.farmer, many=False)
+        return serializer.data
+
+    def get_order_items(self, obj):
+        serializer = ProductItemSerializer(instance=obj.order_items, many=True)
+
+        return serializer.data
 
 class ProductItemSerializer(serializers.ModelSerializer):
     product_title = serializers.SerializerMethodField('get_product_title')

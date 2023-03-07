@@ -276,14 +276,38 @@ class PaymentDetailsUpdateAPIView(UpdateAPIView):
 
 
 class AdminOrdersListByPickupPointsListAPIView(ListAPIView):
-    permission_classes = [IsAuthenticated]
-    # pagination_class = Pro
+    permission_classes = [AllowAny]
     serializer_class = AdminOrdersListByPickupPointsListSerializer
 
     def get_queryset(self):
-        query = SubOrder.objects.filter(
-            order_status='ON_PROCESS', order_item_suborder__is_qc_passed='PASS')
-        return query
+        pickup_location = PickupLocation.objects.filter(order_item_pickup_location__product__possible_productions_date=datetime.today(),
+                                                        order_item_pickup_location__is_qc_passed="PASS").annotate(quantity=Sum('order_item_product__quantity', ))
+        print(pickup_location)
+        # product_list = Product.objects.filter(possible_productions_date=datetime.today())
+        # print(product_list)
+        # order_list = OrderItem.objects.filter(product__in=product_list, is_qc_passed='PASS', suborder__order_status='ON_TRANSIT')
+        # print(order_list)
+        #
+        # location_dict = {}
+        # for order in order_list:
+        #     location = order.pickup_location
+        #     print(location)
+        #     if location in location_dict:
+        #         location_dict[location]["product"] += order.product
+        #         location_dict[location]["item_list"].append({
+        #             "product_id": order.id,
+        #         })
+        #     else:
+        #         location_dict[location] = {
+        #             "location": location,
+        #             "product": order.product,
+        #             "item_list": [
+        #                 {
+        #                     "product_id"
+        #                 }
+        #             ]
+        #         }
+        # return location_dict
 
 
 class FarmerPaymentListAPIView(ListAPIView):

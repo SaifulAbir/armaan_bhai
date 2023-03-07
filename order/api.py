@@ -284,6 +284,21 @@ class AdminOrdersListByPickupPointsListAPIView(ListAPIView):
         query = SubOrder.objects.filter(
             order_status='ON_PROCESS', order_item_suborder__is_qc_passed='PASS')
         return query
+        qc_passed_product = OrderItem.objects.filter(product__possible_productions_date=datetime.today(),
+                                                     is_qc_passed='PASS')
+        location = []
+        pickup_locations = qc_passed_product.values_list('pickup_location', flat=True).distinct()
+        pickup_location = qc_passed_product.first().pickup_location
+        print(pickup_location)
+        print(pickup_locations)
+        print(qc_passed_product)
+        # for loc in pickup_locations:
+        #     if loc in qc_passed_product:
+        #         location.append(loc)
+        #
+        #         print(location)
+        return qc_passed_product
+
 
 
 class FarmerPaymentListAPIView(ListAPIView):
@@ -374,7 +389,7 @@ class FarmerPaymentListAPIView(ListAPIView):
         except Exception as e:
             print(e)
             raise NotFound("No Farmer List Found to Pay")
-        
+
 
 class FarmerPaymentStatusUpdateAPIView(UpdateAPIView):
     queryset = PaymentHistory.objects.all()
@@ -392,5 +407,4 @@ class FarmerPaymentStatusUpdateAPIView(UpdateAPIView):
             instance.status = 'PAID'
             instance.save()
             return Response({"message": "Payment Paid Successfully"}, status=status.HTTP_200_OK)
-        
-    
+

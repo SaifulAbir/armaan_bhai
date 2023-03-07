@@ -183,25 +183,20 @@ class AgentSetPickupLocationOnOrderListAPIView(ListAPIView):
         user = self.request.user
         if self.request.user.user_type == "AGENT":
             tomorrow = datetime.today() + timedelta(days=1)
-            # queryset = User.objects.filter(agent_user_id=user.id, user_type="FARMER").exclude(~Q(product_seller__possible_productions_date=tomorrow))
-
-            queryset = User.objects.filter(agent_user_id=user.id, user_type="FARMER").exclude(
-                ~Q(product_seller__possible_productions_date=tomorrow))
+            queryset = User.objects.filter(agent_user_id=user.id, user_type="FARMER").exclude(~Q(product_seller__possible_productions_date=tomorrow)).order_by()
         else:
             queryset = None
         return queryset
 
 
 class AgentPickupLocationListOfAgentAPIView(ListAPIView):
-    serializer_class = AgentPickupLocationListSerializer
+    serializer_class = PickupLocationListSerializer
 
     def get_queryset(self):
         user = self.request.user
         if self.request.user.user_type == "AGENT":
-            agent_district = self.request.user.district
-            # queryset = AgentPickupLocation.objects.filter(user=user.id ,status=True)
-            queryset = PickupLocation.objects.filter(
-                status=True, district=agent_district)
+            agent_upazilla = self.request.user.upazilla
+            queryset = PickupLocation.objects.filter(status=True, upazilla=agent_upazilla)
         else:
             queryset = None
         return queryset
@@ -214,27 +209,8 @@ class PickupLocationQcPassedInfoUpdateAPIView(UpdateAPIView):
 
     def get_object(self):
         id = self.kwargs['id']
-        query = OrderItem.objects.get(id=id)
+        query = User.objects.get(id=id)
         return query
-
-    # queryset=OrderItem.objects.all()
-    # serializer_class = PickupLocationQcPassedInfoUpdateSerializer
-
-    # def get_object(self):
-    #     return Profile.objects.annotate(
-    #         total_donor=Count(
-    #             Concat('profile_goal__goal_payment__goal', 'profile_goal__goal_payment__user'),
-    #             filter=Q(profile_goal__goal_payment__status='PAID'),
-    #             distinct=True
-    #         ),
-    #         total_completed_goals = Count(
-    #             'profile_goal', filter=Q(profile_goal__paid_amount=F('profile_goal__total_amount'))
-    #         )
-    #     ).get(user=self.request.user)
-
-    # def put(self, request, *args, **kwargs):
-    #     return self.update(request, *args, **kwargs)
-
 
 class OrderUpdateAPIView(UpdateAPIView):
     serializer_class = OrderUpdateSerializer

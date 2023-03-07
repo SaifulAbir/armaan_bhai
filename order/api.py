@@ -306,33 +306,59 @@ class FarmerPaymentListAPIView(ListAPIView):
                 existpaymentHistory = PaymentHistory.objects.filter(
                     farmer_account_info=account_info, date=datetime.today())
                 if existpaymentHistory:
-                    payment = existpaymentHistory[0]
-                    if payment.status == 'PAID':
-                        new_item_list = []
-                        for item_data in farmer_data['item_list']:
-                            if not payment.order_items.filter(id=item_data['product_id']).exists():
-                                new_item_list.append(item_data)
-                        if new_item_list:
-                            new_payment = PaymentHistory.objects.create(
-                                farmer=account_info.farmer,
-                                farmer_account_info=account_info,
-                                amount=farmer_data['total_amount'],
-                            )
-                            for item_data in new_item_list:
+                    for payment in existpaymentHistory:
+                        if payment.status == 'PAID':
+                            new_item_list = []
+                            for item_data in farmer_data['item_list']:
+                                if not payment.order_items.filter(id=item_data['product_id']).exists():
+                                    new_item_list.append(item_data)
+                            if new_item_list:
+                                final_item_list = []
+                                for item_data in new_item_list:
+                                    checkitemexit =PaymentHistory.objects.filter(order_items=item_data['product_id'],date=datetime.today())
+                                    if not checkitemexit:
+                                        final_item_list.append(item_data)
+                                
+                                if final_item_list:
+                                    new_payment = PaymentHistory.objects.create(
+                                        farmer=account_info.farmer,
+                                        farmer_account_info=account_info,
+                                        amount=0,
+                                    )
+                                    for item_data in final_item_list:
+                                        order_item = OrderItem.objects.get(
+                                            id=item_data['product_id'])
+                                        new_payment.order_items.add(order_item)
+                                        new_payment.amount += item_data['total_price']
+                                        new_payment.save()
+                                    farmer_payments.append(new_payment)
+                                        # print(item_data["total_price"])
+                                        # return
+                                        # new_payment = PaymentHistory.objects.create(
+                                        #     farmer=account_info.farmer,
+                                        #     farmer_account_info=account_info,
+                                        #     amount=farmer_data['farmer_id']['item_list']['total_price'],
+                                        # )
+                                        # for item_data in new_item_list:
+                                        #     order_item = OrderItem.objects.get(
+                                        #         id=item_data['product_id'])
+                                        #     new_payment.order_items.add(order_item)
+                                        # new_payment.save()
+                                        # farmer_payments.append(new_payment)
+                                else:
+                                    farmer_payments.append(payment)
+                            
+                        
+                        else:
+                            print(payment)        
+                            payment.order_items.clear()
+                            for item_data in farmer_data['item_list']:
                                 order_item = OrderItem.objects.get(
                                     id=item_data['product_id'])
-                                new_payment.order_items.add(order_item)
-                            new_payment.save()
-                            farmer_payments.append(new_payment)
-                        
-                    else:        
-                        payment.order_items.clear()
-                        for item_data in farmer_data['item_list']:
-                            order_item = OrderItem.objects.get(
-                                id=item_data['product_id'])
-                            payment.order_items.add(order_item)
-                        payment.amount = farmer_data['total_amount']
-                        payment.save()
+                                payment.order_items.add(order_item)
+                            payment.amount = farmer_data['total_amount']
+                            payment.save()
+                    
                 else:
                     payment = PaymentHistory.objects.create(
                         farmer=account_info.farmer,

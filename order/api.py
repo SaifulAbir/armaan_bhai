@@ -1,5 +1,3 @@
-import itertools
-
 from rest_framework.generics import CreateAPIView, RetrieveUpdateAPIView, ListAPIView, DestroyAPIView, RetrieveAPIView, \
     UpdateAPIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -11,7 +9,6 @@ from order.serializers import *
 from django.db.models import Q
 from order.models import *
 from user.models import *
-from itertools import groupby
 from rest_framework import status
 
 
@@ -279,38 +276,14 @@ class PaymentDetailsUpdateAPIView(UpdateAPIView):
 
 
 class AdminOrdersListByPickupPointsListAPIView(ListAPIView):
-    permission_classes = [AllowAny]
-    serializer_class = ProductItemCheckoutSerializer
+    permission_classes = [IsAuthenticated]
+    # pagination_class = Pro
+    serializer_class = AdminOrdersListByPickupPointsListSerializer
 
     def get_queryset(self):
-        # pickup_point = self.request.query_params.get('pickup_point', None)
-        # print(current_date)
-        # pickup_point = self.request.query_params.get('pickup_location')
-        product_list = Product.objects.filter(
-            possible_productions_date=datetime.today()
-            )
-        print(product_list)
-        # order_items = OrderItem.objects.filter(
-        #     product__in=product_list, is_qc_passed='PASS'
-        # )
-        # print(order_items)
-        # pickup_location_dict = [{}]
-        # for order_item in order_items:
-        #     location = order_item.pickup_location
-        #     if location in pickup_location_dict:
-        #         pickup_location_dict.append("order_item", order_item.order_item_product)
-        #     else:
-        #         pickup_location_dict.append("location", location)
-        #
-        #     print(pickup_location_dict)
-
-        # sorted_item = itertools.groupby(
-        #     queryset, key=lambda item: item.pickup_location)
-        # item_by_location = []
-        # for location, items in sorted_item:
-        #     item_by_location[location] = list(items)
-        # return item_by_location
-        # return queryset
+        query = SubOrder.objects.filter(
+            order_status='ON_PROCESS', order_item_suborder__is_qc_passed='PASS')
+        return query
 
 
 class FarmerPaymentListAPIView(ListAPIView):
@@ -319,7 +292,7 @@ class FarmerPaymentListAPIView(ListAPIView):
     def get_queryset(self):
         try:
             product_list = Product.objects.filter(
-            status='PUBLISH', possible_productions_date=datetime.today())
+                status='PUBLISH', possible_productions_date=datetime.today())
             order_list = OrderItem.objects.filter(
                 product__in=product_list, is_qc_passed='PASS', order__order_status='ON_TRANSIT')
             farmer_dict = {}
@@ -354,22 +327,54 @@ class FarmerPaymentListAPIView(ListAPIView):
                 farmer_id = farmer_data['farmer_id']
                 farmer = User.objects.get(id=farmer_id)
                 account_info = FarmerAccountInfo.objects.get(farmer=farmer)
-                payment = PaymentHistory.objects.create(
-                    farmer_account_info=account_info,
-                    amount=farmer_data['total_amount'],
-                )
-                for item_data in farmer_data['item_list']:
-                    order_item = OrderItem.objects.get(id=item_data['product_id'])
-                    payment.order_items.add(order_item)
+                existpaymentHistory = PaymentHistory.objects.filter(
+                    farmer_account_info=account_info, date=datetime.today())
+                if existpaymentHistory:
+                    payment = existpaymentHistory[0]
+                    if payment.status == 'PAID':
+                        new_item_list = []
+                        for item_data in farmer_data['item_list']:
+                            if not payment.order_items.filter(id=item_data['product_id']).exists():
+                                new_item_list.append(item_data)
+                        if new_item_list:
+                            new_payment = PaymentHistory.objects.create(
+                                farmer=account_info.farmer,
+                                farmer_account_info=account_info,
+                                amount=farmer_data['total_amount'],
+                            )
+                            for item_data in new_item_list:
+                                order_item = OrderItem.objects.get(
+                                    id=item_data['product_id'])
+                                new_payment.order_items.add(order_item)
+                            new_payment.save()
+                            farmer_payments.append(new_payment)
+
+                    else:
+                        payment.order_items.clear()
+                        for item_data in farmer_data['item_list']:
+                            order_item = OrderItem.objects.get(
+                                id=item_data['product_id'])
+                            payment.order_items.add(order_item)
+                        payment.amount = farmer_data['total_amount']
+                        payment.save()
+                else:
+                    payment = PaymentHistory.objects.create(
+                        farmer=account_info.farmer,
+                        farmer_account_info=account_info,
+                        amount=farmer_data['total_amount'],
+                    )
+                    for item_data in farmer_data['item_list']:
+                        order_item = OrderItem.objects.get(
+                            id=item_data['product_id'])
+                        payment.order_items.add(order_item)
                 farmer_payments.append(payment)
 
             return PaymentHistory.objects.filter(id__in=[p.id for p in farmer_payments])
 
-
         except Exception as e:
             print(e)
             raise NotFound("No Farmer List Found to Pay")
-
+        
 
 class FarmerPaymentStatusUpdateAPIView(UpdateAPIView):
     queryset = PaymentHistory.objects.all()
@@ -387,4 +392,5 @@ class FarmerPaymentStatusUpdateAPIView(UpdateAPIView):
             instance.status = 'PAID'
             instance.save()
             return Response({"message": "Payment Paid Successfully"}, status=status.HTTP_200_OK)
-
+        
+    

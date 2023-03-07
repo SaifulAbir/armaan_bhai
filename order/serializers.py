@@ -422,17 +422,28 @@ class AdminOrdersListByPickupPointsListSerializer(serializers.ModelSerializer):
         queryset = SubOrder.objects.filter(order_item_suborder__is_qc_passed='PASS')
 
 class ProductItemSerializer(serializers.ModelSerializer):
+    product_title = serializers.SerializerMethodField('get_product_title')
     class Meta:
         model = OrderItem
-        fields = ['id', 'product', 'quantity', 'unit_price', 'is_qc_passed']
+        fields = ['id', 'product','product_title', 'quantity', 'unit_price', 'is_qc_passed']
+    
+    def get_product_title(self, obj):
+        return obj.product.title
+    
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['full_name','gender','address','phone_number' ]
 
 class FarmerPaymentListSerializer(serializers.ModelSerializer):
     farmer_account_info = serializers.SerializerMethodField('get_farmer_account_info')
     order_items = serializers.SerializerMethodField('get_order_items')
+    farmer = serializers.SerializerMethodField('get_farmer')
 
     class Meta:
         model = PaymentHistory
-        fields = ['id', 'farmer_account_info', 'order_items', 'amount', 'status', 'date']
+        fields = ['id','farmer', 'farmer_account_info', 'order_items', 'amount', 'status', 'date']
 
     def get_farmer_account_info(self, obj):
         serializer = PaymentDetailsSerializer(instance=obj.farmer_account_info, many=False)
@@ -440,4 +451,9 @@ class FarmerPaymentListSerializer(serializers.ModelSerializer):
 
     def get_order_items(self, obj):
         serializer = ProductItemSerializer(instance=obj.order_items, many=True)
+
+        return serializer.data
+    
+    def get_farmer(self, obj):
+        serializer = UserSerializer(instance=obj.farmer, many=False)
         return serializer.data

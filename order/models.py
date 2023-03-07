@@ -375,6 +375,11 @@ class PaymentHistory(models.Model):
         max_digits=10,
         decimal_places=2,
     )
+    farmer = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='payments',
+    )
     status = models.CharField(
         max_length=4,
         choices=STATUS_CHOICES,

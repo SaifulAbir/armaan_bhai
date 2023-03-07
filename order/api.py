@@ -284,20 +284,33 @@ class AdminOrdersListByPickupPointsListAPIView(ListAPIView):
 
     def get_queryset(self):
         # pickup_point = self.request.query_params.get('pickup_point', None)
-        current_date = timezone.now().date()
         # print(current_date)
         # pickup_point = self.request.query_params.get('pickup_location')
-        queryset = OrderItem.objects.filter(
-            is_qc_passed='PASS',
-            product__possible_productions_date=current_date
+        product_list = Product.objects.filter(
+            possible_productions_date=datetime.today()
             )
+        print(product_list)
+        # order_items = OrderItem.objects.filter(
+        #     product__in=product_list, is_qc_passed='PASS'
+        # )
+        # print(order_items)
+        # pickup_location_dict = [{}]
+        # for order_item in order_items:
+        #     location = order_item.pickup_location
+        #     if location in pickup_location_dict:
+        #         pickup_location_dict.append("order_item", order_item.order_item_product)
+        #     else:
+        #         pickup_location_dict.append("location", location)
+        #
+        #     print(pickup_location_dict)
+
         # sorted_item = itertools.groupby(
         #     queryset, key=lambda item: item.pickup_location)
         # item_by_location = []
         # for location, items in sorted_item:
         #     item_by_location[location] = list(items)
         # return item_by_location
-        return queryset
+        # return queryset
 
 
 class FarmerPaymentListAPIView(ListAPIView):

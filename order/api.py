@@ -383,12 +383,12 @@ class FarmerPaymentStatusUpdateAPIView(UpdateAPIView):
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
-        if instance.status == 'PAID':
-            instance.status = 'DUE'
+        newStatus = request.data.get('status')
+        if newStatus:
+            instance.status = newStatus
             instance.save()
-            return Response({"message": "Payment return to due"}, status=status.HTTP_200_OK)
-
+            return Response({'status': instance.status}, status=status.HTTP_200_OK)
         else:
-            instance.status = 'PAID'
-            instance.save()
-            return Response({"message": "Payment Paid Successfully"}, status=status.HTTP_200_OK)
+            return Response({'status': 'Status not provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+        

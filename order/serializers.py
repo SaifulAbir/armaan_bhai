@@ -2,7 +2,7 @@ import decimal
 
 from rest_framework import serializers
 from order.models import DeliveryAddress, OrderItem, Order, CouponStat, Coupon, PickupLocation, AgentPickupLocation, \
-    FarmerAccountInfo, SubOrder
+    FarmerAccountInfo, SubOrder, PaymentHistory
 from product.models import Inventory, Product
 from product.serializers import ProductViewSerializer
 from user.models import User
@@ -34,14 +34,18 @@ class DeliveryAddressListSerializer(serializers.ModelSerializer):
 
 
 class ProductItemCheckoutSerializer(serializers.ModelSerializer):
-    product_title = serializers.CharField(source='product.title', read_only=True)
+    product_obj = ProductViewSerializer(source='product', read_only=True)
+    pickup_location_title = serializers.CharField(source='pickup_location.address', read_only=True)
     class Meta:
         model = OrderItem
         fields = ['id',
                   'product',
-                  'product_title',
+                  'product_obj',
                   'quantity',
-                  'unit_price'
+                  'unit_price',
+                  'pickup_location',
+                  'pickup_location_title',
+                  'is_qc_passed'
                   ]
 
 
@@ -239,14 +243,17 @@ class OrderUpdateSerializer(serializers.ModelSerializer):
 class CustomerOrderListSerializer(serializers.ModelSerializer):
     user = CustomerProfileDetailSerializer(many=False, read_only=True)
     order_item_suborder = ProductItemCheckoutSerializer(many=True, read_only=True)
-    delivery_address = DeliveryAddressSerializer(many=False, read_only=True)
+    delivery_address = DeliveryAddressListSerializer(many=False, read_only=True)
     order_status_value = serializers.CharField(
         source='get_order_status_display', read_only=True
+    )
+    payment_status_value = serializers.CharField(
+        source='get_payment_status_display', read_only=True
     )
     class Meta:
         model = SubOrder
         fields = ['id', 'user', 'order', 'suborder_number', 'order_date', 'delivery_date', 'order_status', 'order_status_value', 'order_item_suborder', 'delivery_address', 'payment_type',
-        'coupon_discount_amount', 'total_price']
+        'coupon_discount_amount', 'total_price', 'payment_status_value']
 
 
 class AgentOrderListSerializer(serializers.ModelSerializer):
@@ -338,10 +345,10 @@ class PaymentMethodSerializer(serializers.ModelSerializer):
     class Meta:
         model = FarmerAccountInfo
         fields = ['id', 'account_type', 'account_number', 'account_holder', 'bank_name', 'brunch_name', 'Mobile_number',
-                  'farmer', 'created_by']
+                  'farmer']
 
     def create(self, validated_data):
-        farmer_account_info = FarmerAccountInfo.objects.create(**validated_data, user=self.context['request'].user)
+        farmer_account_info = FarmerAccountInfo.objects.create(**validated_data, created_by=self.context['request'].user)
         return farmer_account_info
 
 
@@ -369,7 +376,7 @@ class AgentMukamLocationSetupDataSerializer(serializers.ModelSerializer):
         fields = ['id',
                   'title',
                   'whole_quantity',
-                  'product_unit_title'
+                  'product_unit_title',
                   ]
     def get_whole_quantity(self, obj):
         try:
@@ -379,15 +386,32 @@ class AgentMukamLocationSetupDataSerializer(serializers.ModelSerializer):
 
 class AgentOrderListForSetupPickupLocationSerializer(serializers.ModelSerializer):
     products = serializers.SerializerMethodField('get_products')
+    pickup_location = serializers.SerializerMethodField()
+    is_qc_passed = serializers.SerializerMethodField()
     class Meta:
         model = User
-        fields = ['id', 'full_name', 'phone_number', 'products']
+        fields = ['id', 'full_name', 'phone_number', 'products', 'pickup_location', 'is_qc_passed']
 
     def get_products(self, obj):
         tomorrow = datetime.today() + timedelta(days=1)
-        query = Product.objects.filter(user = obj, possible_productions_date=tomorrow).annotate(whole_quantity=Sum('order_item_product__quantity', filter=Q(order_item_product__suborder__order_status='ON_PROCESS')))
+        query = Product.objects.filter(user = obj, possible_productions_date=tomorrow).annotate(whole_quantity=Sum('order_item_product__quantity', filter=Q(order_item_product__suborder__order_status='ON_PROCESS') | Q(order_item_product__suborder__order_status='ON_TRANSIT')))
         serializer = AgentMukamLocationSetupDataSerializer(instance=query, many=True)
         return serializer.data
+
+    def get_pickup_location(self, obj):
+        tomorrow = datetime.today() + timedelta(days=1)
+        query = OrderItem.objects.filter(Q(product__user = obj), Q(product__possible_productions_date=tomorrow), Q(suborder__order_status='ON_PROCESS') | Q(suborder__order_status='ON_TRANSIT')).distinct('pickup_location')
+        for i in query:
+            if i.pickup_location:
+                pickup_location = i.pickup_location.id
+                return pickup_location
+
+    def get_is_qc_passed(self, obj):
+        tomorrow = datetime.today() + timedelta(days=1)
+        query = OrderItem.objects.filter(Q(product__user = obj), Q(product__possible_productions_date=tomorrow), Q(suborder__order_status='ON_PROCESS') | Q(suborder__order_status='ON_TRANSIT')).distinct('is_qc_passed')
+        for i in query:
+            is_qc_passed = i.is_qc_passed
+            return is_qc_passed
 
 class PaymentDetailsSerializer(serializers.ModelSerializer):
     class Meta:
@@ -410,3 +434,34 @@ class PaymentDetailsUpdateSerializer(serializers.ModelSerializer):
         instance.Mobile_number = validated_data.get('Mobile_number', instance.Mobile_number)
         instance.save()
         return instance
+
+
+class AdminOrdersListByPickupPointsListSerializer(serializers.ModelSerializer):
+    order_item_suborder = ProductItemCheckoutSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = SubOrder
+        fields = [
+            'id', 'order_item_suborder', 'user', 'farmer', 'order_status'
+        ]
+
+class ProductItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderItem
+        fields = ['id', 'product', 'quantity', 'unit_price', 'is_qc_passed']
+
+class FarmerPaymentListSerializer(serializers.ModelSerializer):
+    farmer_account_info = serializers.SerializerMethodField('get_farmer_account_info')
+    order_items = serializers.SerializerMethodField('get_order_items')
+
+    class Meta:
+        model = PaymentHistory
+        fields = ['id', 'farmer_account_info', 'order_items', 'amount', 'status', 'date']
+
+    def get_farmer_account_info(self, obj):
+        serializer = PaymentDetailsSerializer(instance=obj.farmer_account_info, many=False)
+        return serializer.data
+    
+    def get_order_items(self, obj):
+        serializer = ProductItemSerializer(instance=obj.order_items, many=True)
+        return serializer.data

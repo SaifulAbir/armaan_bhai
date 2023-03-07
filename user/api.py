@@ -99,7 +99,7 @@ class OTPVerifyAPIVIEW(CreateAPIView):
 
             otp_obj.save()
             return Response(
-                {"user_id": user.id, "user_type": user.user_type, "full_name": user.full_name, "phone_number": user.phone_number, 'details': 'Verified',
+                {"user_id": user.id, "image": user.image if user.image else None, "user_type": user.user_type, "full_name": user.full_name, "phone_number": user.phone_number, 'details': 'Verified',
                  "access_token": str(token.access_token) if token else None,
                  "refresh_token": str(token) if token else None}, status=status.HTTP_200_OK)
         else:
@@ -186,6 +186,12 @@ class DistrictListAPI(ListAPIView):
         division_id = self.kwargs['division_id']
         query = District.objects.filter(division=division_id)
         return query
+    
+class AllDistrictListAPI(ListAPIView):
+    permission_classes = (AllowAny, )
+    serializer_class = DistrictListSerializer
+    queryset = District.objects.all()
+
 
 
 class UpazillaListAPI(ListAPIView):

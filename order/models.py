@@ -308,7 +308,7 @@ class OrderItem(AbstractTimeStamp):
         db_table = 'order_items'
 
     def __str__(self):
-        return f"{self.quantity} of {self.product.title}"
+        return f"{self.quantity} of {self.product.title}" + ' - ' + str(self.product.user.id)
 
     def get_total_item_price(self):
         return self.quantity * self.product.price_per_unit

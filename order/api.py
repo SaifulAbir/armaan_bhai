@@ -183,25 +183,20 @@ class AgentSetPickupLocationOnOrderListAPIView(ListAPIView):
         user = self.request.user
         if self.request.user.user_type == "AGENT":
             tomorrow = datetime.today() + timedelta(days=1)
-            # queryset = User.objects.filter(agent_user_id=user.id, user_type="FARMER").exclude(~Q(product_seller__possible_productions_date=tomorrow))
-
-            queryset = User.objects.filter(agent_user_id=user.id, user_type="FARMER").exclude(
-                ~Q(product_seller__possible_productions_date=tomorrow))
+            queryset = User.objects.filter(agent_user_id=user.id, user_type="FARMER").exclude(~Q(product_seller__possible_productions_date=tomorrow)).order_by()
         else:
             queryset = None
         return queryset
 
 
 class AgentPickupLocationListOfAgentAPIView(ListAPIView):
-    serializer_class = AgentPickupLocationListSerializer
+    serializer_class = PickupLocationListSerializer
 
     def get_queryset(self):
         user = self.request.user
         if self.request.user.user_type == "AGENT":
-            agent_district = self.request.user.district
-            # queryset = AgentPickupLocation.objects.filter(user=user.id ,status=True)
-            queryset = PickupLocation.objects.filter(
-                status=True, district=agent_district)
+            agent_upazilla = self.request.user.upazilla
+            queryset = PickupLocation.objects.filter(status=True, upazilla=agent_upazilla)
         else:
             queryset = None
         return queryset
@@ -214,27 +209,8 @@ class PickupLocationQcPassedInfoUpdateAPIView(UpdateAPIView):
 
     def get_object(self):
         id = self.kwargs['id']
-        query = OrderItem.objects.get(id=id)
+        query = User.objects.get(id=id)
         return query
-
-    # queryset=OrderItem.objects.all()
-    # serializer_class = PickupLocationQcPassedInfoUpdateSerializer
-
-    # def get_object(self):
-    #     return Profile.objects.annotate(
-    #         total_donor=Count(
-    #             Concat('profile_goal__goal_payment__goal', 'profile_goal__goal_payment__user'),
-    #             filter=Q(profile_goal__goal_payment__status='PAID'),
-    #             distinct=True
-    #         ),
-    #         total_completed_goals = Count(
-    #             'profile_goal', filter=Q(profile_goal__paid_amount=F('profile_goal__total_amount'))
-    #         )
-    #     ).get(user=self.request.user)
-
-    # def put(self, request, *args, **kwargs):
-    #     return self.update(request, *args, **kwargs)
-
 
 class OrderUpdateAPIView(UpdateAPIView):
     serializer_class = OrderUpdateSerializer
@@ -354,33 +330,59 @@ class FarmerPaymentListAPIView(ListAPIView):
                 existpaymentHistory = PaymentHistory.objects.filter(
                     farmer_account_info=account_info, date=datetime.today())
                 if existpaymentHistory:
-                    payment = existpaymentHistory[0]
-                    if payment.status == 'PAID':
-                        new_item_list = []
-                        for item_data in farmer_data['item_list']:
-                            if not payment.order_items.filter(id=item_data['product_id']).exists():
-                                new_item_list.append(item_data)
-                        if new_item_list:
-                            new_payment = PaymentHistory.objects.create(
-                                farmer=account_info.farmer,
-                                farmer_account_info=account_info,
-                                amount=farmer_data['total_amount'],
-                            )
-                            for item_data in new_item_list:
+                    for payment in existpaymentHistory:
+                        if payment.status == 'PAID':
+                            new_item_list = []
+                            for item_data in farmer_data['item_list']:
+                                if not payment.order_items.filter(id=item_data['product_id']).exists():
+                                    new_item_list.append(item_data)
+                            if new_item_list:
+                                final_item_list = []
+                                for item_data in new_item_list:
+                                    checkitemexit =PaymentHistory.objects.filter(order_items=item_data['product_id'],date=datetime.today())
+                                    if not checkitemexit:
+                                        final_item_list.append(item_data)
+                                
+                                if final_item_list:
+                                    new_payment = PaymentHistory.objects.create(
+                                        farmer=account_info.farmer,
+                                        farmer_account_info=account_info,
+                                        amount=0,
+                                    )
+                                    for item_data in final_item_list:
+                                        order_item = OrderItem.objects.get(
+                                            id=item_data['product_id'])
+                                        new_payment.order_items.add(order_item)
+                                        new_payment.amount += item_data['total_price']
+                                        new_payment.save()
+                                    farmer_payments.append(new_payment)
+                                        # print(item_data["total_price"])
+                                        # return
+                                        # new_payment = PaymentHistory.objects.create(
+                                        #     farmer=account_info.farmer,
+                                        #     farmer_account_info=account_info,
+                                        #     amount=farmer_data['farmer_id']['item_list']['total_price'],
+                                        # )
+                                        # for item_data in new_item_list:
+                                        #     order_item = OrderItem.objects.get(
+                                        #         id=item_data['product_id'])
+                                        #     new_payment.order_items.add(order_item)
+                                        # new_payment.save()
+                                        # farmer_payments.append(new_payment)
+                                else:
+                                    farmer_payments.append(payment)
+                            
+                        
+                        else:
+                            print(payment)        
+                            payment.order_items.clear()
+                            for item_data in farmer_data['item_list']:
                                 order_item = OrderItem.objects.get(
                                     id=item_data['product_id'])
-                                new_payment.order_items.add(order_item)
-                            new_payment.save()
-                            farmer_payments.append(new_payment)
-                        
-                    else:        
-                        payment.order_items.clear()
-                        for item_data in farmer_data['item_list']:
-                            order_item = OrderItem.objects.get(
-                                id=item_data['product_id'])
-                            payment.order_items.add(order_item)
-                        payment.amount = farmer_data['total_amount']
-                        payment.save()
+                                payment.order_items.add(order_item)
+                            payment.amount = farmer_data['total_amount']
+                            payment.save()
+                    
                 else:
                     payment = PaymentHistory.objects.create(
                         farmer=account_info.farmer,

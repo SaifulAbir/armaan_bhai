@@ -97,7 +97,7 @@ class Product(AbstractTimeStamp):
         return self.reviews.aggregate(Avg('rating'))
 
     def __str__(self):
-        return self.title
+        return self.title + ' - ' + str(self.possible_productions_date)
 
 
 

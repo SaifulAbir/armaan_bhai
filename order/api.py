@@ -331,20 +331,32 @@ class FarmerPaymentListAPIView(ListAPIView):
                     farmer_account_info=account_info, date=datetime.today())
                 if existpaymentHistory:
                     payment = existpaymentHistory[0]
-                    payment.order_items.clear()
-                    for item_data in farmer_data['item_list']:
-                        order_item = OrderItem.objects.get(
-                            id=item_data['product_id'])
-                        payment.order_items.add(order_item)
-                    payment.amount = farmer_data['total_amount']
-                    payment.save()
-                    # for item_data in farmer_data['item_list']:
-                    #     if not payment.order_items.filter(id=item_data['product_id']).exists():
-                    #         order_item = OrderItem.objects.get(
-                    #             id=item_data['product_id'])
-                    #         payment.order_items.add(order_item)
-                    # payment.amount = farmer_data['total_amount']
-                    # payment.save()
+                    if payment.status == 'PAID':
+                        new_item_list = []
+                        for item_data in farmer_data['item_list']:
+                            if not payment.order_items.filter(id=item_data['product_id']).exists():
+                                new_item_list.append(item_data)
+                        if new_item_list:
+                            new_payment = PaymentHistory.objects.create(
+                                farmer=account_info.farmer,
+                                farmer_account_info=account_info,
+                                amount=farmer_data['total_amount'],
+                            )
+                            for item_data in new_item_list:
+                                order_item = OrderItem.objects.get(
+                                    id=item_data['product_id'])
+                                new_payment.order_items.add(order_item)
+                            new_payment.save()
+                            farmer_payments.append(new_payment)
+                        
+                    else:        
+                        payment.order_items.clear()
+                        for item_data in farmer_data['item_list']:
+                            order_item = OrderItem.objects.get(
+                                id=item_data['product_id'])
+                            payment.order_items.add(order_item)
+                        payment.amount = farmer_data['total_amount']
+                        payment.save()
                 else:
                     payment = PaymentHistory.objects.create(
                         farmer=account_info.farmer,

@@ -284,21 +284,6 @@ class AdminOrdersListByPickupPointsListAPIView(ListAPIView):
         query = SubOrder.objects.filter(
             order_status='ON_PROCESS', order_item_suborder__is_qc_passed='PASS')
         return query
-        qc_passed_product = OrderItem.objects.filter(product__possible_productions_date=datetime.today(),
-                                                     is_qc_passed='PASS')
-        location = []
-        pickup_locations = qc_passed_product.values_list('pickup_location', flat=True).distinct()
-        pickup_location = qc_passed_product.first().pickup_location
-        print(pickup_location)
-        print(pickup_locations)
-        print(qc_passed_product)
-        # for loc in pickup_locations:
-        #     if loc in qc_passed_product:
-        #         location.append(loc)
-        #
-        #         print(location)
-        return qc_passed_product
-
 
 
 class FarmerPaymentListAPIView(ListAPIView):
@@ -363,8 +348,8 @@ class FarmerPaymentListAPIView(ListAPIView):
                                 new_payment.order_items.add(order_item)
                             new_payment.save()
                             farmer_payments.append(new_payment)
-
-                    else:
+                        
+                    else:        
                         payment.order_items.clear()
                         for item_data in farmer_data['item_list']:
                             order_item = OrderItem.objects.get(
@@ -398,13 +383,10 @@ class FarmerPaymentStatusUpdateAPIView(UpdateAPIView):
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
-        if instance.status == 'PAID':
-            instance.status = 'DUE'
+        newStatus = request.data.get('status')
+        if newStatus:
+            instance.status = newStatus
             instance.save()
-            return Response({"message": "Payment return to due"}, status=status.HTTP_200_OK)
-
+            return Response({'status': instance.status}, status=status.HTTP_200_OK)
         else:
-            instance.status = 'PAID'
-            instance.save()
-            return Response({"message": "Payment Paid Successfully"}, status=status.HTTP_200_OK)
-
+            return Response({'status': 'Status not provided'}, status=status.HTTP_400_BAD_REQUEST)

@@ -487,9 +487,11 @@ class AdminOrdersListByPickupPointsListSerializer(serializers.ModelSerializer):
         return serializer.data
 
     def get_is_qc_passed(self, obj):
-        query = OrderItem.objects.filter(Q(pickup_location=obj), Q(product__possible_productions_date=datetime.today()), Q(suborder__order_status='ON_TRANSIT'), Q(is_qc_passed='PASS'))
-        print("dev")
-        print(query)
+        query = OrderItem.objects.filter(Q(pickup_location=obj),
+                                         Q(product__possible_productions_date=datetime.today()),
+                                         Q(suborder__order_status='ON_TRANSIT'), Q(is_qc_passed='PASS'))
+        # print("dev")
+        # print(query)
         for i in query:
             is_qc_passed = i.is_qc_passed
             return is_qc_passed

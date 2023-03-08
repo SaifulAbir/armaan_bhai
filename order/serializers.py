@@ -416,7 +416,7 @@ class ProductItemSerializer(serializers.ModelSerializer):
     product_title = serializers.SerializerMethodField('get_product_title')
     class Meta:
         model = OrderItem
-        fields = ['id', 'product','product_title', 'quantity', 'unit_price', 'is_qc_passed']
+        fields = ['id', 'product','product_title', 'quantity', 'unit_price', 'is_qc_passed','payment_status']
     
     def get_product_title(self, obj):
         return obj.product.title
@@ -448,3 +448,28 @@ class FarmerPaymentListSerializer(serializers.ModelSerializer):
     def get_farmer(self, obj):
         serializer = UserSerializer(instance=obj.farmer, many=False)
         return serializer.data
+
+
+class OrderListOfQcPassedOrderSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField('get_user')
+    order_items = serializers.SerializerMethodField('get_order_items')
+    delivery_address = serializers.SerializerMethodField('get_delivery_address')
+
+
+    class Meta:
+        model = Order
+        fields = ['id', 'order_id','user', 'order_items', 'total_price', 'order_date', 'payment_status', 'payment_type', 'order_status', 'delivery_address', 'delivery_date', 'comment', 'is_qc_passed', 'pickup_request']
+
+    def get_user(self, obj):
+        serializer = UserSerializer(instance=obj.user, many=False)
+        return serializer.data
+    
+    def get_order_items(self, obj):
+        serializer = ProductItemSerializer(instance=obj.order_items, many=True)
+
+        return serializer.data
+    
+    def get_delivery_address(self, obj):
+        serializer = DeliveryAddressSerializer(instance=obj.delivery_address, many=False)
+        return serializer.data
+    

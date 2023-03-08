@@ -278,6 +278,12 @@ class OrderItem(AbstractTimeStamp):
         ('PASS', 'Pass'),
         ('FAIL', 'Fail'),
     ]
+    paymentStatus = [
+        ('NONE', 'None'),
+        ('DUE', 'Due'),
+        ('PAID', 'Paid')
+        
+    ]
 
     order = models.ForeignKey(
         Order, on_delete=models.CASCADE, related_name='order_item_order', blank=True, null=True)
@@ -296,6 +302,9 @@ class OrderItem(AbstractTimeStamp):
         PickupLocation, on_delete=models.CASCADE, null=True, blank=True, related_name='order_item_pickup_location')
     agent = models.ForeignKey(User, on_delete=models.CASCADE,
                               related_name='order_item_agent', null=True, blank=True)
+    payment_status = models.CharField(
+        max_length=20, null=False, blank=False, choices=paymentStatus, default='NONE')
+    
 
     @property
     def subtotal(self):

@@ -10,6 +10,7 @@ from django.db.models import Q
 from order.models import *
 from user.models import *
 from rest_framework import status
+from decimal import Decimal
 
 
 class DeliveryAddressCreateAPIView(CreateAPIView):
@@ -322,80 +323,86 @@ class FarmerPaymentListAPIView(ListAPIView):
                         ]
                     }
 
-            farmer_payments = []
-            for farmer_data in farmer_dict.values():
-                farmer_id = farmer_data['farmer_id']
-                farmer = User.objects.get(id=farmer_id)
-                account_info = FarmerAccountInfo.objects.get(farmer=farmer)
-                existpaymentHistory = PaymentHistory.objects.filter(
-                    farmer_account_info=account_info, date=datetime.today())
-                if existpaymentHistory:
-                    for payment in existpaymentHistory:
-                        if payment.status == 'PAID':
-                            new_item_list = []
-                            for item_data in farmer_data['item_list']:
-                                if not payment.order_items.filter(id=item_data['product_id']).exists():
-                                    new_item_list.append(item_data)
-                            if new_item_list:
-                                final_item_list = []
-                                for item_data in new_item_list:
-                                    checkitemexit =PaymentHistory.objects.filter(order_items=item_data['product_id'],date=datetime.today())
-                                    if not checkitemexit:
-                                        final_item_list.append(item_data)
-                                
-                                if final_item_list:
-                                    new_payment = PaymentHistory.objects.create(
-                                        farmer=account_info.farmer,
-                                        farmer_account_info=account_info,
-                                        amount=0,
-                                    )
-                                    for item_data in final_item_list:
-                                        order_item = OrderItem.objects.get(
-                                            id=item_data['product_id'])
-                                        new_payment.order_items.add(order_item)
-                                        new_payment.amount += item_data['total_price']
-                                        new_payment.save()
-                                    farmer_payments.append(new_payment)
-                                        # print(item_data["total_price"])
-                                        # return
-                                        # new_payment = PaymentHistory.objects.create(
-                                        #     farmer=account_info.farmer,
-                                        #     farmer_account_info=account_info,
-                                        #     amount=farmer_data['farmer_id']['item_list']['total_price'],
-                                        # )
-                                        # for item_data in new_item_list:
-                                        #     order_item = OrderItem.objects.get(
-                                        #         id=item_data['product_id'])
-                                        #     new_payment.order_items.add(order_item)
-                                        # new_payment.save()
-                                        # farmer_payments.append(new_payment)
-                                else:
-                                    farmer_payments.append(payment)
-                            
-                        
-                        else:
-                            print(payment)        
-                            payment.order_items.clear()
-                            for item_data in farmer_data['item_list']:
-                                order_item = OrderItem.objects.get(
-                                    id=item_data['product_id'])
-                                payment.order_items.add(order_item)
-                            payment.amount = farmer_data['total_amount']
-                            payment.save()
-                    
-                else:
-                    payment = PaymentHistory.objects.create(
-                        farmer=account_info.farmer,
-                        farmer_account_info=account_info,
-                        amount=farmer_data['total_amount'],
-                    )
-                    for item_data in farmer_data['item_list']:
-                        order_item = OrderItem.objects.get(
-                            id=item_data['product_id'])
-                        payment.order_items.add(order_item)
-                farmer_payments.append(payment)
 
-            return PaymentHistory.objects.filter(id__in=[p.id for p in farmer_payments])
+            for farmer in farmer_dict.values():
+                farmer_id = farmer['farmer_id']
+                farmerq = User.objects.get(id=farmer_id)
+                account_info = FarmerAccountInfo.objects.get(farmer=farmerq)
+
+                checkfarmerexist = PaymentHistory.objects.filter(
+                    farmer=farmer_id, date=datetime.today())
+                if checkfarmerexist:
+                    due_payment_history = PaymentHistory.objects.filter(
+                        farmer=farmerq, status='DUE', date=datetime.today())
+                    if due_payment_history:
+                        firstpayment = due_payment_history.first()
+                        noneitemlist = []
+                        for item in farmer["item_list"]:
+                            order_item1 = OrderItem.objects.get(
+                                id=item["product_id"])
+                            if order_item1.payment_status == 'NONE':
+                                noneitemlist.append(item)
+                        if noneitemlist:
+                            for item in noneitemlist:
+                                order_item = OrderItem.objects.get(
+                                    id=item["product_id"])
+                                firstpayment.order_items.add(order_item)
+                                firstpayment.amount += Decimal(
+                                    item["total_price"])
+                                firstpayment.save()
+                                order_item.payment_status = 'DUE'
+                                order_item.save()
+                        else:
+                            pass
+                    else:
+                        noneitemlist = []
+                        for item in farmer["item_list"]:
+                            order_item1 = OrderItem.objects.get(
+                                id=item["product_id"])
+
+                            if order_item1.payment_status == 'NONE':
+                                noneitemlist.append(item)
+                        if noneitemlist:
+                            payment_history = PaymentHistory.objects.create(
+                                farmer=farmerq,
+                                farmer_account_info=account_info,
+                                amount=0
+                            )
+                            for item in noneitemlist:
+                                order_item = OrderItem.objects.get(
+                                    id=item["product_id"])
+                                payment_history.order_items.add(order_item)
+                                payment_history.amount += Decimal(
+                                    item["total_price"])
+                                payment_history.save()
+                                order_item.payment_status = 'DUE'
+                                order_item.save()
+
+                else:
+                    noneitemlist = []
+                    for item in farmer["item_list"]:
+                        order_item1 = OrderItem.objects.get(
+                            id=item["product_id"])
+                        if order_item1.payment_status == 'NONE':
+                            noneitemlist.append(item)
+                    payment_history = PaymentHistory.objects.create(
+                        farmer=farmerq,
+                        farmer_account_info=account_info,
+                        amount=0,
+                    )
+                    if noneitemlist:
+                        for item in noneitemlist:
+                            order_item = OrderItem.objects.get(
+                                id=item["product_id"])
+                            payment_history.order_items.add(order_item)
+                            payment_history.amount += Decimal(
+                                item["total_price"])
+                            payment_history.save()
+                            order_item.payment_status = 'DUE'
+                            order_item.save()
+            payment_history_for_today = PaymentHistory.objects.filter(
+                date=datetime.today())
+            return payment_history_for_today
 
         except Exception as e:
             print(e)
@@ -412,9 +419,17 @@ class FarmerPaymentStatusUpdateAPIView(UpdateAPIView):
         newStatus = request.data.get('status')
         if newStatus:
             instance.status = newStatus
+            # update order items payment_status to PAID
+            if newStatus == 'PAID':
+                for order_item in instance.order_items.all():
+                    order_item.payment_status = 'PAID'
+                    order_item.save()
+            else:
+                for order_item in instance.order_items.all():
+                    order_item.payment_status = 'DUE'
+                    order_item.save()
             instance.save()
+            print(instance, 'instance.status')
             return Response({'status': instance.status}, status=status.HTTP_200_OK)
         else:
             return Response({'status': 'Status not provided'}, status=status.HTTP_400_BAD_REQUEST)
-
-        

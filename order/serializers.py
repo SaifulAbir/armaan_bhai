@@ -440,25 +440,59 @@ class PaymentDetailsUpdateSerializer(serializers.ModelSerializer):
         return instance
 
 
+class AdminOrderListByLocationSerializer(serializers.ModelSerializer):
+    product_unit_title = serializers.CharField(source='unit.title', read_only=True)
+    whole_quantity = serializers.SerializerMethodField()
+    class Meta:
+        model = Product
+        fields = ['id',
+                  'title',
+                  'whole_quantity',
+                  'product_unit_title',
+                  'possible_productions_date'
+                  ]
+    def get_whole_quantity(self, obj):
+        try:
+            return obj.whole_quantity
+        except:
+            return 0
+
+
 class AdminOrdersListByPickupPointsListSerializer(serializers.ModelSerializer):
-    order_items = serializers.SerializerMethodField('get_order_items')
-    farmer = serializers.SerializerMethodField('get_farmer')
+    products = serializers.SerializerMethodField('get_products')
+    # pickup_location = serializers.SerializerMethodField()
+    is_qc_passed = serializers.SerializerMethodField()
+    # farmer = serializers.SerializerMethodField('get_farmer')
 
     class Meta:
-        model = SubOrder
+        model = PickupLocation
         fields = [
-            'id', 'order_items', 'farmer',
-            'farmer_phone', 'order_status', 'order_id'
+            'id', 'address', 'is_qc_passed', 'products'
         ]
 
-    def get_farmer(self, obj):
-        serializer = UserSerializer(instance=obj.farmer, many=False)
+    # def get_farmer(self, obj):
+    #     serializer = UserSerializer(instance=obj.farmer, many=False)
+    #     return serializer.data
+
+    # def get_order_items(self, obj):
+    #     serializer = ProductItemSerializer(instance=obj, many=True)
+    #
+    #     return serializer.data
+    def get_products(self, obj):
+        query = Product.objects.filter(possible_productions_date=datetime.today()).annotate(
+            whole_quantity=Sum('order_item_product__quantity',
+                               filter=Q(
+                                   order_item_product__suborder__order_status='ON_TRANSIT')))
+        serializer = AdminOrderListByLocationSerializer(instance=query, many=True)
         return serializer.data
 
-    def get_order_items(self, obj):
-        serializer = ProductItemSerializer(instance=obj.order_items, many=True)
-
-        return serializer.data
+    def get_is_qc_passed(self, obj):
+        query = OrderItem.objects.filter(Q(pickup_location=obj), Q(product__possible_productions_date=datetime.today()), Q(suborder__order_status='ON_TRANSIT'), Q(is_qc_passed='PASS'))
+        print("dev")
+        print(query)
+        for i in query:
+            is_qc_passed = i.is_qc_passed
+            return is_qc_passed
 
 class ProductItemSerializer(serializers.ModelSerializer):
     product_title = serializers.SerializerMethodField('get_product_title')

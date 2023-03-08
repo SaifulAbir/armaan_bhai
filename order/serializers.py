@@ -442,6 +442,8 @@ class PaymentDetailsUpdateSerializer(serializers.ModelSerializer):
 
 class AdminOrderListByLocationSerializer(serializers.ModelSerializer):
     product_unit_title = serializers.CharField(source='unit.title', read_only=True)
+    product_seller_title = serializers.CharField(source='user.full_name', read_only=True)
+    product_seller_number = serializers.CharField(source='user.phone_number', read_only=True)
     whole_quantity = serializers.SerializerMethodField()
     class Meta:
         model = Product
@@ -449,7 +451,9 @@ class AdminOrderListByLocationSerializer(serializers.ModelSerializer):
                   'title',
                   'whole_quantity',
                   'product_unit_title',
-                  'possible_productions_date'
+                  'possible_productions_date',
+                  'product_seller_title',
+                  'product_seller_number'
                   ]
     def get_whole_quantity(self, obj):
         try:

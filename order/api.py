@@ -290,7 +290,7 @@ class AdminOrdersListByPickupPointsListAPIView(ListAPIView):
                 }
                 location_dict[location]["order_list"].append(order_dict)
 
-        print(location_dict)
+        # print(location_dict)
         return location_dict
 
 

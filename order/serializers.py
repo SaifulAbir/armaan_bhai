@@ -44,7 +44,6 @@ class ProductItemCheckoutSerializer(serializers.ModelSerializer):
         model = OrderItem
         fields = ['id',
                   'product',
-                  'product_title',
                   'product_obj',
                   ]
 

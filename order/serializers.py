@@ -11,12 +11,16 @@ from user.serializers import CustomerProfileDetailSerializer, DivisionSerializer
 from django.utils import timezone
 from django.db.models import Sum
 from django.db.models import Q
+from rest_framework.exceptions import ValidationError
 
 
 class DeliveryAddressSerializer(serializers.ModelSerializer):
+    district_name = serializers.CharField(source='district.name', read_only=True)
+    division_name = serializers.CharField(source='division.name', read_only=True)
+    upazilla_name = serializers.CharField(source='upazilla.name', read_only=True)
     class Meta:
         model = DeliveryAddress
-        fields = ['id', 'user', 'name', 'address', 'phone', 'email', 'district', 'division', 'upazilla']
+        fields = ['id', 'user', 'name', 'address', 'phone', 'email', 'district', 'district_name', 'division', 'division_name', 'upazilla', 'upazilla_name']
 
     def create(self, validated_data):
         address_instance = DeliveryAddress.objects.create(**validated_data, user=self.context['request'].user)
@@ -42,6 +46,7 @@ class ProductItemCheckoutSerializer(serializers.ModelSerializer):
         model = OrderItem
         fields = ['id',
                   'product',
+                  'product_title',
                   'product_obj',
                   'quantity',
                   'unit_price',
@@ -506,7 +511,7 @@ class ProductItemSerializer(serializers.ModelSerializer):
     product_title = serializers.SerializerMethodField('get_product_title')
     class Meta:
         model = OrderItem
-        fields = ['id', 'product','product_title', 'quantity', 'unit_price', 'is_qc_passed','payment_status']
+        fields = ['id', 'product','product_title', 'quantity', 'unit_price', 'total_price', 'is_qc_passed','payment_status']
     
     def get_product_title(self, obj):
         return obj.product.title
@@ -563,3 +568,36 @@ class OrderListOfQcPassedOrderSerializer(serializers.ModelSerializer):
         serializer = DeliveryAddressSerializer(instance=obj.delivery_address, many=False)
         return serializer.data
     
+
+class AdminOrderListSerializer(serializers.ModelSerializer):
+    delivery_location = serializers.SerializerMethodField('get_delivery_location')
+    order_items = serializers.SerializerMethodField('get_order_items')
+    class Meta:
+        model = Order
+        fields = ['id', 'order_id', 'delivery_location', 'delivery_date', 'order_items']
+
+    def get_delivery_location(self, obj):
+        delivery_address = DeliveryAddressSerializer(instance=obj.delivery_address, many=False)
+        return delivery_address.data
+
+    def get_order_items(self, obj):
+        try:
+            queryset = OrderItem.objects.filter(order=obj.id, is_qc_passed='PASS')
+            serializer = ProductItemSerializer(instance=queryset, many=True, context={
+                                                'request': self.context['request']})
+            return serializer.data
+        except:
+            return []
+        
+
+ORDER_CHOICES =(
+    ('ON_PROCESS', 'On Process'),
+    ('CANCELED', 'Canceled'),
+    ('ON_TRANSIT', 'On Transit'),
+    ('DELIVERED', 'Delivered'),
+)
+class OrderStatusSerializer(serializers.ModelSerializer):
+    order_status = serializers.ChoiceField(choices = ORDER_CHOICES, required=False)
+    class Meta:
+        model = Order
+        fields = ['id', 'order_status']

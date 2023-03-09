@@ -227,6 +227,7 @@ class PickupLocationQcPassedInfoUpdateAPIView(UpdateAPIView):
         query = User.objects.get(id=id)
         return query
 
+
 class OrderUpdateAPIView(UpdateAPIView):
     serializer_class = OrderUpdateSerializer
     lookup_field = 'id'
@@ -294,7 +295,6 @@ class AdminOrdersListByPickupPointsListAPIView(ListAPIView):
 
         # print(location_dict)
         return location_dict
-
 
 
 class FarmerPaymentListAPIView(ListAPIView):
@@ -443,3 +443,36 @@ class FarmerPaymentStatusUpdateAPIView(UpdateAPIView):
             return Response({'status': instance.status}, status=status.HTTP_200_OK)
         else:
             return Response({'status': 'Status not provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AdminOrderListOfQcPassedOrderAPIView(ListAPIView):
+    serializer_class = AdminOrderListSerializer
+
+    def get_queryset(self):
+        if self.request.user.is_admin == True:
+
+            request = self.request
+            today = request.GET.get('today')
+            this_week = request.GET.get('this_week')
+
+            queryset = Order.objects.filter(order_status='ON_TRANSIT')
+            if today:
+                today_date = datetime.today().date()
+                queryset = queryset.filter(Q(delivery_date__icontains=(today_date)))
+            if this_week:
+                today_date = datetime.today().date()
+                today = today_date.strftime("%d/%m/%Y")
+                dt = datetime.strptime(str(today), '%d/%m/%Y')
+                week_start = dt - (timedelta(days=dt.weekday()) + timedelta(days=2))
+                week_end = week_start + timedelta(days=6)
+                queryset = queryset.filter(Q(delivery_date__range=(week_start,week_end)))
+
+            return queryset
+        else:
+            raise ValidationError(
+                {"msg": 'You can not see Order list, because you are not an Admin!'})
+
+
+class AdminOrdertStatusUpdateAPIView(UpdateAPIView):
+    serializer_class = OrderStatusSerializer
+    queryset = Order.objects.all()

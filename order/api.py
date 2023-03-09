@@ -449,7 +449,7 @@ class AdminOrderListOfQcPassedOrderAPIView(ListAPIView):
     serializer_class = AdminOrderListSerializer
 
     def get_queryset(self):
-        if self.request.user.is_admin == True:
+        # if self.request.user.is_admin == True:
 
             request = self.request
             today = request.GET.get('today')
@@ -468,9 +468,9 @@ class AdminOrderListOfQcPassedOrderAPIView(ListAPIView):
                 queryset = queryset.filter(Q(delivery_date__range=(week_start,week_end)))
 
             return queryset
-        else:
-            raise ValidationError(
-                {"msg": 'You can not see Order list, because you are not an Admin!'})
+        # else:
+        #     raise ValidationError(
+        #         {"msg": 'You can not see Order list, because you are not an Admin!'})
 
 
 class AdminOrdertStatusUpdateAPIView(UpdateAPIView):

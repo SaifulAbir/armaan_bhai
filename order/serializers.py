@@ -511,7 +511,7 @@ class ProductItemSerializer(serializers.ModelSerializer):
     product_title = serializers.SerializerMethodField('get_product_title')
     class Meta:
         model = OrderItem
-        fields = ['id', 'product','product_title', 'quantity', 'unit_price', 'is_qc_passed','payment_status']
+        fields = ['id', 'product','product_title', 'quantity', 'unit_price', 'total_price', 'is_qc_passed','payment_status']
     
     def get_product_title(self, obj):
         return obj.product.title

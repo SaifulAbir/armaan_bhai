@@ -568,5 +568,5 @@ ORDER_CHOICES =(
 class OrderStatusSerializer(serializers.ModelSerializer):
     order_status = serializers.ChoiceField(choices = ORDER_CHOICES, required=False)
     class Meta:
-        model = Order
+        model = SubOrder
         fields = ['id', 'order_status']

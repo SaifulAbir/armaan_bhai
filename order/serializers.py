@@ -34,6 +34,8 @@ class DeliveryAddressListSerializer(serializers.ModelSerializer):
 
 
 class ProductItemCheckoutSerializer(serializers.ModelSerializer):
+    product_title = serializers.CharField(source='product.title', read_only=True)
+    possible_production_date = serializers.CharField(source='product.possible_productions_date', read_only=True)
     product_obj = ProductViewSerializer(source='product', read_only=True)
     pickup_location_title = serializers.CharField(source='pickup_location.address', read_only=True)
     class Meta:
@@ -45,8 +47,10 @@ class ProductItemCheckoutSerializer(serializers.ModelSerializer):
                   'unit_price',
                   'pickup_location',
                   'pickup_location_title',
-                  'is_qc_passed'
+                  'is_qc_passed',
+                  'possible_production_date'
                   ]
+        queryset = OrderItem.objects.filter(is_qc_passed='PASS')
 
 
 class CheckoutSerializer(serializers.ModelSerializer):
@@ -436,14 +440,65 @@ class PaymentDetailsUpdateSerializer(serializers.ModelSerializer):
         return instance
 
 
+class AdminOrderListByLocationSerializer(serializers.ModelSerializer):
+    product_unit_title = serializers.CharField(source='unit.title', read_only=True)
+    product_seller_title = serializers.CharField(source='user.full_name', read_only=True)
+    product_seller_number = serializers.CharField(source='user.phone_number', read_only=True)
+    whole_quantity = serializers.SerializerMethodField()
+    class Meta:
+        model = Product
+        fields = ['id',
+                  'title',
+                  'whole_quantity',
+                  'product_unit_title',
+                  'possible_productions_date',
+                  'product_seller_title',
+                  'product_seller_number'
+                  ]
+    def get_whole_quantity(self, obj):
+        try:
+            return obj.whole_quantity
+        except:
+            return 0
+
+
 class AdminOrdersListByPickupPointsListSerializer(serializers.ModelSerializer):
-    order_item_suborder = ProductItemCheckoutSerializer(many=True, read_only=True)
+    products = serializers.SerializerMethodField('get_products')
+    # pickup_location = serializers.SerializerMethodField()
+    is_qc_passed = serializers.SerializerMethodField()
+    # farmer = serializers.SerializerMethodField('get_farmer')
 
     class Meta:
-        model = SubOrder
+        model = PickupLocation
         fields = [
-            'id', 'order_item_suborder', 'user', 'farmer', 'order_status'
+            'id', 'address', 'is_qc_passed', 'products'
         ]
+
+    # def get_farmer(self, obj):
+    #     serializer = UserSerializer(instance=obj.farmer, many=False)
+    #     return serializer.data
+
+    # def get_order_items(self, obj):
+    #     serializer = ProductItemSerializer(instance=obj, many=True)
+    #
+    #     return serializer.data
+    def get_products(self, obj):
+        query = Product.objects.filter(possible_productions_date=datetime.today()).annotate(
+            whole_quantity=Sum('order_item_product__quantity',
+                               filter=Q(
+                                   order_item_product__suborder__order_status='ON_TRANSIT')))
+        serializer = AdminOrderListByLocationSerializer(instance=query, many=True)
+        return serializer.data
+
+    def get_is_qc_passed(self, obj):
+        query = OrderItem.objects.filter(Q(pickup_location=obj),
+                                         Q(product__possible_productions_date=datetime.today()),
+                                         Q(suborder__order_status='ON_TRANSIT'), Q(is_qc_passed='PASS'))
+        # print("dev")
+        # print(query)
+        for i in query:
+            is_qc_passed = i.is_qc_passed
+            return is_qc_passed
 
 class ProductItemSerializer(serializers.ModelSerializer):
     product_title = serializers.SerializerMethodField('get_product_title')
@@ -472,7 +527,7 @@ class FarmerPaymentListSerializer(serializers.ModelSerializer):
     def get_farmer_account_info(self, obj):
         serializer = PaymentDetailsSerializer(instance=obj.farmer_account_info, many=False)
         return serializer.data
-    
+
     def get_order_items(self, obj):
         serializer = ProductItemSerializer(instance=obj.order_items, many=True)
 

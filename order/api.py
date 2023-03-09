@@ -473,6 +473,6 @@ class AdminOrderListOfQcPassedOrderAPIView(ListAPIView):
         #         {"msg": 'You can not see Order list, because you are not an Admin!'})
 
 
-class AdminOrdertStatusUpdateAPIView(UpdateAPIView):
+class AdminOrderStatusUpdateAPIView(UpdateAPIView):
     serializer_class = OrderStatusSerializer
-    queryset = Order.objects.all()
+    queryset = SubOrder.objects.all()

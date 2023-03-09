@@ -45,6 +45,8 @@ class ProductItemCheckoutSerializer(serializers.ModelSerializer):
         fields = ['id',
                   'product',
                   'product_obj',
+                  'quantity',
+                  'unit_price'
                   ]
 
 

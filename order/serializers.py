@@ -329,13 +329,15 @@ class PickupLocationQcPassedInfoUpdateSerializer(serializers.ModelSerializer):
             OrderItem.objects.filter(product__user = instance.id, product__possible_productions_date = tomorrow).update(is_qc_passed=is_qc_passed)
 
         if Order.objects.filter(order_item_order__product__user=instance.id, order_item_order__product__possible_productions_date = tomorrow).exists():
-        #     Order.objects.filter(id=instance.order.id).update(is_qc_passed=is_qc_passed)
             if is_qc_passed == 'PASS':
                 Order.objects.filter(order_item_order__product__user=instance.id, order_item_order__product__possible_productions_date = tomorrow).update(order_status='ON_TRANSIT')
+            if is_qc_passed == 'FAIL':
+                Order.objects.filter(order_item_order__product__user=instance.id, order_item_order__product__possible_productions_date = tomorrow).update(order_status='CANCELED')
         if SubOrder.objects.filter(order_item_suborder__product__user=instance.id, order_item_suborder__product__possible_productions_date = tomorrow).exists():
-        #     SubOrder.objects.filter(id=instance.suborder.id).update(is_qc_passed=is_qc_passed)
             if is_qc_passed == 'PASS':
                 SubOrder.objects.filter(order_item_suborder__product__user=instance.id, order_item_suborder__product__possible_productions_date = tomorrow).update(order_status='ON_TRANSIT')
+            if is_qc_passed == 'FAIL':
+                Order.objects.filter(order_item_order__product__user=instance.id, order_item_order__product__possible_productions_date = tomorrow).update(order_status='CANCELED')
 
         return super().update(instance, validated_data)
 

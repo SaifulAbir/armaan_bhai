@@ -35,22 +35,14 @@ class DeliveryAddressListSerializer(serializers.ModelSerializer):
 
 class ProductItemCheckoutSerializer(serializers.ModelSerializer):
     product_title = serializers.CharField(source='product.title', read_only=True)
-    possible_production_date = serializers.CharField(source='product.possible_productions_date', read_only=True)
     product_obj = ProductViewSerializer(source='product', read_only=True)
-    pickup_location_title = serializers.CharField(source='pickup_location.address', read_only=True)
     class Meta:
         model = OrderItem
         fields = ['id',
                   'product',
                   'product_obj',
-                  'quantity',
-                  'unit_price',
-                  'pickup_location',
-                  'pickup_location_title',
-                  'is_qc_passed',
-                  'possible_production_date'
+                  'quantity'
                   ]
-        queryset = OrderItem.objects.filter(is_qc_passed='PASS')
 
 
 class CheckoutSerializer(serializers.ModelSerializer):

@@ -537,37 +537,13 @@ class FarmerPaymentListSerializer(serializers.ModelSerializer):
         return serializer.data
 
 
-class OrderListOfQcPassedOrderSerializer(serializers.ModelSerializer):
-    user = serializers.SerializerMethodField('get_user')
-    order_items = serializers.SerializerMethodField('get_order_items')
-    delivery_address = serializers.SerializerMethodField('get_delivery_address')
-
-
-    class Meta:
-        model = Order
-        fields = ['id', 'order_id','user', 'order_items', 'total_price', 'order_date', 'payment_status', 'payment_type', 'order_status', 'delivery_address', 'delivery_date', 'comment', 'is_qc_passed', 'pickup_request']
-
-    def get_user(self, obj):
-        serializer = UserSerializer(instance=obj.user, many=False)
-        return serializer.data
-    
-    def get_order_items(self, obj):
-        serializer = ProductItemSerializer(instance=obj.order_items, many=True)
-
-        return serializer.data
-    
-    def get_delivery_address(self, obj):
-        serializer = DeliveryAddressSerializer(instance=obj.delivery_address, many=False)
-        return serializer.data
-    
-
 class AdminOrderListSerializer(serializers.ModelSerializer):
     order_id = serializers.CharField(source='order.order_id', read_only=True)
     delivery_location = serializers.SerializerMethodField('get_delivery_location')
     order_items = serializers.SerializerMethodField('get_order_items')
     class Meta:
         model = SubOrder
-        fields = ['id', 'order_id', 'suborder_number', 'delivery_location', 'delivery_date', 'order_items']
+        fields = ['id', 'order_id', 'suborder_number', 'delivery_location', 'delivery_date', 'order_items', 'order_status']
 
     def get_delivery_location(self, obj):
         delivery_address = DeliveryAddressSerializer(instance=obj.delivery_address, many=False)

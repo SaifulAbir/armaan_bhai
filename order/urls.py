@@ -12,6 +12,7 @@ urlpatterns = [
     path('admin/order-update/<str:id>/', OrderUpdateAPIView.as_view()),
     path('customer-order-list/', CustomerOrderList.as_view()),
     path('customer-order-details/<str:id>/', CustomerOrderDetailsAPIView.as_view()),
+    path('admin-order-details/<str:id>/', AdminOrderDetailsAPIView.as_view()),
     path('agent-order-list/', AgentOrderList.as_view()),
     #path('admin/collect-order-list/', CollectOrderList.as_view()),
     # pickup location
@@ -36,4 +37,7 @@ urlpatterns = [
     path('admin/order_list_by_pickup_point/', AdminOrdersListByPickupPointsListAPIView.as_view()),
     path('farmer-payment-list/', FarmerPaymentListAPIView.as_view()),
     path('farmer-payment-status-update/<int:id>/', FarmerPaymentStatusUpdateAPIView.as_view()),
+
+    # order list of qc passed order
+    # path('admin/order-list-of-qc-passed-order/', OrderListOfQcPassedOrderAPIView.as_view()),
 ]

@@ -570,11 +570,12 @@ class OrderListOfQcPassedOrderSerializer(serializers.ModelSerializer):
     
 
 class AdminOrderListSerializer(serializers.ModelSerializer):
+    order_id = serializers.CharField(source='order.order_id', read_only=True)
     delivery_location = serializers.SerializerMethodField('get_delivery_location')
     order_items = serializers.SerializerMethodField('get_order_items')
     class Meta:
-        model = Order
-        fields = ['id', 'order_id', 'delivery_location', 'delivery_date', 'order_items']
+        model = SubOrder
+        fields = ['id', 'order_id', 'suborder_number', 'delivery_location', 'delivery_date', 'order_items']
 
     def get_delivery_location(self, obj):
         delivery_address = DeliveryAddressSerializer(instance=obj.delivery_address, many=False)
@@ -582,7 +583,7 @@ class AdminOrderListSerializer(serializers.ModelSerializer):
 
     def get_order_items(self, obj):
         try:
-            queryset = OrderItem.objects.filter(order=obj.id, is_qc_passed='PASS')
+            queryset = OrderItem.objects.filter(suborder=obj.id, is_qc_passed='PASS')
             serializer = ProductItemSerializer(instance=queryset, many=True, context={
                                                 'request': self.context['request']})
             return serializer.data

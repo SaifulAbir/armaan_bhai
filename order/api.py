@@ -192,12 +192,13 @@ class AgentPickupLocationUpdateAPIView(UpdateAPIView):
 
 class AgentSetPickupLocationOnOrderListAPIView(ListAPIView):
     serializer_class = AgentOrderListForSetupPickupLocationSerializer
+    # pagination_class = CustomPagination
 
     def get_queryset(self):
         user = self.request.user
         if self.request.user.user_type == "AGENT":
             tomorrow = datetime.today() + timedelta(days=1)
-            queryset = User.objects.filter(agent_user_id=user.id, user_type="FARMER").exclude(~Q(product_seller__possible_productions_date=tomorrow)).order_by()
+            queryset = User.objects.filter(agent_user_id=user.id, user_type="FARMER").exclude(~Q(product_seller__possible_productions_date=tomorrow)).order_by('id')
         else:
             queryset = None
         return queryset

@@ -38,7 +38,7 @@ class DeliveryAddressListSerializer(serializers.ModelSerializer):
 
 
 class ProductItemCheckoutSerializer(serializers.ModelSerializer):
-    product_title = serializers.CharField(source='product.title', read_only=True)
+    # product_title = serializers.CharField(source='product.title', read_only=True)
     possible_production_date = serializers.CharField(source='product.possible_productions_date', read_only=True)
     product_obj = ProductViewSerializer(source='product', read_only=True)
     pickup_location_title = serializers.CharField(source='pickup_location.address', read_only=True)

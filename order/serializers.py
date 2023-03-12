@@ -466,41 +466,18 @@ class AdminOrderListByLocationSerializer(serializers.ModelSerializer):
 
 class AdminOrdersListByPickupPointsListSerializer(serializers.ModelSerializer):
     products = serializers.SerializerMethodField('get_products')
-    # pickup_location = serializers.SerializerMethodField()
-    is_qc_passed = serializers.SerializerMethodField()
-    # farmer = serializers.SerializerMethodField('get_farmer')
 
     class Meta:
         model = PickupLocation
         fields = [
-            'id', 'address', 'is_qc_passed', 'products'
+            'id', 'address', 'products'
         ]
 
-    # def get_farmer(self, obj):
-    #     serializer = UserSerializer(instance=obj.farmer, many=False)
-    #     return serializer.data
-
-    # def get_order_items(self, obj):
-    #     serializer = ProductItemSerializer(instance=obj, many=True)
-    #
-    #     return serializer.data
     def get_products(self, obj):
-        query = Product.objects.filter(possible_productions_date=datetime.today()).annotate(
-            whole_quantity=Sum('order_item_product__quantity',
-                               filter=Q(
-                                   order_item_product__suborder__order_status='ON_TRANSIT')))
+        today = datetime.today()
+        query = Product.objects.filter(Q(possible_productions_date=today), Q(order_item_product__pickup_location=obj), Q(order_item_product__is_qc_passed='PASS')).annotate(whole_quantity=Sum('order_item_product__quantity',  filter=Q(order_item_product__pickup_location=obj, order_item_product__is_qc_passed='PASS')))
         serializer = AdminOrderListByLocationSerializer(instance=query, many=True)
         return serializer.data
-
-    def get_is_qc_passed(self, obj):
-        query = OrderItem.objects.filter(Q(pickup_location=obj),
-                                         Q(product__possible_productions_date=datetime.today()),
-                                         Q(suborder__order_status='ON_TRANSIT'), Q(is_qc_passed='PASS'))
-        # print("dev")
-        # print(query)
-        for i in query:
-            is_qc_passed = i.is_qc_passed
-            return is_qc_passed
 
 class ProductItemSerializer(serializers.ModelSerializer):
     product_title = serializers.SerializerMethodField('get_product_title')

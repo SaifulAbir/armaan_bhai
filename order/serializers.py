@@ -113,6 +113,9 @@ class CheckoutSerializer(serializers.ModelSerializer):
                 quantity = order_item['quantity']
                 unit_price = order_item['unit_price']
                 total_price = float(unit_price) * float(quantity)
+                if int(quantity) > product.quantity:
+                    raise ValidationError("Ordered quantity is greater than inventory")
+
                 if suborder_instance_count == 0:
                     if payment_type == 'PG':
                         suborder_obj = SubOrder.objects.create(order=order_instance, user=self.context['request'].user, product_count=1,

@@ -272,29 +272,39 @@ class AdminOrdersListByPickupPointsListAPIView(ListAPIView):
     serializer_class = AdminOrdersListByPickupPointsListSerializer
 
     def get_queryset(self):
-        order_items = OrderItem.objects.filter(
-            is_qc_passed='PASS',
-            product__possible_productions_date=datetime.today()
-        )
-        order_item_locations = set([order_item.pickup_location for order_item in order_items])
-        location_dict = {}
-        for location in order_item_locations:
-            all_order_items = OrderItem.objects.filter(
-                is_qc_passed='PASS',
-                product__possible_productions_date=datetime.today(),
-                pickup_location=location
-            )
-            location_dict[location] = {"order_list": []}  # initialize dictionary with an empty order_list
-            for order_item in all_order_items:
-                order_dict = {
-                    "title": order_item.product.title,
-                    "quantity": order_item.quantity,
-                    # add any other information you want to include
-                }
-                location_dict[location]["order_list"].append(order_dict)
+        # user = self.request.user
+        # if self.request.user.user_type == "AGENT":
+        # tomorrow = datetime.today()
+        # queryset = User.objects.filter(agent_user_id=user.id, user_type="FARMER").exclude(~Q(product_seller__possible_productions_date=tomorrow)).order_by('id')
+        queryset = PickupLocation.objects.filter(status=True)
+        # else:
+        #     queryset = None
+        return queryset
 
-        # print(location_dict)
-        return location_dict
+    # def get_queryset(self):
+    #     order_items = OrderItem.objects.filter(
+    #         is_qc_passed='PASS',
+    #         product__possible_productions_date=datetime.today()
+    #     )
+    #     order_item_locations = set([order_item.pickup_location for order_item in order_items])
+    #     location_dict = {}
+    #     for location in order_item_locations:
+    #         all_order_items = OrderItem.objects.filter(
+    #             is_qc_passed='PASS',
+    #             product__possible_productions_date=datetime.today(),
+    #             pickup_location=location
+    #         )
+    #         location_dict[location] = {"order_list": []}  # initialize dictionary with an empty order_list
+    #         for order_item in all_order_items:
+    #             order_dict = {
+    #                 "title": order_item.product.title,
+    #                 "quantity": order_item.quantity,
+    #                 # add any other information you want to include
+    #             }
+    #             location_dict[location]["order_list"].append(order_dict)
+
+    #     # print(location_dict)
+    #     return location_dict
 
 
 class FarmerPaymentListAPIView(ListAPIView):

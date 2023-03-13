@@ -254,9 +254,10 @@ class CustomerOrderListSerializer(serializers.ModelSerializer):
     payment_status_value = serializers.CharField(
         source='get_payment_status_display', read_only=True
     )
+    order_number = serializers.CharField(source='order.order_id')
     class Meta:
         model = SubOrder
-        fields = ['id', 'user', 'order', 'suborder_number', 'order_date', 'delivery_date', 'order_status', 'order_status_value', 'order_item_suborder', 'delivery_address', 'payment_type',
+        fields = ['id', 'user', 'order_number', 'suborder_number', 'order_date', 'delivery_date', 'order_status', 'order_status_value', 'order_item_suborder', 'delivery_address', 'payment_type',
         'coupon_discount_amount', 'total_price', 'payment_status_value']
 
 

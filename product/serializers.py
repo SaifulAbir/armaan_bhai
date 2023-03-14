@@ -191,6 +191,7 @@ class ProductViewSerializer(serializers.ModelSerializer):
             'price_per_unit',
             'full_description',
             'quantity',
+            'total_quantity',
             'user',
             'possible_productions_date',
             'possible_delivery_date',

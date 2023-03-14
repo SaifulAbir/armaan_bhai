@@ -401,7 +401,7 @@ class AgentOrderListForSetupPickupLocationSerializer(serializers.ModelSerializer
 
     def get_products(self, obj):
         tomorrow = datetime.today() + timedelta(days=1)
-        query = Product.objects.filter(user = obj, possible_productions_date=tomorrow).annotate(whole_quantity=Sum('order_item_product__quantity', filter=Q(order_item_product__suborder__order_status='ON_PROCESS') | Q(order_item_product__suborder__order_status='ON_TRANSIT')))
+        query = Product.objects.filter(Q(user = obj), Q(possible_productions_date=tomorrow), Q(order_item_product__isnull=False) ).annotate(whole_quantity=Sum('order_item_product__quantity', filter=Q(order_item_product__suborder__order_status='ON_PROCESS') | Q(order_item_product__suborder__order_status='ON_TRANSIT')))
         serializer = AgentMukamLocationSetupDataSerializer(instance=query, many=True)
         return serializer.data
 

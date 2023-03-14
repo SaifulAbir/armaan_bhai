@@ -43,7 +43,7 @@ class AgentUpdateAPIView(UpdateAPIView):
 
 class FarmerCreateApi(CreateAPIView):
     queryset = User.objects.all()
-    serializer_class = UserRegSerializer
+    serializer_class = FarmerCreateSerializer
 
 
 class CreateCustomerAPI(CreateAPIView):

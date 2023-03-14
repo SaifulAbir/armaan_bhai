@@ -447,7 +447,7 @@ class AdminOrderListOfQcPassedOrderAPIView(ListAPIView):
             queryset = SubOrder.objects.filter(order_status='ON_TRANSIT')
             if today:
                 today_date = datetime.today().date()
-                queryset = queryset.filter(Q(delivery_date__icontains=today_date))
+                queryset = queryset.filter(Q(delivery_date__date=today_date))
             if this_week:
                 today_date = datetime.today().date()
                 today = today_date.strftime("%d/%m/%Y")

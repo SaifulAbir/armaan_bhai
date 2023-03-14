@@ -448,6 +448,8 @@ class AdminOrderListByLocationSerializer(serializers.ModelSerializer):
     product_seller_title = serializers.CharField(source='user.full_name', read_only=True)
     product_seller_number = serializers.CharField(source='user.phone_number', read_only=True)
     whole_quantity = serializers.SerializerMethodField()
+    agent_name = serializers.SerializerMethodField()
+    agent_phone_number = serializers.SerializerMethodField()
     class Meta:
         model = Product
         fields = ['id',
@@ -456,13 +458,31 @@ class AdminOrderListByLocationSerializer(serializers.ModelSerializer):
                   'product_unit_title',
                   'possible_productions_date',
                   'product_seller_title',
-                  'product_seller_number'
+                  'product_seller_number',
+                  'agent_name',
+                  'agent_phone_number'
                   ]
     def get_whole_quantity(self, obj):
         try:
             return obj.whole_quantity
         except:
             return 0
+
+    def get_agent_name(self, obj):
+        agent_user_id = obj.user.agent_user_id
+        if agent_user_id:
+            agent_user = User.objects.get(id=agent_user_id)
+            return agent_user.full_name
+        else:
+            return None
+
+    def get_agent_phone_number(self, obj):
+        agent_user_id = obj.user.agent_user_id
+        if agent_user_id:
+            agent_user = User.objects.get(id=agent_user_id)
+            return agent_user.phone_number
+        else:
+            return None
 
 
 class AdminOrdersListByPickupPointsListSerializer(serializers.ModelSerializer):

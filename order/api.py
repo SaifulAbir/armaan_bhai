@@ -198,7 +198,9 @@ class AgentSetPickupLocationOnOrderListAPIView(ListAPIView):
         user = self.request.user
         if self.request.user.user_type == "AGENT":
             tomorrow = datetime.today() + timedelta(days=1)
-            queryset = User.objects.filter(Q(agent_user_id=user.id), Q(user_type="FARMER"), Q(product_seller__order_item_product__isnull=False)).exclude(~Q(product_seller__possible_productions_date=tomorrow)).order_by('id').distinct()
+            # queryset = User.objects.filter(Q(agent_user_id=user.id), Q(user_type="FARMER"), Q(product_seller__order_item_product__isnull=False)).exclude(~Q(product_seller__possible_productions_date=tomorrow)).order_by('id').distinct()
+
+            queryset = User.objects.filter(Q(agent_user_id=user.id), Q(user_type="FARMER"), Q(product_seller__order_item_product__isnull=False), Q(product_seller__possible_productions_date=tomorrow)).order_by('id').distinct()
         else:
             queryset = None
         return queryset

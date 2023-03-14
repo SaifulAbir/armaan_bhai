@@ -71,6 +71,68 @@ class UserRegSerializer(serializers.ModelSerializer):
         return user
 
 
+class FarmerCreateSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(
+        write_only=True,
+        required=True,
+        style={'input_type': 'password', 'placeholder': 'Password'}
+    )
+    phone_number = serializers.CharField(required=True, validators=[UniqueValidator(queryset=User.objects.all())])
+
+    class Meta:
+        model = User
+        fields = ['full_name', 'gender', 'organization_name', 'address', 'division', 'district', 'upazilla',
+                  'password', 'village', 'postcode', 'phone_number', 'terms_and_conditions', 'image', 'user_type',
+                  'username']
+        extra_kwargs = {"full_name": {"required": True},
+                        "gender": {"required": True},
+                        "division": {"required": True},
+                        "district": {"required": True},
+                        "upazilla": {"required": True},
+                        "village": {"required": False},
+                        "address": {"required": True},
+                        "postcode": {"required": False},
+                        "terms_and_conditions": {"required": True},
+                        "image": {"required": False},
+                        "user_type": {"required": True},
+                        "phone_number": {"required": True},
+                        'username': {'read_only': True}
+                        }
+
+    def create(self, validated_data):
+        if validated_data["user_type"] == 'FARMER' and not self.context['request'].user.is_authenticated:
+            raise serializers.ValidationError("Only Agent is Possible")
+
+        user = super().create(validated_data)
+        user.set_password(validated_data['password'])
+        user.is_active = True
+        user.username = UserIDManager().generate_user_id()
+        if user.user_type == 'FARMER' and self.context['request'].user.is_authenticated:
+            user.agent_user_id = self.context['request'].user.id
+
+        user.save()
+        # email_list = validated_data['email']
+        # subject = "Account Verification"
+        # code = user.verification_id
+        # current_host = get_current_host(self.context.get("request"))
+        # if current_host == 'https://sandbox.doneeapp.com/':
+        #     current_host = "https://mvp.doneeapp.com/"
+        # else:
+        #     current_host = "https://doneeapp.com/"
+        # verification_link = '{}verifyuser/id={}'.format(current_host, code)
+        # html_message = render_to_string('verification_email.html', {'verification_link':verification_link })
+        #
+        # send_mail(
+        #     subject=subject,
+        #     message=None,
+        #     from_email=settings.EMAIL_HOST_USER,
+        #     recipient_list=[email_list],
+        #     html_message=html_message
+        # )
+
+        return user
+
+
 class CreateCustomerSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(required=True, validators=[UniqueValidator(queryset=User.objects.filter(is_active=True))])
     otp = serializers.SerializerMethodField()

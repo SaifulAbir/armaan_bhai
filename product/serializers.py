@@ -190,6 +190,7 @@ class ProductViewSerializer(serializers.ModelSerializer):
             'product_images',
             'thumbnail',
             'price_per_unit',
+            'sell_price_per_unit',
             'full_description',
             'quantity',
             'total_quantity',

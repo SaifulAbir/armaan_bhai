@@ -198,7 +198,7 @@ class AgentSetPickupLocationOnOrderListAPIView(ListAPIView):
         user = self.request.user
         if self.request.user.user_type == "AGENT":
             tomorrow = datetime.today() + timedelta(days=1)
-            queryset = User.objects.filter(Q(agent_user_id=user.id), Q(user_type="FARMER"), Q(product_seller__order_item_product__isnull=False)).exclude(~Q(product_seller__possible_productions_date=tomorrow)).order_by('id').distinct()
+            queryset = User.objects.filter(Q(agent_user_id=user.id), Q(user_type="FARMER"), Q(product_seller__order_item_product__isnull=False)).order_by('id').distinct()
         else:
             queryset = None
         return queryset
@@ -272,7 +272,8 @@ class AdminOrdersListByPickupPointsListAPIView(ListAPIView):
     serializer_class = AdminOrdersListByPickupPointsListSerializer
 
     def get_queryset(self):
-       pickup_points = PickupLocation.objects.filter(status=True)
+       today = datetime.today()
+       pickup_points = PickupLocation.objects.filter(Q(status=True), Q(order_item_pickup_location__product__possible_productions_date=today))
        location = []
        for pickup_point in pickup_points:
            order = OrderItem.objects.filter(pickup_location=pickup_point)

@@ -409,6 +409,7 @@ class FarmerPaymentListAPIView(ListAPIView):
 
 
 class FarmerPaymentStatusUpdateAPIView(UpdateAPIView):
+    serializer_class = FarmerPaymentStatusUpdateSerializer
     queryset = PaymentHistory.objects.all()
     lookup_field = 'id'
     lookup_url_kwarg = 'id'

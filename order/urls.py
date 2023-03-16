@@ -41,4 +41,7 @@ urlpatterns = [
     # order list of qc passed order
     path('admin/order-list-of-qc-passed-order/', AdminOrderListOfQcPassedOrderAPIView.as_view()),
     path('admin/order-status-update/<int:pk>/', AdminOrderStatusUpdateAPIView.as_view()),
+
+    path('farmer-info-list/', FarmerInfoListAPIView.as_view()),
+    path('district-info-list/', DistrictInfoListAPIView.as_view()),
 ]

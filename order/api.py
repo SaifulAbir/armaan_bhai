@@ -141,6 +141,8 @@ class AgentOrderList(ListAPIView):
         if deliver_start_date and deliver_end_date:
             queryset = queryset.filter(Q(delivery_date__range=(deliver_start_date,deliver_end_date)))
         if order_start_date and order_end_date:
+            oed = datetime.strptime(str(order_end_date), '%Y-%m-%d')
+            order_end_date = oed + timedelta(days=1)
             queryset = queryset.filter(Q(created_at__range=(order_start_date,order_end_date)))
         if farmer:
             queryset = queryset.filter(Q(order_item_suborder__product__user__id=farmer))

@@ -118,6 +118,15 @@ class AgentOrderList(ListAPIView):
     def get_queryset(self):
         tomorrow = datetime.today() + timedelta(days=1)
         deliver_to_mukam = self.request.GET.get('deliver_to_mukam')
+        deliver_start_date = self.request.GET.get('deliver_start_date')
+        deliver_end_date = self.request.GET.get('deliver_end_date')
+        order_start_date = self.request.GET.get('order_start_date')
+        order_end_date = self.request.GET.get('order_end_date')
+        farmer = self.request.GET.get('farmer')
+        order_status = self.request.GET.get('order_status')
+        district = self.request.GET.get('district')
+
+
         if self.request.user.user_type == "AGENT":
             queryset = SubOrder.objects.filter(
                 order_item_suborder__product__user__agent_user_id=self.request.user.id).order_by('-created_at')
@@ -129,6 +138,18 @@ class AgentOrderList(ListAPIView):
         if deliver_to_mukam == "true":
             queryset = queryset.filter(
                 delivery_date__date=tomorrow, is_qc_passed=True)
+        if deliver_start_date and deliver_end_date:
+            queryset = queryset.filter(Q(delivery_date__range=(deliver_start_date,deliver_end_date)))
+        if order_start_date and order_end_date:
+            oed = datetime.strptime(str(order_end_date), '%Y-%m-%d')
+            order_end_date = oed + timedelta(days=1)
+            queryset = queryset.filter(Q(created_at__range=(order_start_date,order_end_date)))
+        if farmer:
+            queryset = queryset.filter(Q(order_item_suborder__product__user__id=farmer))
+        if order_status:
+            queryset = queryset.filter(Q(order_status=order_status))
+        if district:
+            queryset = queryset.filter(Q(user__district__id=district))
         return queryset
 
 #
@@ -466,3 +487,31 @@ class AdminOrderListOfQcPassedOrderAPIView(ListAPIView):
 class AdminOrderStatusUpdateAPIView(UpdateAPIView):
     serializer_class = OrderStatusSerializer
     queryset = SubOrder.objects.all()
+
+
+class FarmerInfoListAPIView(ListAPIView):
+    serializer_class = FarmerInfoListSerializer
+
+    def get_queryset(self):
+        if self.request.user.user_type == "ADMIN":
+            queryset = User.objects.filter(user_type='FARMER')
+        if self.request.user.user_type == "AGENT":
+            queryset = User.objects.filter(user_type='FARMER', agent_user_id=self.request.user.id)
+        if queryset:
+            return queryset
+        else:
+            return []
+        
+class DistrictInfoListAPIView(ListAPIView):
+    serializer_class = DistrictSerializer
+
+    def get_queryset(self):
+        if self.request.user.user_type == "ADMIN":
+            queryset = District.objects.all()
+        if self.request.user.user_type == "AGENT":
+            # queryset = District.objects.filter(division__division_user__id=self.request.user.id)
+            queryset = District.objects.all()
+        if queryset:
+            return queryset
+        else:
+            return []

@@ -587,3 +587,9 @@ class OrderStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = SubOrder
         fields = ['id', 'order_status']
+
+
+class FarmerInfoListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'full_name','phone_number']

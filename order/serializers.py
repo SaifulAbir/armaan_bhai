@@ -5,7 +5,7 @@ from order.models import DeliveryAddress, OrderItem, Order, CouponStat, Coupon, 
     FarmerAccountInfo, SubOrder, PaymentHistory
 from product.models import Inventory, Product
 from product.serializers import ProductViewSerializer
-from user.models import User
+from user.models import User, AgentFarmer
 from datetime import datetime, timedelta
 from user.serializers import CustomerProfileDetailSerializer, DivisionSerializer, DistrictSerializer, UpazillaSerializer
 from django.utils import timezone
@@ -519,10 +519,11 @@ class FarmerPaymentListSerializer(serializers.ModelSerializer):
     farmer_account_info = serializers.SerializerMethodField('get_farmer_account_info')
     order_items = serializers.SerializerMethodField('get_order_items')
     farmer = serializers.SerializerMethodField('get_farmer')
+    agent_name = serializers.SerializerMethodField('get_agent_name')
 
     class Meta:
         model = PaymentHistory
-        fields = ['id','farmer', 'farmer_account_info', 'order_items', 'amount', 'status', 'date']
+        fields = ['id','farmer', 'farmer_account_info', 'order_items', 'amount', 'status', 'date', 'agent_name']
 
     def get_farmer_account_info(self, obj):
         serializer = PaymentDetailsSerializer(instance=obj.farmer_account_info, many=False)
@@ -536,6 +537,21 @@ class FarmerPaymentListSerializer(serializers.ModelSerializer):
     def get_farmer(self, obj):
         serializer = UserSerializer(instance=obj.farmer, many=False)
         return serializer.data
+
+    def get_agent_name(self, obj):
+        agent_user_id = obj.farmer.id
+        print(agent_user_id)
+        if agent_user_id:
+            agent_user = AgentFarmer.objects.get(farmer=agent_user_id)
+            return agent_user.agent.full_name
+        else:
+            return None
+
+class FarmerPaymentStatusUpdateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = PaymentHistory
+        fields = ['status']
 
 
 class AdminOrderListSerializer(serializers.ModelSerializer):

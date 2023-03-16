@@ -519,10 +519,11 @@ class FarmerPaymentListSerializer(serializers.ModelSerializer):
     farmer_account_info = serializers.SerializerMethodField('get_farmer_account_info')
     order_items = serializers.SerializerMethodField('get_order_items')
     farmer = serializers.SerializerMethodField('get_farmer')
+    agent_name = serializers.SerializerMethodField('get_agent_name')
 
     class Meta:
         model = PaymentHistory
-        fields = ['id','farmer', 'farmer_account_info', 'order_items', 'amount', 'status', 'date']
+        fields = ['id','farmer', 'farmer_account_info', 'order_items', 'amount', 'status', 'date', 'agent_name']
 
     def get_farmer_account_info(self, obj):
         serializer = PaymentDetailsSerializer(instance=obj.farmer_account_info, many=False)
@@ -536,6 +537,14 @@ class FarmerPaymentListSerializer(serializers.ModelSerializer):
     def get_farmer(self, obj):
         serializer = UserSerializer(instance=obj.farmer, many=False)
         return serializer.data
+
+    def get_agent_name(self, obj):
+        agent_user_id = obj.user.agent_user_id
+        if agent_user_id:
+            agent_user = User.objects.get(id=agent_user_id)
+            return agent_user.full_name
+        else:
+            return None
 
 
 class AdminOrderListSerializer(serializers.ModelSerializer):

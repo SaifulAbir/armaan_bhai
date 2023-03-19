@@ -1,4 +1,6 @@
 import datetime
+from django.utils import timezone
+from datetime import date
 
 from django.db.models import Sum
 from rest_framework.exceptions import ValidationError
@@ -8,7 +10,7 @@ from rest_framework.response import Response
 
 from home.models import TotalVisit
 from home.serializers import CategoryListSerializer
-from order.models import Order
+from order.models import Order, PaymentHistory
 from product.models import Category, Product
 from product.serializers import ProductListSerializer
 from user.models import User, District, Upazilla
@@ -148,11 +150,42 @@ class AdminDashboardDataAPIView(APIView):
             else:
                 total_unpublished_product = 0
 
+            # agent total sale amount
+            if PaymentHistory.objects.filter(farmer__agent_user_id=self.request.user.id, status='PAID').exists():
+                agent_total_sale = PaymentHistory.objects.filter(farmer__agent_user_id=self.request.user.id,
+                                                                        status='PAID').aggregate(
+                                                                        agent_total_sale_amount=Sum('amount'))
+            else:
+                agent_total_sale = 0
+
+            # agent total sale amount this month
+            current_month = timezone.now().month
+            start_of_month = date(year=timezone.now().year, month=current_month, day=1)
+            end_of_month = start_of_month.replace(day=28) + datetime.timedelta(days=4)
+            end_of_month = end_of_month - datetime.timedelta(days=end_of_month.day)
+
+            if PaymentHistory.objects.filter(
+                    farmer__agent_user_id=self.request.user.id,
+                    status='PAID',
+                    date__gte=start_of_month,
+                    date__lte=end_of_month,
+            ).exists():
+                agent_total_sale_this_month = PaymentHistory.objects.filter(
+                    farmer__agent_user_id=self.request.user.id,
+                    status='PAID',
+                    date__gte=start_of_month,
+                    date__lte=end_of_month,
+                ).aggregate(agent_total_sale_amount=Sum('amount'))
+
+
+
             return Response({
                 "total_farmer": total_farmer,
                 "total_delivered_order": total_delivered_order,
                 "total_published_product": total_published_product,
                 "total_unpublished_product": total_unpublished_product,
+                "agent_total_sale_amount": agent_total_sale if agent_total_sale else 0,
+                "agent_total_sale_this_month": agent_total_sale_this_month if agent_total_sale_this_month else 0,
                 "total_sales_this_month": total_sales if total_sales else 0,
                 "top_selling_products": top_selling_products.data if top_selling_products else "No Product"
             })

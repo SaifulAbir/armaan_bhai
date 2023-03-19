@@ -149,7 +149,7 @@ class AgentOrderList(ListAPIView):
         if order_status:
             queryset = queryset.filter(Q(order_status=order_status))
         if district:
-            queryset = queryset.filter(Q(user__district__id=district))
+            queryset = queryset.filter(Q(delivery_address__district__id=district))
         return queryset
 
 #
@@ -501,7 +501,8 @@ class FarmerInfoListAPIView(ListAPIView):
             return queryset
         else:
             return []
-        
+
+
 class DistrictInfoListAPIView(ListAPIView):
     serializer_class = DistrictSerializer
 
@@ -511,6 +512,18 @@ class DistrictInfoListAPIView(ListAPIView):
         if self.request.user.user_type == "AGENT":
             # queryset = District.objects.filter(division__division_user__id=self.request.user.id)
             queryset = District.objects.all()
+        if queryset:
+            return queryset
+        else:
+            return []
+
+
+class AdminSalesOfAnAgentAPIView(ListAPIView):
+    serializer_class = SalesOfAnAgentSerializer
+    # serializer_class = SalesOfAnAgentSerializer(context={'request': request})
+
+    def get_queryset(self):
+        queryset = User.objects.filter(user_type='AGENT')
         if queryset:
             return queryset
         else:

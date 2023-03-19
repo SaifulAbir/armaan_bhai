@@ -520,7 +520,6 @@ class DistrictInfoListAPIView(ListAPIView):
 
 class AdminSalesOfAnAgentAPIView(ListAPIView):
     serializer_class = SalesOfAnAgentSerializer
-    # serializer_class = SalesOfAnAgentSerializer(context={'request': request})
 
     def get_queryset(self):
         queryset = User.objects.filter(user_type='AGENT')

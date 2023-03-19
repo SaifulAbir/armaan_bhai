@@ -594,6 +594,17 @@ class OrderStatusSerializer(serializers.ModelSerializer):
         model = SubOrder
         fields = ['id', 'order_status']
 
+    def update(self, instance, validated_data):
+        try:
+            order_status = validated_data.pop('order_status')
+        except:
+            order_status = ''
+        if order_status == 'DELIVERED':
+            validated_data.update({"payment_status": 'PAID', "order_status": order_status})
+        else:
+            validated_data.update({"order_status": order_status})
+        return super().update(instance, validated_data)
+
 
 class FarmerInfoListSerializer(serializers.ModelSerializer):
     class Meta:
@@ -640,13 +651,14 @@ class SalesOfAnAgentSerializer(serializers.ModelSerializer):
             dt = datetime.strptime(str(today), '%d/%m/%Y')
             week_start = dt - (timedelta(days=dt.weekday()) + timedelta(days=2))
             week_end = week_start + timedelta(days=6)
-            total_amount = PaymentHistory.objects.filter(farmer__agent_user_id=obj.id, status='PAID', date__range=(week_start,week_end)).aggregate(total=Sum('amount'))['total'] or 0
+            total_amount = OrderItem.objects.filter(product__user__agent_user_id=obj.id, suborder__payment_status='PAID', created_at__range=(week_start,week_end)).aggregate(total=Sum('total_price'))['total'] or 0
         elif this_month:
             current_year = date.today().year
             current_month = date.today().month
             first = first_date_of_current_month(current_year, current_month)
             last = last_date_of_month(current_year, current_month)
-            total_amount = PaymentHistory.objects.filter(farmer__agent_user_id=obj.id, status='PAID', date__range=(first,last)).aggregate(total=Sum('amount'))['total'] or 0
+            total_amount = OrderItem.objects.filter(product__user__agent_user_id=obj.id, suborder__payment_status='PAID', created_at__range=(first,last)).aggregate(total=Sum('total_price'))['total'] or 0
         else:
-            total_amount = PaymentHistory.objects.filter(farmer__agent_user_id=obj.id, status='PAID').aggregate(total=Sum('amount'))['total'] or 0
+            total_amount = OrderItem.objects.filter(product__user__agent_user_id=obj.id, suborder__payment_status='PAID').aggregate(total=Sum('total_price'))['total'] or 0
+
         return total_amount

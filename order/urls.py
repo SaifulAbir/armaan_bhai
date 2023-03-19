@@ -44,4 +44,6 @@ urlpatterns = [
 
     path('farmer-info-list/', FarmerInfoListAPIView.as_view()),
     path('district-info-list/', DistrictInfoListAPIView.as_view()),
+
+    path('admin/sales-of-an-agent/', AdminSalesOfAnAgentAPIView.as_view()),
 ]

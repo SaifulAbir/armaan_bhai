@@ -10,7 +10,7 @@ from rest_framework.response import Response
 
 from home.models import TotalVisit
 from home.serializers import CategoryListSerializer
-from order.models import Order, PaymentHistory
+from order.models import Order, PaymentHistory, OrderItem
 from product.models import Category, Product
 from product.serializers import ProductListSerializer
 from user.models import User, District, Upazilla
@@ -95,6 +95,16 @@ class AdminDashboardDataAPIView(APIView):
             else:
                 total_sales = None
 
+            # total sale amount
+            total_sale_amount = OrderItem.objects.filter(suborder__payment_status='PAID').aggregate(total=Sum('total_price'))['total'] or 0
+
+            # total sale amount this month
+            current_month = timezone.now().month
+            start_of_month = date(year=timezone.now().year, month=current_month, day=1)
+            end_of_month = start_of_month.replace(day=28) + datetime.timedelta(days=4)
+            end_of_month = end_of_month - datetime.timedelta(days=end_of_month.day)
+            total_sale_amount_of_this_month = OrderItem.objects.filter(suborder__payment_status='PAID', created_at__gte=start_of_month, created_at__lte=end_of_month).aggregate(total=Sum('total_price'))['total'] or 0
+
 
             return Response({
                 "total_farmer": total_farmer,
@@ -105,7 +115,9 @@ class AdminDashboardDataAPIView(APIView):
                 "total_product": total_product,
                 "total_sales_this_month": total_sales if total_sales else 0,
                 "admin_list": admin_list.data if admin_list else "No Admin",
-                "top_selling_products": top_selling_products.data if top_selling_products else "No Product"
+                "top_selling_products": top_selling_products.data if top_selling_products else "No Product",
+                "total_sale_amount": total_sale_amount,
+                "total_sale_amount_of_this_month": total_sale_amount_of_this_month
             })
         elif self.request.user.user_type == "AGENT":
             # Top selling products
@@ -150,33 +162,15 @@ class AdminDashboardDataAPIView(APIView):
             else:
                 total_unpublished_product = 0
 
-            # agent total sale amount
-            if PaymentHistory.objects.filter(farmer__agent_user_id=self.request.user.id, status='PAID').exists():
-                agent_total_sale = PaymentHistory.objects.filter(farmer__agent_user_id=self.request.user.id,
-                                                                        status='PAID').aggregate(
-                                                                        agent_total_sale_amount=Sum('amount'))
-            else:
-                agent_total_sale = 0
+            # total sale amount
+            total_sale_amount = OrderItem.objects.filter(product__user__agent_user_id=self.request.user.id,suborder__payment_status='PAID').aggregate(total=Sum('total_price'))['total'] or 0
 
-            # agent total sale amount this month
+            # total sale amount this month
             current_month = timezone.now().month
             start_of_month = date(year=timezone.now().year, month=current_month, day=1)
             end_of_month = start_of_month.replace(day=28) + datetime.timedelta(days=4)
             end_of_month = end_of_month - datetime.timedelta(days=end_of_month.day)
-
-            if PaymentHistory.objects.filter(
-                    farmer__agent_user_id=self.request.user.id,
-                    status='PAID',
-                    date__gte=start_of_month,
-                    date__lte=end_of_month,
-            ).exists():
-                agent_total_sale_this_month = PaymentHistory.objects.filter(
-                    farmer__agent_user_id=self.request.user.id,
-                    status='PAID',
-                    date__gte=start_of_month,
-                    date__lte=end_of_month,
-                ).aggregate(agent_total_sale_amount=Sum('amount'))
-
+            total_sale_amount_of_this_month = OrderItem.objects.filter(product__user__agent_user_id=self.request.user.id, suborder__payment_status='PAID', created_at__gte=start_of_month, created_at__lte=end_of_month).aggregate(total=Sum('total_price'))['total'] or 0
 
 
             return Response({
@@ -184,10 +178,10 @@ class AdminDashboardDataAPIView(APIView):
                 "total_delivered_order": total_delivered_order,
                 "total_published_product": total_published_product,
                 "total_unpublished_product": total_unpublished_product,
-                "agent_total_sale_amount": agent_total_sale if agent_total_sale else 0,
-                "agent_total_sale_this_month": agent_total_sale_this_month if agent_total_sale_this_month else 0,
                 "total_sales_this_month": total_sales if total_sales else 0,
-                "top_selling_products": top_selling_products.data if top_selling_products else "No Product"
+                "top_selling_products": top_selling_products.data if top_selling_products else "No Product",
+                "total_sale_amount": total_sale_amount,
+                "total_sale_amount_of_this_month": total_sale_amount_of_this_month
             })
         elif self.request.user.user_type == "FARMER":
             # Top selling products
@@ -226,12 +220,24 @@ class AdminDashboardDataAPIView(APIView):
             else:
                 total_unpublished_product = 0
 
+            # total sale amount
+            total_sale_amount = OrderItem.objects.filter(product__user=self.request.user.id,suborder__payment_status='PAID').aggregate(total=Sum('total_price'))['total'] or 0
+
+            # total sale amount this month
+            current_month = timezone.now().month
+            start_of_month = date(year=timezone.now().year, month=current_month, day=1)
+            end_of_month = start_of_month.replace(day=28) + datetime.timedelta(days=4)
+            end_of_month = end_of_month - datetime.timedelta(days=end_of_month.day)
+            total_sale_amount_of_this_month = OrderItem.objects.filter(product__user=self.request.user.id, suborder__payment_status='PAID', created_at__gte=start_of_month, created_at__lte=end_of_month).aggregate(total=Sum('total_price'))['total'] or 0
+
             return Response({
                 "total_delivered_order": total_delivered_order,
                 "total_published_product": total_published_product,
                 "total_unpublished_product": total_unpublished_product,
                 "total_sales_this_month": total_sales if total_sales else 0,
-                "top_selling_products": top_selling_products.data if top_selling_products else "No Product"
+                "top_selling_products": top_selling_products.data if top_selling_products else "No Product",
+                "total_sale_amount": total_sale_amount,
+                "total_sale_amount_of_this_month": total_sale_amount_of_this_month
             })
         else:
             raise ValidationError({"msg": 'You can not see dashboard data, because you are not authorized!'})

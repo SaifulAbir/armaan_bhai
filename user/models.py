@@ -66,6 +66,8 @@ class User(AbstractUser):
     user_type = models.CharField(max_length=50, choices=USER_CHOICES, null=True, blank=True)
     is_admin = models.BooleanField(default=False)
     agent_user_id = models.CharField(max_length=50, null=True, blank=True)
+    nid_front = models.ImageField(upload_to='images/user', null=True, blank=True)
+    nid_back = models.ImageField(upload_to='images/user', null=True, blank=True)
     first_name = None
     last_name = None
 

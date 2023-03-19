@@ -168,14 +168,15 @@ class AdminDashboardDataAPIView(APIView):
                     farmer__agent_user_id=self.request.user.id,
                     status='PAID',
                     date__gte=start_of_month,
-                    date__lte=end_of_month,
-            ).exists():
+                    date__lte=end_of_month,).exists():
                 agent_total_sale_this_month = PaymentHistory.objects.filter(
                     farmer__agent_user_id=self.request.user.id,
                     status='PAID',
                     date__gte=start_of_month,
                     date__lte=end_of_month,
                 ).aggregate(agent_total_sale_amount=Sum('amount'))
+            else:
+                agent_total_sale_this_month = 0
 
 
 

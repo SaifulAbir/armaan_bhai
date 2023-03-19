@@ -12,6 +12,7 @@ from django.utils import timezone
 from django.db.models import Sum
 from django.db.models import Q
 from rest_framework.exceptions import ValidationError
+from datetime import date
 
 
 class DeliveryAddressSerializer(serializers.ModelSerializer):
@@ -391,6 +392,7 @@ class AgentMukamLocationSetupDataSerializer(serializers.ModelSerializer):
         except:
             return 0
 
+
 class AgentOrderListForSetupPickupLocationSerializer(serializers.ModelSerializer):
     products = serializers.SerializerMethodField('get_products')
     pickup_location = serializers.SerializerMethodField()
@@ -420,12 +422,14 @@ class AgentOrderListForSetupPickupLocationSerializer(serializers.ModelSerializer
             is_qc_passed = i.is_qc_passed
             return is_qc_passed
 
+
 class PaymentDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model = FarmerAccountInfo
         fields = ['id', 'account_type', 'account_number', 'account_holder', 'bank_name', 'brunch_name', 'Mobile_number',
                   'farmer', 'created_by']
-        
+
+
 class PaymentDetailsUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = FarmerAccountInfo
@@ -505,15 +509,16 @@ class ProductItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderItem
         fields = ['id', 'product','product_title', 'quantity', 'unit_price', 'total_price', 'is_qc_passed','payment_status']
-    
+
     def get_product_title(self, obj):
         return obj.product.title
-    
+
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['full_name','gender','address','phone_number' ]
+
 
 class FarmerPaymentListSerializer(serializers.ModelSerializer):
     farmer_account_info = serializers.SerializerMethodField('get_farmer_account_info')
@@ -547,6 +552,7 @@ class FarmerPaymentListSerializer(serializers.ModelSerializer):
         else:
             return None
 
+
 class FarmerPaymentStatusUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -574,7 +580,7 @@ class AdminOrderListSerializer(serializers.ModelSerializer):
             return serializer.data
         except:
             return []
-        
+
 
 ORDER_CHOICES =(
     ('ON_PROCESS', 'On Process'),
@@ -587,3 +593,60 @@ class OrderStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = SubOrder
         fields = ['id', 'order_status']
+
+
+class FarmerInfoListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'full_name','phone_number']
+
+
+def first_date_of_current_month(year, month):
+        first_date = datetime(year, month, 1)
+        return first_date.strftime("%Y-%m-%d")
+
+
+def last_date_of_month(year, month):
+    if month == 12:
+        last_date = datetime(year, month, 31)
+    else:
+        last_date = datetime(year, month + 1, 1) + timedelta(days=-1)
+    return last_date.strftime("%Y-%m-%d")
+
+class SalesOfAnAgentSerializer(serializers.ModelSerializer):
+    farmers = serializers.SerializerMethodField('get_farmer')
+    total_sale = serializers.SerializerMethodField('get_total_sale')
+    class Meta:
+        model = User
+        fields = ['id', 'full_name', 'phone_number', 'farmers', 'total_sale']
+
+    def get_farmer(self, obj):
+        try:
+            queryset = User.objects.filter(agent_user_id=obj.id)
+            serializer = FarmerInfoListSerializer(instance=queryset, many=True, context={
+                                                'request': self.context['request']})
+            return serializer.data
+        except:
+            return []
+
+    def get_total_sale(self, obj):
+        request = self.context.get("request")
+        this_week = request.GET.get('this_week')
+        this_month = request.GET.get('this_month')
+
+        if this_week:
+            today_date = datetime.today().date()
+            today = today_date.strftime("%d/%m/%Y")
+            dt = datetime.strptime(str(today), '%d/%m/%Y')
+            week_start = dt - (timedelta(days=dt.weekday()) + timedelta(days=2))
+            week_end = week_start + timedelta(days=6)
+            total_amount = PaymentHistory.objects.filter(farmer__agent_user_id=obj.id, status='PAID', date__range=(week_start,week_end)).aggregate(total=Sum('amount'))['total'] or 0
+        elif this_month:
+            current_year = date.today().year
+            current_month = date.today().month
+            first = first_date_of_current_month(current_year, current_month)
+            last = last_date_of_month(current_year, current_month)
+            total_amount = PaymentHistory.objects.filter(farmer__agent_user_id=obj.id, status='PAID', date__range=(first,last)).aggregate(total=Sum('amount'))['total'] or 0
+        else:
+            total_amount = PaymentHistory.objects.filter(farmer__agent_user_id=obj.id, status='PAID').aggregate(total=Sum('amount'))['total'] or 0
+        return total_amount

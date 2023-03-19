@@ -17,7 +17,7 @@ class Division(AbstractTimeStamp):
 
 
 class District(AbstractTimeStamp):
-    division = models.ForeignKey(Division, on_delete=models.PROTECT, null=True)
+    division = models.ForeignKey(Division, on_delete=models.PROTECT, null=True, related_name='division_district')
     name = models.CharField(max_length=255)
 
     class Meta:
@@ -55,7 +55,7 @@ class User(AbstractUser):
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, null=True)
     organization_name = models.CharField(max_length=255, null=True, blank=True)
     address = models.TextField(null=True)
-    division = models.ForeignKey(Division, on_delete=models.PROTECT, null=True)
+    division = models.ForeignKey(Division, on_delete=models.PROTECT, null=True, related_name='division_user')
     district = models.ForeignKey(District, on_delete=models.PROTECT, null=True)
     upazilla = models.ForeignKey(Upazilla, on_delete=models.PROTECT, null=True)
     village = models.CharField(max_length=255, null=True, blank=True)

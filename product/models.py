@@ -168,7 +168,7 @@ class ProductionStep(AbstractTimeStamp):
         db_table = 'production_step'
 
     def __str__(self):
-        return self.step
+        return self.step + ' ' + str(self.id)
 
 
 def pre_save_product(sender, instance, *args, **kwargs):

@@ -101,8 +101,6 @@ class OTPVerifyAPIVIEW(CreateAPIView):
             return Response(
                 {"user_id": user.id, "image": user.image.url if user.image else None, "user_type": user.user_type,
                  "full_name": user.full_name, "phone_number": user.phone_number, 'details': 'Verified',
-                 "nid_front": user.nid_front.url if user.nid_front else None,
-                 "nid_back": user.nid_back.url if user.nid_back else None,
                  "access_token": str(token.access_token) if token else None,
                  "refresh_token": str(token) if token else None}, status=status.HTTP_200_OK)
         else:

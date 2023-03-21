@@ -83,7 +83,7 @@ class FarmerCreateSerializer(serializers.ModelSerializer):
         model = User
         fields = ['full_name', 'gender', 'organization_name', 'address', 'division', 'district', 'upazilla',
                   'password', 'village', 'postcode', 'phone_number', 'terms_and_conditions', 'image', 'user_type',
-                  'username']
+                  'username', 'nid_front', 'nid_back']
         extra_kwargs = {"full_name": {"required": True},
                         "gender": {"required": True},
                         "division": {"required": True},
@@ -96,7 +96,9 @@ class FarmerCreateSerializer(serializers.ModelSerializer):
                         "image": {"required": False},
                         "user_type": {"required": True},
                         "phone_number": {"required": True},
-                        'username': {'read_only': True}
+                        'username': {'read_only': True},
+                        "nid_front": {"required": False},
+                        "nid_back": {"required": False}
                         }
 
     def create(self, validated_data):

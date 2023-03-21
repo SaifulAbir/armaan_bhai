@@ -2,9 +2,21 @@ from rest_framework import serializers
 from product.models import Product, Category, SubCategory, Units, Inventory, ProductImage, ProductionStep
 from user.models import User, Division, District, Upazilla
 from user.serializers import FarmerListSerializer
+from rest_framework.exceptions import ValidationError
 
 
 class ProductionStepSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = ProductionStep
+        fields = ['id',
+                  'step',
+                  'image',
+                  'step_date',
+                  ]
+
+class ProductionStepSerializerForProductUpdate(serializers.ModelSerializer):
+    image = serializers.FileField(required=False)
 
     class Meta:
         model = ProductionStep
@@ -203,11 +215,14 @@ class ProductViewSerializer(serializers.ModelSerializer):
 
 
 class ProductUpdateSerializer(serializers.ModelSerializer):
+    title = serializers.CharField(required=False)
+    full_description = serializers.CharField(required=False)
     new_product_images = serializers.ListField(
         child=serializers.FileField(), write_only=True, required=False)
     deleted_product_images = serializers.ListField(
         child=serializers.IntegerField(), write_only=True, required=False)
-    production_steps = ProductionStepSerializer(many=True, required=True)
+    # production_steps = ProductionStepSerializer(many=True, required=False)
+    production_steps = ProductionStepSerializerForProductUpdate(many=True, required=False)
     product_images = ProductImageSerializer(many=True, read_only=True)
 
     class Meta:
@@ -281,11 +296,14 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
             for step in production_steps:
                 try:
                     production_steps = ProductionStep.objects.get(product=instance, step=step['step'])
-                    production_steps.image = step['image']
-                    production_steps.step_date = step['step_date']
+                    if step.get("image") is not None:
+                        production_steps.image = step['image']
+                    if step.get("step_date") is not None:
+                        production_steps.step_date = step['step_date']
                     production_steps.save()
                 except ProductionStep.DoesNotExist:
-                    ProductionStep.objects.create(product=instance, step=step['step'], image=step['image'], step_date=step['step_date'])
+                    raise ValidationError("Something went wrong of product step update.")
+                #     ProductionStep.objects.create(product=instance, step=step['step'], image=step['image'], step_date=step['step_date'])
         return super().update(instance, validated_data)
 
 

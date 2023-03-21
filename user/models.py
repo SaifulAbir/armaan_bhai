@@ -19,6 +19,7 @@ class Division(AbstractTimeStamp):
 class District(AbstractTimeStamp):
     division = models.ForeignKey(Division, on_delete=models.PROTECT, null=True, related_name='division_district')
     name = models.CharField(max_length=255)
+    english_name = models.CharField(max_length=255)
 
     class Meta:
         db_table = 'districts'

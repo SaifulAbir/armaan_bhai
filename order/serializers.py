@@ -545,10 +545,10 @@ class FarmerPaymentListSerializer(serializers.ModelSerializer):
 
     def get_agent_name(self, obj):
         agent_user_id = obj.farmer.id
-        print(agent_user_id)
         if agent_user_id:
-            agent_user = AgentFarmer.objects.get(farmer=agent_user_id)
-            return agent_user.agent.full_name
+            farmer_obj = User.objects.get(id=agent_user_id)
+            agent_user = User.objects.get(id=farmer_obj.agent_user_id)
+            return agent_user.full_name
         else:
             return None
 

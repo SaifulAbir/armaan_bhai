@@ -3,6 +3,8 @@ from product.models import Product, Category, SubCategory, Units, Inventory, Pro
 from user.models import User, Division, District, Upazilla
 from user.serializers import FarmerListSerializer
 from rest_framework.exceptions import ValidationError
+from django.db.models import Sum
+
 
 
 class ProductionStepSerializer(serializers.ModelSerializer):
@@ -304,6 +306,7 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
         # product inventory
         try:
             quantity = validated_data["quantity"]
+            print(quantity)
         except:
             quantity = None
 
@@ -311,8 +314,9 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
             last_inventory = Inventory.objects.filter(product=instance).last()
             initial_quantity = quantity - last_inventory.current_quantity
             Inventory.objects.create(initial_quantity=initial_quantity, current_quantity=quantity, product=instance)
-            total_quantity = Inventory.objects.filter(product=instance).aggregate(total_quantity=sum('initial_quantity'))
-            validated_data.update({"total_quantity": total_quantity})
+            total_quantity = Inventory.objects.filter(product=instance).aggregate(total_quantity=Sum('initial_quantity'))
+            validated_data.update({'total_quantity': total_quantity['total_quantity']})
+           
 
         # new product_images
         if new_product_images:

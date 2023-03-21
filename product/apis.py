@@ -158,3 +158,13 @@ class UnitListAPIView(ListAPIView):
     def get_queryset(self):
         queryset = Units.objects.filter(is_active=True)
         return queryset
+
+
+class CustomerBestSellingProductListAPI(ListAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = BestSellingProductListSerializer
+
+    def get_queryset(self):
+        queryset = Product.objects.filter(status='PUBLISH', ).order_by('-sell_count')
+
+        return queryset

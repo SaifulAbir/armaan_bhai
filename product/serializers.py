@@ -152,6 +152,18 @@ class ProductCreateSerializer(serializers.ModelSerializer):
         return product_instance
 
 
+class RelatedProductInfo(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = [
+            'id',
+            'title',
+            'category',
+            'sub_category',
+            'thumbnail'
+        ]
+
+
 class ProductListSerializer(serializers.ModelSerializer):
     production_steps = ProductionStepSerializer(many=True, read_only=True)
     product_images = ProductImageSerializer(many=True, read_only=True)
@@ -159,6 +171,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     category = CategoryListSerializer(many=False, read_only=True)
     sub_category = SubCategoryListSerializer(many=False, read_only=True)
     unit = UnitListSerializer(many=False, read_only=True)
+    related_products = serializers.SerializerMethodField('get_related_products')
 
     class Meta:
         model = Product
@@ -182,8 +195,18 @@ class ProductListSerializer(serializers.ModelSerializer):
             'sell_price_per_unit',
             'status',
             'sell_count',
-            'created_at'
+            'created_at',
+            'related_products'
         ]
+
+    def get_related_products(self, obj):
+        try:
+            queryset = Product.objects.filter(
+                sub_category=obj.sub_category.id, status='PUBLISH', quantity__gt = 0)
+            serializer = RelatedProductInfo(instance=queryset, many=True, context={'request': self.context['request']})
+            return serializer.data
+        except:
+            return []
 
 
 class ProductViewSerializer(serializers.ModelSerializer):
@@ -191,6 +214,7 @@ class ProductViewSerializer(serializers.ModelSerializer):
     product_images = ProductImageSerializer(many=True, read_only=True)
     user = FarmerListSerializer(many=False, read_only=True)
     category_title = serializers.CharField(source="category.title", read_only=True)
+    related_products = serializers.SerializerMethodField('get_related_products')
 
     class Meta:
         model = Product
@@ -212,8 +236,18 @@ class ProductViewSerializer(serializers.ModelSerializer):
             'user',
             'possible_productions_date',
             'possible_delivery_date',
-            'production_steps'
+            'production_steps',
+            'related_products'
         ]
+
+    def get_related_products(self, obj):
+        try:
+            queryset = Product.objects.filter(
+                sub_category=obj.sub_category.id, status='PUBLISH', quantity__gt = 0)
+            serializer = RelatedProductInfo(instance=queryset, many=True, context={'request': self.context['request']})
+            return serializer.data
+        except:
+            return []
 
 
 class ProductUpdateSerializer(serializers.ModelSerializer):
@@ -322,6 +356,19 @@ class PublishProductSerializer(serializers.ModelSerializer):
         ]
 
 
+class BestSellingProductListSerializer(serializers.ModelSerializer):
 
+    class Meta:
+        model = Product
+        fields = [
+            'id',
+            'thumbnail',
+            'thumbnail',
+            'price_per_unit',
+            'sell_price_per_unit',
+            'quantity',
+            'unit',
+            'sell_count'
+        ]
 
 

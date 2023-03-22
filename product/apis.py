@@ -24,6 +24,10 @@ class CustomerProductListAPI(ListAPIView):
         category = request.GET.get('category_id')
         sub_category = request.GET.get('sub_category_id')
         status = request.GET.get('status')
+        district = request.GET.get('district')
+        price = request.GET.get('price')
+        delivery_start_date = request.GET.get('delivery_start_date')
+        delivery_end_date = request.GET.get('delivery_end_date')
 
         queryset = Product.objects.filter(status="PUBLISH").order_by('-created_at')
 
@@ -40,6 +44,15 @@ class CustomerProductListAPI(ListAPIView):
 
         if status:
             queryset = queryset.filter(status=status)
+
+        if district:
+            queryset = queryset.filter(user__district=district)
+
+        if price:
+            queryset = queryset.filter(sell_price_per_unit__range=(0,price))
+
+        if delivery_start_date and delivery_end_date:
+            queryset = queryset.filter(possible_delivery_date__range=(delivery_start_date,delivery_end_date))
 
         return queryset
 

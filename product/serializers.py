@@ -363,7 +363,8 @@ class BestSellingProductListSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id',
-            'thumbnail',
+            'title',
+            'slug',
             'thumbnail',
             'price_per_unit',
             'sell_price_per_unit',

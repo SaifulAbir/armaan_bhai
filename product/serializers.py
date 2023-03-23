@@ -2,9 +2,23 @@ from rest_framework import serializers
 from product.models import Product, Category, SubCategory, Units, Inventory, ProductImage, ProductionStep
 from user.models import User, Division, District, Upazilla
 from user.serializers import FarmerListSerializer
+from rest_framework.exceptions import ValidationError
+from django.db.models import Sum
+
 
 
 class ProductionStepSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = ProductionStep
+        fields = ['id',
+                  'step',
+                  'image',
+                  'step_date',
+                  ]
+
+class ProductionStepSerializerForProductUpdate(serializers.ModelSerializer):
+    image = serializers.FileField(required=False)
 
     class Meta:
         model = ProductionStep
@@ -138,6 +152,19 @@ class ProductCreateSerializer(serializers.ModelSerializer):
         return product_instance
 
 
+class RelatedProductInfo(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = [
+            'id',
+            'title',
+            'slug',
+            'category',
+            'sub_category',
+            'thumbnail'
+        ]
+
+
 class ProductListSerializer(serializers.ModelSerializer):
     production_steps = ProductionStepSerializer(many=True, read_only=True)
     product_images = ProductImageSerializer(many=True, read_only=True)
@@ -145,6 +172,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     category = CategoryListSerializer(many=False, read_only=True)
     sub_category = SubCategoryListSerializer(many=False, read_only=True)
     unit = UnitListSerializer(many=False, read_only=True)
+    related_products = serializers.SerializerMethodField('get_related_products')
 
     class Meta:
         model = Product
@@ -168,8 +196,18 @@ class ProductListSerializer(serializers.ModelSerializer):
             'sell_price_per_unit',
             'status',
             'sell_count',
-            'created_at'
+            'created_at',
+            'related_products'
         ]
+
+    def get_related_products(self, obj):
+        try:
+            queryset = Product.objects.filter(
+                sub_category=obj.sub_category.id, status='PUBLISH', quantity__gt = 0)
+            serializer = RelatedProductInfo(instance=queryset, many=True, context={'request': self.context['request']})
+            return serializer.data
+        except:
+            return []
 
 
 class ProductViewSerializer(serializers.ModelSerializer):
@@ -177,6 +215,7 @@ class ProductViewSerializer(serializers.ModelSerializer):
     product_images = ProductImageSerializer(many=True, read_only=True)
     user = FarmerListSerializer(many=False, read_only=True)
     category_title = serializers.CharField(source="category.title", read_only=True)
+    related_products = serializers.SerializerMethodField('get_related_products')
 
     class Meta:
         model = Product
@@ -198,16 +237,29 @@ class ProductViewSerializer(serializers.ModelSerializer):
             'user',
             'possible_productions_date',
             'possible_delivery_date',
-            'production_steps'
+            'production_steps',
+            'related_products'
         ]
+
+    def get_related_products(self, obj):
+        try:
+            queryset = Product.objects.filter(
+                sub_category=obj.sub_category.id, status='PUBLISH', quantity__gt = 0)
+            serializer = RelatedProductInfo(instance=queryset, many=True, context={'request': self.context['request']})
+            return serializer.data
+        except:
+            return []
 
 
 class ProductUpdateSerializer(serializers.ModelSerializer):
+    title = serializers.CharField(required=False)
+    full_description = serializers.CharField(required=False)
     new_product_images = serializers.ListField(
         child=serializers.FileField(), write_only=True, required=False)
     deleted_product_images = serializers.ListField(
         child=serializers.IntegerField(), write_only=True, required=False)
-    production_steps = ProductionStepSerializer(many=True, required=True)
+    # production_steps = ProductionStepSerializer(many=True, required=False)
+    production_steps = ProductionStepSerializerForProductUpdate(many=True, required=False)
     product_images = ProductImageSerializer(many=True, read_only=True)
 
     class Meta:
@@ -255,6 +307,7 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
         # product inventory
         try:
             quantity = validated_data["quantity"]
+            print(quantity)
         except:
             quantity = None
 
@@ -262,8 +315,9 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
             last_inventory = Inventory.objects.filter(product=instance).last()
             initial_quantity = quantity - last_inventory.current_quantity
             Inventory.objects.create(initial_quantity=initial_quantity, current_quantity=quantity, product=instance)
-            total_quantity = Inventory.objects.filter(product=instance).aggregate(total_quantity=sum('initial_quantity'))
-            validated_data.update({"total_quantity": total_quantity})
+            total_quantity = Inventory.objects.filter(product=instance).aggregate(total_quantity=Sum('initial_quantity'))
+            validated_data.update({'total_quantity': total_quantity['total_quantity']})
+           
 
         # new product_images
         if new_product_images:
@@ -281,11 +335,14 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
             for step in production_steps:
                 try:
                     production_steps = ProductionStep.objects.get(product=instance, step=step['step'])
-                    production_steps.image = step['image']
-                    production_steps.step_date = step['step_date']
+                    if step.get("image") is not None:
+                        production_steps.image = step['image']
+                    if step.get("step_date") is not None:
+                        production_steps.step_date = step['step_date']
                     production_steps.save()
                 except ProductionStep.DoesNotExist:
-                    ProductionStep.objects.create(product=instance, step=step['step'], image=step['image'], step_date=step['step_date'])
+                    raise ValidationError("Something went wrong of product step update.")
+                #     ProductionStep.objects.create(product=instance, step=step['step'], image=step['image'], step_date=step['step_date'])
         return super().update(instance, validated_data)
 
 
@@ -300,6 +357,20 @@ class PublishProductSerializer(serializers.ModelSerializer):
         ]
 
 
+class BestSellingProductListSerializer(serializers.ModelSerializer):
 
+    class Meta:
+        model = Product
+        fields = [
+            'id',
+            'title',
+            'slug',
+            'thumbnail',
+            'price_per_unit',
+            'sell_price_per_unit',
+            'quantity',
+            'unit',
+            'sell_count'
+        ]
 
 

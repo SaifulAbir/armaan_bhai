@@ -13,6 +13,9 @@ from django.db.models import Sum
 from django.db.models import Q
 from rest_framework.exceptions import ValidationError
 from datetime import date
+from django.template.loader import render_to_string
+from django.core.mail import send_mail
+from django.conf import settings
 
 
 class DeliveryAddressSerializer(serializers.ModelSerializer):
@@ -81,31 +84,6 @@ class CheckoutSerializer(serializers.ModelSerializer):
             order_instance = Order.objects.create(
                 **validated_data, user=self.context['request'].user, payment_status='DUE', order_status='ON_PROCESS')
 
-        # if order_items:
-        #     for order_item in order_items:
-        #         product = order_item['product']
-        #         quantity = order_item['quantity']
-        #         unit_price = order_item['unit_price']
-        #         total_price = float(unit_price) * float(quantity)
-        #         OrderItem.objects.create(order=order_instance, product=product, quantity=int(
-        #             quantity), unit_price=unit_price, total_price=total_price)
-        #
-        #         # delivery date
-        #         order_instance.delivery_date = product.possible_delivery_date
-        #         order_instance.save()
-        #
-        #         # update inventory
-        #         if order_instance:
-        #             product_obj = Product.objects.filter(id=product.id)
-        #             inventory_obj = Inventory.objects.filter(product=product).latest('created_at')
-        #             update_quantity = int(inventory_obj.current_quantity) - int(quantity)
-        #             product_obj.update(quantity = update_quantity)
-        #             inventory_obj.current_quantity = update_quantity
-        #             inventory_obj.save()
-        #
-        #             # product sell count
-        #             sell_count = product_obj[0].sell_count + 1
-        #             product_obj.update(sell_count=sell_count)
 
         if order_items:
             suborder_instance_count = 0
@@ -223,7 +201,40 @@ class CheckoutSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError("Usage limit exceeded")
             else:
                 raise serializers.ValidationError("Usage limit exceeded")
-        return order_instance
+
+        # send email to the user
+        user = self.context['request'].user
+        email = user.email
+        if email:
+            order_id = order_instance.order_id
+            created_at = order_instance.created_at.strftime("%Y-%m-%d")
+            payment_type = order_instance.payment_type
+            sub_total = OrderItem.objects.filter(order=order_instance).aggregate(total=Sum('total_price'))['total'] or 0.0
+
+            order_items = OrderItem.objects.filter(order=order_instance)
+            subject = "Your order has been successfully placed."
+            html_message = render_to_string('order_details.html',
+                {
+                    'email' : email,
+                    'order_id': order_id,
+                    'created_at': created_at,
+                    'order_items': order_items,
+                    'payment_type': payment_type,
+                    'sub_total': sub_total if sub_total else 0.0,
+                    'total': sub_total + 60.0 if sub_total  else 0.0
+                })
+
+            send_mail(
+                subject=subject,
+                message=None,
+                from_email=settings.EMAIL_HOST_USER,
+                recipient_list=[email],
+                html_message=html_message
+            )
+
+            return order_instance
+        else:
+            return order_instance
 
 
 class CheckoutDetailsSerializer(serializers.ModelSerializer):
@@ -545,10 +556,10 @@ class FarmerPaymentListSerializer(serializers.ModelSerializer):
 
     def get_agent_name(self, obj):
         agent_user_id = obj.farmer.id
-        print(agent_user_id)
         if agent_user_id:
-            agent_user = AgentFarmer.objects.get(farmer=agent_user_id)
-            return agent_user.agent.full_name
+            farmer_obj = User.objects.get(id=agent_user_id)
+            agent_user = User.objects.get(id=farmer_obj.agent_user_id)
+            return agent_user.full_name
         else:
             return None
 

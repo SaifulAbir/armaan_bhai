@@ -79,7 +79,7 @@ class UnitListSerializer(serializers.ModelSerializer):
 class ProductCreateSerializer(serializers.ModelSerializer):
     images = serializers.ListField(
         child=serializers.FileField(), write_only=True, required=False)
-    production_steps = ProductionStepSerializer(many=True, required=True)
+    production_steps = ProductionStepSerializer(many=True, required=False)
     product_images = ProductImageSerializer(many=True, read_only=True)
 
     class Meta:

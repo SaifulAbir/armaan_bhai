@@ -158,6 +158,7 @@ class RelatedProductInfo(serializers.ModelSerializer):
         fields = [
             'id',
             'title',
+            'slug',
             'category',
             'sub_category',
             'thumbnail'

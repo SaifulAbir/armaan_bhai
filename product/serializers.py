@@ -158,6 +158,7 @@ class RelatedProductInfo(serializers.ModelSerializer):
         fields = [
             'id',
             'title',
+            'slug',
             'category',
             'sub_category',
             'thumbnail'
@@ -362,7 +363,8 @@ class BestSellingProductListSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id',
-            'thumbnail',
+            'title',
+            'slug',
             'thumbnail',
             'price_per_unit',
             'sell_price_per_unit',

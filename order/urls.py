@@ -39,5 +39,11 @@ urlpatterns = [
     path('farmer-payment-status-update/<int:id>/', FarmerPaymentStatusUpdateAPIView.as_view()),
 
     # order list of qc passed order
-    # path('admin/order-list-of-qc-passed-order/', OrderListOfQcPassedOrderAPIView.as_view()),
+    path('admin/order-list-of-qc-passed-order/', AdminOrderListOfQcPassedOrderAPIView.as_view()),
+    path('admin/order-status-update/<int:pk>/', AdminOrderStatusUpdateAPIView.as_view()),
+
+    path('farmer-info-list/', FarmerInfoListAPIView.as_view()),
+    path('district-info-list/', DistrictInfoListAPIView.as_view()),
+
+    path('admin/sales-of-an-agent/', AdminSalesOfAnAgentAPIView.as_view()),
 ]

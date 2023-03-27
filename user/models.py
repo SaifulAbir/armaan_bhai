@@ -17,8 +17,9 @@ class Division(AbstractTimeStamp):
 
 
 class District(AbstractTimeStamp):
-    division = models.ForeignKey(Division, on_delete=models.PROTECT, null=True)
+    division = models.ForeignKey(Division, on_delete=models.PROTECT, null=True, related_name='division_district')
     name = models.CharField(max_length=255)
+    english_name = models.CharField(max_length=255)
 
     class Meta:
         db_table = 'districts'
@@ -55,7 +56,7 @@ class User(AbstractUser):
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, null=True)
     organization_name = models.CharField(max_length=255, null=True, blank=True)
     address = models.TextField(null=True)
-    division = models.ForeignKey(Division, on_delete=models.PROTECT, null=True)
+    division = models.ForeignKey(Division, on_delete=models.PROTECT, null=True, related_name='division_user')
     district = models.ForeignKey(District, on_delete=models.PROTECT, null=True)
     upazilla = models.ForeignKey(Upazilla, on_delete=models.PROTECT, null=True)
     village = models.CharField(max_length=255, null=True, blank=True)
@@ -66,6 +67,8 @@ class User(AbstractUser):
     user_type = models.CharField(max_length=50, choices=USER_CHOICES, null=True, blank=True)
     is_admin = models.BooleanField(default=False)
     agent_user_id = models.CharField(max_length=50, null=True, blank=True)
+    nid_front = models.ImageField(upload_to='images/user', null=True, blank=True)
+    nid_back = models.ImageField(upload_to='images/user', null=True, blank=True)
     first_name = None
     last_name = None
 

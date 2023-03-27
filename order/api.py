@@ -118,6 +118,15 @@ class AgentOrderList(ListAPIView):
     def get_queryset(self):
         tomorrow = datetime.today() + timedelta(days=1)
         deliver_to_mukam = self.request.GET.get('deliver_to_mukam')
+        deliver_start_date = self.request.GET.get('deliver_start_date')
+        deliver_end_date = self.request.GET.get('deliver_end_date')
+        order_start_date = self.request.GET.get('order_start_date')
+        order_end_date = self.request.GET.get('order_end_date')
+        farmer = self.request.GET.get('farmer')
+        order_status = self.request.GET.get('order_status')
+        district = self.request.GET.get('district')
+
+
         if self.request.user.user_type == "AGENT":
             queryset = SubOrder.objects.filter(
                 order_item_suborder__product__user__agent_user_id=self.request.user.id).order_by('-created_at')
@@ -129,6 +138,18 @@ class AgentOrderList(ListAPIView):
         if deliver_to_mukam == "true":
             queryset = queryset.filter(
                 delivery_date__date=tomorrow, is_qc_passed=True)
+        if deliver_start_date and deliver_end_date:
+            queryset = queryset.filter(Q(delivery_date__range=(deliver_start_date,deliver_end_date)))
+        if order_start_date and order_end_date:
+            oed = datetime.strptime(str(order_end_date), '%Y-%m-%d')
+            order_end_date = oed + timedelta(days=1)
+            queryset = queryset.filter(Q(created_at__range=(order_start_date,order_end_date)))
+        if farmer:
+            queryset = queryset.filter(Q(order_item_suborder__product__user__id=farmer))
+        if order_status:
+            queryset = queryset.filter(Q(order_status=order_status))
+        if district:
+            queryset = queryset.filter(Q(delivery_address__district__id=district))
         return queryset
 
 #
@@ -192,12 +213,15 @@ class AgentPickupLocationUpdateAPIView(UpdateAPIView):
 
 class AgentSetPickupLocationOnOrderListAPIView(ListAPIView):
     serializer_class = AgentOrderListForSetupPickupLocationSerializer
+    # pagination_class = CustomPagination
 
     def get_queryset(self):
         user = self.request.user
         if self.request.user.user_type == "AGENT":
             tomorrow = datetime.today() + timedelta(days=1)
-            queryset = User.objects.filter(agent_user_id=user.id, user_type="FARMER").exclude(~Q(product_seller__possible_productions_date=tomorrow)).order_by()
+            # queryset = User.objects.filter(Q(agent_user_id=user.id), Q(user_type="FARMER"), Q(product_seller__order_item_product__isnull=False)).exclude(~Q(product_seller__possible_productions_date=tomorrow)).order_by('id').distinct()
+
+            queryset = User.objects.filter(Q(agent_user_id=user.id), Q(user_type="FARMER"), Q(product_seller__order_item_product__isnull=False), Q(product_seller__possible_productions_date=tomorrow)).order_by('id').distinct()
         else:
             queryset = None
         return queryset
@@ -225,6 +249,7 @@ class PickupLocationQcPassedInfoUpdateAPIView(UpdateAPIView):
         id = self.kwargs['id']
         query = User.objects.get(id=id)
         return query
+
 
 class OrderUpdateAPIView(UpdateAPIView):
     serializer_class = OrderUpdateSerializer
@@ -270,30 +295,16 @@ class AdminOrdersListByPickupPointsListAPIView(ListAPIView):
     serializer_class = AdminOrdersListByPickupPointsListSerializer
 
     def get_queryset(self):
-        order_items = OrderItem.objects.filter(
-            is_qc_passed='PASS',
-            product__possible_productions_date=datetime.today()
-        )
-        order_item_locations = set([order_item.pickup_location for order_item in order_items])
-        location_dict = {}
-        for location in order_item_locations:
-            all_order_items = OrderItem.objects.filter(
-                is_qc_passed='PASS',
-                product__possible_productions_date=datetime.today(),
-                pickup_location=location
-            )
-            location_dict[location] = {"order_list": []}  # initialize dictionary with an empty order_list
-            for order_item in all_order_items:
-                order_dict = {
-                    "title": order_item.product.title,
-                    "quantity": order_item.quantity,
-                    # add any other information you want to include
-                }
-                location_dict[location]["order_list"].append(order_dict)
+       today = datetime.today()
+       pickup_points = PickupLocation.objects.filter(Q(status=True), Q(order_item_pickup_location__product__possible_productions_date=today))
+       location = []
+       for pickup_point in pickup_points:
+           order = OrderItem.objects.filter(pickup_location=pickup_point)
+           if order.exists():
+               location.append(pickup_point.id)
 
-        # print(location_dict)
-        return location_dict
-
+       queryset = PickupLocation.objects.filter(id__in=location)
+       return queryset
 
 
 class FarmerPaymentListAPIView(ListAPIView):
@@ -419,6 +430,7 @@ class FarmerPaymentListAPIView(ListAPIView):
 
 
 class FarmerPaymentStatusUpdateAPIView(UpdateAPIView):
+    serializer_class = FarmerPaymentStatusUpdateSerializer
     queryset = PaymentHistory.objects.all()
     lookup_field = 'id'
     lookup_url_kwarg = 'id'
@@ -442,3 +454,76 @@ class FarmerPaymentStatusUpdateAPIView(UpdateAPIView):
             return Response({'status': instance.status}, status=status.HTTP_200_OK)
         else:
             return Response({'status': 'Status not provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AdminOrderListOfQcPassedOrderAPIView(ListAPIView):
+    serializer_class = AdminOrderListSerializer
+
+    def get_queryset(self):
+        # if self.request.user.is_admin == True:
+
+            request = self.request
+            today = request.GET.get('today')
+            this_week = request.GET.get('this_week')
+
+            queryset = SubOrder.objects.filter(order_status='ON_TRANSIT')
+            if today:
+                today_date = datetime.today().date()
+                queryset = queryset.filter(Q(delivery_date__date=today_date))
+            if this_week:
+                today_date = datetime.today().date()
+                today = today_date.strftime("%d/%m/%Y")
+                dt = datetime.strptime(str(today), '%d/%m/%Y')
+                week_start = dt - (timedelta(days=dt.weekday()) + timedelta(days=2))
+                week_end = week_start + timedelta(days=6)
+                queryset = queryset.filter(Q(delivery_date__range=(week_start,week_end)))
+
+            return queryset
+        # else:
+        #     raise ValidationError(
+        #         {"msg": 'You can not see Order list, because you are not an Admin!'})
+
+
+class AdminOrderStatusUpdateAPIView(UpdateAPIView):
+    serializer_class = OrderStatusSerializer
+    queryset = SubOrder.objects.all()
+
+
+class FarmerInfoListAPIView(ListAPIView):
+    serializer_class = FarmerInfoListSerializer
+
+    def get_queryset(self):
+        if self.request.user.user_type == "ADMIN":
+            queryset = User.objects.filter(user_type='FARMER')
+        if self.request.user.user_type == "AGENT":
+            queryset = User.objects.filter(user_type='FARMER', agent_user_id=self.request.user.id)
+        if queryset:
+            return queryset
+        else:
+            return []
+
+
+class DistrictInfoListAPIView(ListAPIView):
+    serializer_class = DistrictSerializer
+
+    def get_queryset(self):
+        if self.request.user.user_type == "ADMIN":
+            queryset = District.objects.all()
+        if self.request.user.user_type == "AGENT":
+            # queryset = District.objects.filter(division__division_user__id=self.request.user.id)
+            queryset = District.objects.all()
+        if queryset:
+            return queryset
+        else:
+            return []
+
+
+class AdminSalesOfAnAgentAPIView(ListAPIView):
+    serializer_class = SalesOfAnAgentSerializer
+
+    def get_queryset(self):
+        queryset = User.objects.filter(user_type='AGENT')
+        if queryset:
+            return queryset
+        else:
+            return []

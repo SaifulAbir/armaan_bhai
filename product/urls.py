@@ -16,4 +16,6 @@ urlpatterns = [
     path('customer/category/list/', CategoryListAPIView.as_view(), name='product_list'),
     path('admin/unit/list/', UnitListAPIView.as_view(), name='unit_list'),
     path('customer/sub-category-list/<int:cid>/', SubCategoryListAPIView.as_view()),
+
+    path('customer/best-selling-product-list/', CustomerBestSellingProductListAPI.as_view()),
 ]

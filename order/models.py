@@ -241,7 +241,7 @@ class SubOrder(AbstractTimeStamp):
     payment_status = models.CharField(
         max_length=20, null=False, blank=False, choices=PAYMENT_STATUSES, default=PAYMENT_STATUSES[0][0])
     payment_type = models.CharField(
-        max_length=20, null=False, blank=False, choices=PAYMENT_STATUSES, default=PAYMENT_TYPES[0][0])
+        max_length=20, null=False, blank=False, choices=PAYMENT_TYPES, default=PAYMENT_TYPES[0][0])
     cash_on_delivery = models.BooleanField(default=False)
     order_status = models.CharField(
         max_length=20, null=False, blank=False, choices=ORDER_CHOICES, default=ORDER_CHOICES[0][0])
@@ -260,12 +260,12 @@ class SubOrder(AbstractTimeStamp):
         db_table = 'sub_orders'
 
     def __str__(self):
-        return self.suborder_number
+        return self.suborder_number + ' ' + self.payment_status
 
 
 def pre_save_suborder(sender, instance, *args, **kwargs):
     if not instance.suborder_number:
-        instance.suborder_number = 'ar-so-' + \
+        instance.suborder_number = 'ar-' + \
             str(unique_order_id_generator_for_suborder(instance))
 
 

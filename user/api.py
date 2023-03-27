@@ -123,6 +123,18 @@ class CustomerRetrieveAPIView(RetrieveAPIView):
         return customer
 
 
+class UserDetailAPIView(RetrieveAPIView):
+    # permission_classes = [AllowAny]
+    serializer_class = UserDetailSerializer
+    lookup_field = 'user_id'
+    lookup_url_kwarg = 'user_id'
+
+    def get_object(self):
+        user_id = self.kwargs['user_id']
+        query = User.objects.get(id=user_id)
+        return query
+
+
 class UserRetrieveAPIView(RetrieveAPIView):
     serializer_class = UserProfileDetailSerializer
 

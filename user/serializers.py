@@ -317,6 +317,20 @@ class UserProfileDetailSerializer(serializers.ModelSerializer):
                   'village', 'postcode', 'phone_number', 'image', 'gender_display_value', 'user_type', 'is_superuser']
 
 
+class UserDetailSerializer(serializers.ModelSerializer):
+    gender_display_value = serializers.CharField(
+        source='get_gender_display', read_only=True
+    )
+    division = DivisionSerializer(many=False, read_only=True)
+    district = DistrictSerializer(many=False, read_only=True)
+    upazilla = UpazillaSerializer(many=False, read_only=True)
+
+    class Meta:
+        model = User
+        fields = ['id', 'full_name', 'gender', 'organization_name', 'address', 'division', 'district', 'upazilla',
+                  'village', 'postcode', 'phone_number', 'image', 'gender_display_value', 'user_type', 'is_superuser']
+
+
 class ProductSerializer(serializers.ModelSerializer):
 
     class Meta:

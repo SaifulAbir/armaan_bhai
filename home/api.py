@@ -10,7 +10,7 @@ from rest_framework.response import Response
 
 from home.models import TotalVisit
 from home.serializers import CategoryListSerializer
-from order.models import Order, PaymentHistory, OrderItem
+from order.models import Order, PaymentHistory, OrderItem, SubOrder
 from product.models import Category, Product
 from product.serializers import ProductListSerializer
 from user.models import User, District, Upazilla
@@ -142,11 +142,17 @@ class AdminDashboardDataAPIView(APIView):
                 total_sales = 0
 
             # total delivered order
-            if Order.objects.filter(order_item_order__product__user__agent_user_id=self.request.user.id).exists():
-                total_delivered_order = Order.objects.filter(
-                    order_item_order__product__user__agent_user_id=self.request.user.id, order_status="DELIVERED").count()
+            if SubOrder.objects.filter(order_item_suborder__product__user__agent_user_id=self.request.user.id).exists():
+                total_delivered_order = SubOrder.objects.filter(
+                    order_item_suborder__product__user__agent_user_id=self.request.user.id,
+                    order_status="DELIVERED").count()
             else:
                 total_delivered_order = 0
+            # if Order.objects.filter(order_item_order__product__user__agent_user_id=self.request.user.id).exists():
+            #     total_delivered_order = Order.objects.filter(
+            #         order_item_order__product__user__agent_user_id=self.request.user.id, order_status="DELIVERED").count()
+            # else:
+            #     total_delivered_order = 0
 
             # Top published products
             if Product.objects.filter(user__agent_user_id=self.request.user.id, status='PUBLISH').exists():

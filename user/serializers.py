@@ -314,7 +314,8 @@ class UserProfileDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'full_name', 'gender', 'organization_name', 'address', 'division', 'district', 'upazilla',
-                  'village', 'postcode', 'phone_number', 'image', 'gender_display_value', 'user_type', 'is_superuser']
+                  'village', 'postcode', 'phone_number', 'image', 'gender_display_value', 'user_type', 'is_superuser',
+                  'nid_front', 'nid_back']
 
 
 class UserDetailSerializer(serializers.ModelSerializer):

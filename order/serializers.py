@@ -725,3 +725,38 @@ class AdminCouponSerializer(serializers.ModelSerializer):
                     'is_active'
                 ]
         read_only_fields = ['id', 'usage_count']
+
+    def create(self, validated_data):
+        code_get = validated_data.pop('code')
+        if code_get:
+            code_get_for_check = Coupon.objects.filter(code=code_get)
+            if code_get_for_check:
+                raise ValidationError('Code already exists')
+            else:
+                coupon_instance = Coupon.objects.create(**validated_data, code=code_get)
+                return coupon_instance
+
+
+class AdminCouponUpdateSerializer(serializers.ModelSerializer):
+    amount = serializers.FloatField(required=True)
+    code = serializers.CharField(required=False)
+    coupon_title = serializers.CharField(required=False)
+    class Meta:
+        model = Coupon
+        fields = [  'id',
+                    'code',
+                    'coupon_title',
+                    'min_shopping',
+                    'amount',
+                    'max_time',
+                    'start_time',
+                    'end_time',
+                    'is_active'
+                ]
+        read_only_fields = ['id', 'usage_count']
+
+
+class ApplyCouponSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Coupon
+        fields = ['id', 'code', 'coupon_title', 'min_shopping', 'amount', 'max_time', 'usage_count', 'start_time', 'end_time', 'is_active']

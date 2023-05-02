@@ -54,6 +54,7 @@ urlpatterns = [
     # coupon apies
     path('admin/coupon-create/', AdminCouponCreateAPIView.as_view()),
     path('admin/coupon-list/', AdminCouponListAPIView.as_view()),
-    # path('admin/coupon-update/<int:id>/', AdminCouponUpdateAPIView.as_view()),
-    # path('admin/coupon-delete/<int:id>/', AdminCouponDeleteAPIView.as_view()),
+    path('admin/coupon-update/<int:id>/', AdminCouponUpdateAPIView.as_view()),
+    path('admin/coupon-delete/<int:id>/', AdminCouponDeleteAPIView.as_view()),
+    path('apply-coupon/<str:code>/<int:uid>/', ApplyCouponAPIView.as_view()),
 ]

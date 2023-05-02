@@ -1,5 +1,6 @@
 from rest_framework.generics import CreateAPIView, RetrieveUpdateAPIView, ListAPIView, DestroyAPIView, RetrieveAPIView, \
     UpdateAPIView
+from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from datetime import datetime, timedelta
 from armaan_bhai.pagination import CustomPagination
@@ -11,7 +12,7 @@ from order.models import *
 from user.models import *
 from rest_framework import status
 from django.db.models import Sum
-
+from django.utils import timezone
 from decimal import Decimal
 
 
@@ -296,11 +297,11 @@ class AdminOrdersListByPickupPointsListAPIView(ListAPIView):
 
     def get_queryset(self):
        today = datetime.today()
-       pickup_points = PickupLocation.objects.filter(Q(status=True), Q(order_item_pickup_location__product__possible_productions_date=today))
+       pickup_points = PickupLocation.objects.filter(Q(status=True), Q(order_item_pickup_location__product__possible_productions_date=today), Q(order_item_pickup_location__is_qc_passed='PASS'))
        location = []
        for pickup_point in pickup_points:
-           order = OrderItem.objects.filter(pickup_location=pickup_point)
-           if order.exists():
+           order_item = OrderItem.objects.filter(pickup_location=pickup_point)
+           if order_item.exists():
                location.append(pickup_point.id)
 
        queryset = PickupLocation.objects.filter(id__in=location)
@@ -570,8 +571,8 @@ class AdminCouponCreateAPIView(CreateAPIView):
             return super(AdminCouponCreateAPIView, self).post(request, *args, **kwargs)
         else:
             raise ValidationError(
-                {"msg": 'You can not create coupon, because you are not an Admin or a Staff!'})
-        
+                {"msg": 'You can not create coupon, because you are not an Admin!'})
+
 
 class AdminCouponListAPIView(ListAPIView):
     permission_classes = [IsAuthenticated]
@@ -584,6 +585,88 @@ class AdminCouponListAPIView(ListAPIView):
                 return queryset
             else:
                 raise ValidationError(
-                    {"msg": 'Vat types does not exist!'})
+                    {"msg": 'Coupon data does not exist!'})
         else:
-            raise ValidationError({"msg": 'You can not view coupon list, because you are not an Admin or a Staff!'})
+            raise ValidationError({"msg": 'You can not view coupon list, because you are not an Admin!'})
+
+
+class AdminCouponUpdateAPIView(RetrieveUpdateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = AdminCouponUpdateSerializer
+    queryset = Coupon.objects.filter(is_active=True)
+    lookup_field = 'id'
+    lookup_url_kwarg = "id"
+
+    def put(self, request, *args, **kwargs):
+        if self.request.user.is_superuser == True:
+            return super(AdminCouponUpdateAPIView, self).put(request, *args, **kwargs)
+        else:
+            raise ValidationError(
+                {"msg": 'You can not update coupon, because you are not an Admin!'})
+
+
+class AdminCouponDeleteAPIView(ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = AdminCouponSerializer
+    lookup_field = 'id'
+    lookup_url_kwarg = 'id'
+
+    def get_queryset(self):
+        id = self.kwargs['id']
+        if self.request.user.is_superuser == True:
+            coupon_obj = Coupon.objects.filter(id=id).exists()
+            if coupon_obj:
+                Coupon.objects.filter(id=id).update(is_active=False)
+                queryset = Coupon.objects.filter(is_active=True).order_by('-created_at')
+                return queryset
+            else:
+                raise ValidationError(
+                    {"msg": 'Coupon data Does not exist!'}
+                )
+        else:
+            raise ValidationError({"msg": 'You can not delete coupon data, because you are not an Admin!'})
+        
+
+class ApplyCouponAPIView(APIView):
+    permission_classes = (AllowAny,)
+    serializer_class = ApplyCouponSerializer
+
+    def get(self, request, code, uid):
+        try:
+            code = self.kwargs['code']
+            uid = self.kwargs['uid']
+
+            code_exist = Coupon.objects.filter(code=code, is_active=True).exists()
+            if code_exist:
+                coupon_obj = Coupon.objects.filter(code=code)
+                start_date_time = coupon_obj[0].start_time
+                end_date_time = coupon_obj[0].end_time
+
+                current_time = timezone.now()
+
+                if current_time > start_date_time and current_time < end_date_time:
+                    max_time = int(coupon_obj[0].max_time)
+                    usage_count = int(coupon_obj[0].usage_count)
+                    if max_time > usage_count:
+                        user = User.objects.filter(id=uid).exists()
+                        if user:
+                            user_obj = User.objects.filter(id=uid)
+                            check_in_use_coupon_record = CouponStat.objects.filter(
+                                coupon_id=coupon_obj[0].id, user_id=user_obj[0].id).exists()
+                            if check_in_use_coupon_record:
+                                return Response({"status": "You already used this coupon!"})
+                            else:
+                                return Response({"status": "Authentic coupon.", "amount": coupon_obj[0].amount, "coupon_id": coupon_obj[0].id, "code": coupon_obj[0].code, "coupon_title": coupon_obj[0].coupon_title, "min_shopping": coupon_obj[0].min_shopping, "max_time": coupon_obj[0].max_time, "usage_count": coupon_obj[0].usage_count, "start_time": coupon_obj[0].start_time, "end_time": coupon_obj[0].end_time, "is_active": coupon_obj[0].is_active})
+                        else:
+                            return Response({"status": "User doesn't exist!"})
+                    else:
+                        coupon_obj.update(is_active=False)
+                        return Response({"status": "Invalid coupon 1!"})
+                else:
+                    if current_time > end_date_time:
+                        coupon_obj.update(is_active=False)
+                    return Response({"status": "Invalid coupon 2!"})
+            else:
+                return Response({"status": "Invalid coupon 3!"})
+        except:
+            return Response({"status": "Something went wrong!"})

@@ -4,6 +4,7 @@ from rest_framework.permissions import AllowAny
 from armaan_bhai.pagination import ProductCustomPagination
 from product.serializers import *
 from django.db.models import Q
+from django.utils import timezone
 
 
 class ProductCreateAPIView(CreateAPIView):
@@ -29,7 +30,9 @@ class CustomerProductListAPI(ListAPIView):
         delivery_start_date = request.GET.get('delivery_start_date')
         delivery_end_date = request.GET.get('delivery_end_date')
 
-        queryset = Product.objects.filter(status="PUBLISH").order_by('-created_at')
+        today = timezone.now().date()
+
+        queryset = Product.objects.filter(status="PUBLISH", possible_delivery_date__gte=today).order_by('-created_at')
 
         if query:
             queryset = queryset.filter(

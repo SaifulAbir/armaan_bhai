@@ -673,3 +673,55 @@ class SalesOfAnAgentSerializer(serializers.ModelSerializer):
             total_amount = OrderItem.objects.filter(product__user__agent_user_id=obj.id, suborder__payment_status='PAID').aggregate(total=Sum('total_price'))['total'] or 0
 
         return total_amount
+
+
+class FarmerOwnPaymentListSerializer(serializers.ModelSerializer):
+    order_items = serializers.SerializerMethodField('get_order_items')
+
+    class Meta:
+        model = PaymentHistory
+        fields = ['id', 'amount', 'status', 'date', 'order_items']
+
+    def get_order_items(self, obj):
+        serializer = ProductItemSerializer(instance=obj.order_items, many=True)
+        return serializer.data
+
+
+class FarmerProductionProductsSerializer(serializers.ModelSerializer):
+    quantity = serializers.SerializerMethodField('get_quantity')
+    unit = serializers.CharField(source='unit.title')
+    date = serializers.SerializerMethodField('get_date')
+    class Meta:
+        model = Product
+        fields = ['id', 'title', 'quantity', 'unit', 'date']
+
+    def get_quantity(self, obj):
+        try:
+            quantity = 0
+            order_items = OrderItem.objects.filter(product=obj.id, is_qc_passed='NEUTRAL')
+            for order_item in order_items:
+                quantity += order_item.quantity
+            return quantity
+        except:
+            return 0
+
+    def get_date(self, obj):
+        today = datetime.today().date()
+        return today
+    
+
+class AdminCouponSerializer(serializers.ModelSerializer):
+    amount = serializers.FloatField(required=True)
+    class Meta:
+        model = Coupon
+        fields = [  'id',
+                    'code',
+                    'coupon_title',
+                    'min_shopping',
+                    'amount',
+                    'max_time',
+                    'start_time',
+                    'end_time',
+                    'is_active'
+                ]
+        read_only_fields = ['id', 'usage_count']

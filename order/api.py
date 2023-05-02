@@ -527,3 +527,63 @@ class AdminSalesOfAnAgentAPIView(ListAPIView):
             return queryset
         else:
             return []
+
+
+class FarmerOwnPaymentListAPIView(ListAPIView):
+    serializer_class = FarmerOwnPaymentListSerializer
+
+    def get_queryset(self):
+        try:
+            user = self.request.user
+            if self.request.user.user_type == "FARMER":
+                queryset = PaymentHistory.objects.filter(farmer=self.request.user.id)
+                if queryset:
+                    return queryset
+                else:
+                    return []
+            else:
+                raise NotFound("You are not a farmer!")
+        except Exception as e:
+            raise NotFound("No payment data found!")
+
+
+class FarmerProductionProductsListAPIView(ListAPIView):
+    serializer_class = FarmerProductionProductsSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if self.request.user.user_type == "FARMER":
+            tomorrow = datetime.today() + timedelta(days=1)
+            # queryset = User.objects.filter(Q(agent_user_id=user.id), Q(user_type="FARMER"), Q(product_seller__order_item_product__isnull=False), Q(product_seller__possible_productions_date=tomorrow)).order_by('id').distinct()
+            queryset = Product.objects.filter(Q(user=user.id), Q(possible_productions_date=tomorrow), Q(order_item_product__isnull=False), Q(order_item_product__is_qc_passed='NEUTRAL')).order_by('id').distinct()
+        else:
+            queryset = None
+        return queryset
+
+
+class AdminCouponCreateAPIView(CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = AdminCouponSerializer
+
+    def post(self, request, *args, **kwargs):
+        if self.request.user.is_superuser == True:
+            return super(AdminCouponCreateAPIView, self).post(request, *args, **kwargs)
+        else:
+            raise ValidationError(
+                {"msg": 'You can not create coupon, because you are not an Admin or a Staff!'})
+        
+
+class AdminCouponListAPIView(ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = AdminCouponSerializer
+
+    def get_queryset(self):
+        if self.request.user.is_superuser == True:
+            queryset = Coupon.objects.filter(is_active=True).order_by('-created_at')
+            if queryset:
+                return queryset
+            else:
+                raise ValidationError(
+                    {"msg": 'Vat types does not exist!'})
+        else:
+            raise ValidationError({"msg": 'You can not view coupon list, because you are not an Admin or a Staff!'})

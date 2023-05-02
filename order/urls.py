@@ -46,4 +46,14 @@ urlpatterns = [
     path('district-info-list/', DistrictInfoListAPIView.as_view()),
 
     path('admin/sales-of-an-agent/', AdminSalesOfAnAgentAPIView.as_view()),
+
+    # farmer payment list
+    path('farmer/payment-list/', FarmerOwnPaymentListAPIView.as_view()),
+    path('farmer/production-products-list/', FarmerProductionProductsListAPIView.as_view()),
+
+    # coupon apies
+    path('admin/coupon-create/', AdminCouponCreateAPIView.as_view()),
+    path('admin/coupon-list/', AdminCouponListAPIView.as_view()),
+    # path('admin/coupon-update/<int:id>/', AdminCouponUpdateAPIView.as_view()),
+    # path('admin/coupon-delete/<int:id>/', AdminCouponDeleteAPIView.as_view()),
 ]

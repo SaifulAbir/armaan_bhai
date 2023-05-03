@@ -259,7 +259,8 @@ class OrderUpdateAPIView(UpdateAPIView):
 
     def get_object(self):
         id = self.kwargs['id']
-        query = Order.objects.get(id=id)
+        # query = Order.objects.get(id=id)
+        query = SubOrder.objects.get(id=id)
         return query
 
 
@@ -661,12 +662,12 @@ class ApplyCouponAPIView(APIView):
                             return Response({"status": "User doesn't exist!"})
                     else:
                         coupon_obj.update(is_active=False)
-                        return Response({"status": "Invalid coupon 1!"})
+                        return Response({"status": "Invalid coupon!"})
                 else:
                     if current_time > end_date_time:
                         coupon_obj.update(is_active=False)
-                    return Response({"status": "Invalid coupon 2!"})
+                    return Response({"status": "Invalid coupon!"})
             else:
-                return Response({"status": "Invalid coupon 3!"})
+                return Response({"status": "Invalid coupon!"})
         except:
             return Response({"status": "Something went wrong!"})

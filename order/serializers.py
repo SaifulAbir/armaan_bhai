@@ -194,7 +194,7 @@ class CheckoutSerializer(serializers.ModelSerializer):
                     coupon=coupon.id, user=self.context['request'].user).exists()
                 if not coupon_stat:
                     CouponStat.objects.create(
-                        coupon=coupon, user=self.context['request'].user)
+                        coupon=coupon, user=self.context['request'].user, order=order_instance)
                     usage_count = int(coupon.usage_count)
                     coupon_obj.update(usage_count=usage_count + 1)
                 else:
@@ -253,7 +253,7 @@ class OrderUpdateSerializer(serializers.ModelSerializer):
     delivery_address = DeliveryAddressSerializer(many=False, read_only=True)
     class Meta:
         model = SubOrder
-        fields = ['is_qc_passed', 'delivery_address', 'order_item_suborder', 'user']
+        fields = ['is_qc_passed', 'delivery_address', 'order_item_suborder', 'user', 'order_status', 'payment_status']
 
 
 class CustomerOrderListSerializer(serializers.ModelSerializer):
@@ -278,12 +278,13 @@ class AgentOrderListSerializer(serializers.ModelSerializer):
         source='get_order_status_display', read_only=True
     )
     user = CustomerProfileDetailSerializer(many=False, read_only=True)
-    order_item_suborder = ProductItemCheckoutSerializer(many=True, read_only=True)
+    # order_item_suborder = ProductItemCheckoutSerializer(many=True, read_only=True)
     delivery_address = DeliveryAddressSerializer(many=False, read_only=True)
     class Meta:
         model = SubOrder
-        fields = ['id', 'user', 'order', 'suborder_number', 'order_date', 'delivery_date', 'order_status', 'order_status_value', 'order_item_suborder', 'delivery_address', 'payment_type',
-        'coupon_discount_amount', 'total_price', 'is_qc_passed']
+        # fields = ['id', 'user', 'order', 'suborder_number', 'order_date', 'delivery_date', 'order_status', 'payment_status', 'order_status_value', 'order_item_suborder', 'delivery_address', 'payment_type',
+        # 'coupon_discount_amount', 'total_price', 'is_qc_passed']
+        fields = ['id', 'user', 'order', 'suborder_number', 'order_date', 'delivery_date', 'order_status', 'payment_status', 'order_status_value', 'delivery_address', 'payment_type', 'total_price']
 
 
 # Pickup Location
@@ -354,7 +355,7 @@ class PickupLocationQcPassedInfoUpdateSerializer(serializers.ModelSerializer):
             if is_qc_passed == 'PASS':
                 SubOrder.objects.filter(order_item_suborder__product__user=instance.id, order_item_suborder__product__possible_productions_date = tomorrow).update(order_status='ON_TRANSIT')
             if is_qc_passed == 'FAIL':
-                Order.objects.filter(order_item_order__product__user=instance.id, order_item_order__product__possible_productions_date = tomorrow).update(order_status='CANCELED')
+                SubOrder.objects.filter(order_item_suborder__product__user=instance.id, order_item_suborder__product__possible_productions_date = tomorrow).update(order_status='CANCELED')
 
         return super().update(instance, validated_data)
 
@@ -414,13 +415,13 @@ class AgentOrderListForSetupPickupLocationSerializer(serializers.ModelSerializer
 
     def get_products(self, obj):
         tomorrow = datetime.today() + timedelta(days=1)
-        query = Product.objects.filter(Q(user = obj), Q(possible_productions_date=tomorrow), Q(order_item_product__isnull=False) ).annotate(whole_quantity=Sum('order_item_product__quantity', filter=Q(order_item_product__suborder__order_status='ON_PROCESS') | Q(order_item_product__suborder__order_status='ON_TRANSIT')))
+        query = Product.objects.filter(Q(user = obj), Q(possible_productions_date=tomorrow), Q(order_item_product__isnull=False) ).annotate(whole_quantity=Sum('order_item_product__quantity', filter=Q(order_item_product__suborder__order_status='ON_PROCESS') | Q(order_item_product__suborder__order_status='ON_TRANSIT') | Q(order_item_product__suborder__order_status='CANCELED')))
         serializer = AgentMukamLocationSetupDataSerializer(instance=query, many=True)
         return serializer.data
 
     def get_pickup_location(self, obj):
         tomorrow = datetime.today() + timedelta(days=1)
-        query = OrderItem.objects.filter(Q(product__user = obj), Q(product__possible_productions_date=tomorrow), Q(suborder__order_status='ON_PROCESS') | Q(suborder__order_status='ON_TRANSIT')).distinct('pickup_location')
+        query = OrderItem.objects.filter(Q(product__user = obj), Q(product__possible_productions_date=tomorrow), Q(suborder__order_status='ON_PROCESS') | Q(suborder__order_status='ON_TRANSIT') | Q(suborder__order_status='CANCELED')).distinct('pickup_location')
         for i in query:
             if i.pickup_location:
                 pickup_location = i.pickup_location.id
@@ -428,7 +429,7 @@ class AgentOrderListForSetupPickupLocationSerializer(serializers.ModelSerializer
 
     def get_is_qc_passed(self, obj):
         tomorrow = datetime.today() + timedelta(days=1)
-        query = OrderItem.objects.filter(Q(product__user = obj), Q(product__possible_productions_date=tomorrow), Q(suborder__order_status='ON_PROCESS') | Q(suborder__order_status='ON_TRANSIT')).distinct('is_qc_passed')
+        query = OrderItem.objects.filter(Q(product__user = obj), Q(product__possible_productions_date=tomorrow), Q(suborder__order_status='ON_PROCESS') | Q(suborder__order_status='ON_TRANSIT') | Q(suborder__order_status='CANCELED')).distinct('is_qc_passed')
         for i in query:
             is_qc_passed = i.is_qc_passed
             return is_qc_passed

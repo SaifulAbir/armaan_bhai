@@ -57,4 +57,11 @@ urlpatterns = [
     path('admin/coupon-update/<int:id>/', AdminCouponUpdateAPIView.as_view()),
     path('admin/coupon-delete/<int:id>/', AdminCouponDeleteAPIView.as_view()),
     path('apply-coupon/<str:code>/<int:uid>/', ApplyCouponAPIView.as_view()),
+
+    # website-configuration apies
+    path('admin/website-configuration/', AdminWebsiteConfigurationCreateAPIView.as_view()),
+    path('admin/website-configuration-view/<int:id>/', AdminWebsiteConfigurationViewAPIView.as_view()),
+    path('admin/website-configuration-update/<int:pk>/', AdminWebsiteConfigurationUpdateAPIView.as_view()),
+    path('vat-and-delivery-charge/', VatAndDeliveryChargeAPIView.as_view()),
+
 ]

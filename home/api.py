@@ -206,9 +206,9 @@ class AdminDashboardDataAPIView(APIView):
                 total_sales = None
 
             # total delivered order
-            if Order.objects.filter(order_item_order__product__user=self.request.user).exists():
-                total_delivered_order = Order.objects.filter(
-                    order_item_order__product__user=self.request.user, order_status="DELIVERED").count()
+            if SubOrder.objects.filter(order_item_suborder__product__user=self.request.user).exists():
+                total_delivered_order = SubOrder.objects.filter(
+                    order_item_suborder__product__user=self.request.user, order_status="DELIVERED").count()
             else:
                 total_delivered_order = 0
 

@@ -28,6 +28,19 @@ class UserRegApi(CreateAPIView):
     permission_classes = [AllowAny]
 
 
+class SuperUserRegApi(CreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = SuperUserRegSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        if self.request.user.is_superuser == True:
+            return super(SuperUserRegApi, self).post(request, *args, **kwargs)
+        else:
+            raise ValidationError(
+                {"msg": 'You can not add super user, because you are not an Admin!'})
+
+
 class AgentUpdateAPIView(UpdateAPIView):
     queryset = User.objects.all()
     serializer_class = AgentUpdateSerializer

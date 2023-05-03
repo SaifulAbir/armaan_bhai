@@ -533,6 +533,7 @@ class AdminSalesOfAnAgentAPIView(ListAPIView):
 
 class FarmerOwnPaymentListAPIView(ListAPIView):
     serializer_class = FarmerOwnPaymentListSerializer
+    pagination_class = CustomPagination
 
     def get_queryset(self):
         try:
@@ -551,6 +552,7 @@ class FarmerOwnPaymentListAPIView(ListAPIView):
 
 class FarmerProductionProductsListAPIView(ListAPIView):
     serializer_class = FarmerProductionProductsSerializer
+    pagination_class = CustomPagination
 
     def get_queryset(self):
         user = self.request.user
@@ -578,6 +580,7 @@ class AdminCouponCreateAPIView(CreateAPIView):
 class AdminCouponListAPIView(ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = AdminCouponSerializer
+    pagination_class = CustomPagination
 
     def get_queryset(self):
         if self.request.user.is_superuser == True:

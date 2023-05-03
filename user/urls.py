@@ -10,6 +10,8 @@ urlpatterns = [
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     # agent create api
     path('create-user/', csrf_exempt(UserRegApi.as_view())),
+    # admin create api
+    path('create-super-user/', csrf_exempt(SuperUserRegApi.as_view())),
     # farmer create api
     path('create/farmer/', csrf_exempt(FarmerCreateApi.as_view())),
     # active/inactive agent

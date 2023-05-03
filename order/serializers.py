@@ -2,7 +2,7 @@ import decimal
 
 from rest_framework import serializers
 from order.models import DeliveryAddress, OrderItem, Order, CouponStat, Coupon, PickupLocation, AgentPickupLocation, \
-    FarmerAccountInfo, SubOrder, PaymentHistory
+    FarmerAccountInfo, SubOrder, PaymentHistory, Setting
 from product.models import Inventory, Product
 from product.serializers import ProductViewSerializer
 from user.models import User, AgentFarmer
@@ -243,8 +243,7 @@ class CheckoutDetailsSerializer(serializers.ModelSerializer):
     delivery_address = DeliveryAddressSerializer(many=False, read_only=True)
     class Meta:
         model = Order
-        fields = ['id', 'user', 'order_id', 'order_date', 'delivery_date', 'order_status', 'order_item_order', 'delivery_address', 'payment_type',
-        'coupon_discount_amount', 'total_price', 'is_qc_passed']
+        fields = ['id', 'user', 'order_id', 'order_date', 'delivery_date', 'order_status', 'order_item_order', 'delivery_address', 'payment_type', 'coupon', 'coupon_discount_amount', 'coupon_status', 'total_price', 'is_qc_passed']
 
 
 class OrderUpdateSerializer(serializers.ModelSerializer):
@@ -761,3 +760,14 @@ class ApplyCouponSerializer(serializers.ModelSerializer):
     class Meta:
         model = Coupon
         fields = ['id', 'code', 'coupon_title', 'min_shopping', 'amount', 'max_time', 'usage_count', 'start_time', 'end_time', 'is_active']
+
+
+class WebsiteConfigurationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Setting
+        fields = [
+            'id',
+            'vat',
+            'delivery_charge',
+            'is_active'
+        ]

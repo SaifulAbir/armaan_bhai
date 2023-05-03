@@ -275,6 +275,7 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
             'product_images',
             'thumbnail',
             'price_per_unit',
+            'sell_price_per_unit',
             'full_description',
             'quantity',
             'possible_productions_date',
@@ -317,7 +318,17 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
             Inventory.objects.create(initial_quantity=initial_quantity, current_quantity=quantity, product=instance)
             total_quantity = Inventory.objects.filter(product=instance).aggregate(total_quantity=Sum('initial_quantity'))
             validated_data.update({'total_quantity': total_quantity['total_quantity']})
-           
+
+        # price_per_unit & quantity validation
+        price_per_unit = validated_data.get("price_per_unit", instance.price_per_unit)
+        sell_price_per_unit = validated_data.get("sell_price_per_unit", instance.sell_price_per_unit)
+        quantity = validated_data.get("quantity", instance.quantity)
+        if price_per_unit < 0:
+            raise serializers.ValidationError("Price per unit cannot be negative.")
+        if sell_price_per_unit < 0:
+            raise serializers.ValidationError("Sell Price per unit cannot be negative.")
+        if quantity < 0:
+            raise serializers.ValidationError("Quantity cannot be negative.")
 
         # new product_images
         if new_product_images:

@@ -40,7 +40,7 @@ class DeliveryAddressListAPIView(ListAPIView):
     serializer_class = DeliveryAddressListSerializer
 
     def get_queryset(self):
-        queryset = DeliveryAddress.objects.filter(user=self.request.user)
+        queryset = DeliveryAddress.objects.filter(user=self.request.user).order_by('-created_at')
         return queryset
 
 

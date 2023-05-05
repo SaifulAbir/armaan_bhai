@@ -52,6 +52,17 @@ class AgentUpdateAPIView(UpdateAPIView):
         pk = self.kwargs['pk']
         agent = User.objects.get(id=pk, user_type="AGENT")
         return agent
+    
+
+class AdminUpdateAPIView(UpdateAPIView):
+    queryset = User.objects.all()
+    serializer_class = AdminUpdateSerializer
+    lookup_field = 'pk'
+
+    def get_object(self):
+        pk = self.kwargs['pk']
+        agent = User.objects.get(id=pk, user_type="ADMIN")
+        return agent
 
 
 class FarmerCreateApi(CreateAPIView):
@@ -191,6 +202,19 @@ class AgentListAPI(ListAPIView):
         user = self.request.user
         if user.is_superuser:
             queryset = User.objects.filter(user_type="AGENT")
+        else:
+            queryset = None
+        return queryset
+
+
+class AdminListAPI(ListAPIView):
+    serializer_class = AdminListSerializer
+    pagination_class = CustomPagination
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser:
+            queryset = User.objects.filter(user_type="ADMIN")
         else:
             queryset = None
         return queryset

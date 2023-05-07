@@ -50,6 +50,8 @@ class DeliveryAddress(AbstractTimeStamp):
 
 class Setting(AbstractTimeStamp):
     vat = models.FloatField(max_length=255, null=True, blank=True)
+    delivery_charge = models.FloatField(max_length=255, null=True, blank=True)
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = 'Setting'

@@ -259,7 +259,8 @@ class OrderUpdateAPIView(UpdateAPIView):
 
     def get_object(self):
         id = self.kwargs['id']
-        query = Order.objects.get(id=id)
+        # query = Order.objects.get(id=id)
+        query = SubOrder.objects.get(id=id)
         return query
 
 
@@ -532,6 +533,7 @@ class AdminSalesOfAnAgentAPIView(ListAPIView):
 
 class FarmerOwnPaymentListAPIView(ListAPIView):
     serializer_class = FarmerOwnPaymentListSerializer
+    pagination_class = CustomPagination
 
     def get_queryset(self):
         try:
@@ -550,6 +552,7 @@ class FarmerOwnPaymentListAPIView(ListAPIView):
 
 class FarmerProductionProductsListAPIView(ListAPIView):
     serializer_class = FarmerProductionProductsSerializer
+    pagination_class = CustomPagination
 
     def get_queryset(self):
         user = self.request.user
@@ -577,6 +580,7 @@ class AdminCouponCreateAPIView(CreateAPIView):
 class AdminCouponListAPIView(ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = AdminCouponSerializer
+    pagination_class = CustomPagination
 
     def get_queryset(self):
         if self.request.user.is_superuser == True:
@@ -661,12 +665,55 @@ class ApplyCouponAPIView(APIView):
                             return Response({"status": "User doesn't exist!"})
                     else:
                         coupon_obj.update(is_active=False)
-                        return Response({"status": "Invalid coupon 1!"})
+                        return Response({"status": "Invalid coupon!"})
                 else:
                     if current_time > end_date_time:
                         coupon_obj.update(is_active=False)
-                    return Response({"status": "Invalid coupon 2!"})
+                    return Response({"status": "Invalid coupon!"})
             else:
-                return Response({"status": "Invalid coupon 3!"})
+                return Response({"status": "Invalid coupon!"})
         except:
             return Response({"status": "Something went wrong!"})
+        
+
+class AdminWebsiteConfigurationCreateAPIView(CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = WebsiteConfigurationSerializer
+
+    def post(self, request, *args, **kwargs):
+        if self.request.user.is_superuser == True:
+            return super(AdminWebsiteConfigurationCreateAPIView, self).post(request, *args, **kwargs)
+        else:
+            raise ValidationError(
+                {"msg": 'You can not work on web Configuration, because you are not an Admin!'})
+        
+
+class AdminWebsiteConfigurationViewAPIView(RetrieveAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = WebsiteConfigurationSerializer
+    lookup_field = 'id'
+    lookup_url_kwarg = "id"
+
+    def get_object(self):
+        s_id = self.kwargs['id']
+        if self.request.user.is_superuser == True:
+            try:
+                query = Setting.objects.get(id=s_id)
+                return query
+            except:
+                raise ValidationError({"details": "Setting row doesn't exist!"})
+        else:
+            raise ValidationError(
+                {"msg": 'You can not see Offer details, because you are not an Admin or a Staff!'})
+
+class AdminWebsiteConfigurationUpdateAPIView(UpdateAPIView):
+    serializer_class = WebsiteConfigurationSerializer
+    queryset = Setting.objects.all()
+
+
+class VatAndDeliveryChargeAPIView(APIView):
+    permission_classes = [AllowAny]
+    def get(self, request, *args, **kwargs):
+            ticket_details_data = Setting.objects.filter(is_active=True).order_by('-created_at')[:1]
+            serializer = WebsiteConfigurationSerializer(ticket_details_data, many=True)
+            return Response(serializer.data)

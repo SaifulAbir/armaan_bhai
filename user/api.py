@@ -28,6 +28,19 @@ class UserRegApi(CreateAPIView):
     permission_classes = [AllowAny]
 
 
+class SuperUserRegApi(CreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = SuperUserRegSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        if self.request.user.is_superuser == True:
+            return super(SuperUserRegApi, self).post(request, *args, **kwargs)
+        else:
+            raise ValidationError(
+                {"msg": 'You can not add super user, because you are not an Admin!'})
+
+
 class AgentUpdateAPIView(UpdateAPIView):
     queryset = User.objects.all()
     serializer_class = AgentUpdateSerializer
@@ -38,6 +51,17 @@ class AgentUpdateAPIView(UpdateAPIView):
         # TODO sent sms to agent
         pk = self.kwargs['pk']
         agent = User.objects.get(id=pk, user_type="AGENT")
+        return agent
+    
+
+class AdminUpdateAPIView(UpdateAPIView):
+    queryset = User.objects.all()
+    serializer_class = AdminUpdateSerializer
+    lookup_field = 'pk'
+
+    def get_object(self):
+        pk = self.kwargs['pk']
+        agent = User.objects.get(id=pk, user_type="ADMIN")
         return agent
 
 
@@ -139,7 +163,7 @@ class UserRetrieveAPIView(RetrieveAPIView):
     serializer_class = UserProfileDetailSerializer
 
     def get_object(self):
-        user = User.objects.get(Q(id=self.request.user.id), Q(user_type='AGENT') | Q(user_type='FARMER') | Q(is_superuser=True))
+        user = User.objects.get(Q(id=self.request.user.id), Q(user_type='AGENT') | Q(user_type='FARMER') | Q(user_type='ADMIN') | Q(is_superuser=True))
         return user
 
 
@@ -178,6 +202,19 @@ class AgentListAPI(ListAPIView):
         user = self.request.user
         if user.is_superuser:
             queryset = User.objects.filter(user_type="AGENT")
+        else:
+            queryset = None
+        return queryset
+
+
+class AdminListAPI(ListAPIView):
+    serializer_class = AdminListSerializer
+    pagination_class = CustomPagination
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser:
+            queryset = User.objects.filter(user_type="ADMIN")
         else:
             queryset = None
         return queryset

@@ -10,8 +10,12 @@ urlpatterns = [
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     # agent create api
     path('create-user/', csrf_exempt(UserRegApi.as_view())),
+    # admin create api
+    path('create-super-user/', csrf_exempt(SuperUserRegApi.as_view())),
     # farmer create api
     path('create/farmer/', csrf_exempt(FarmerCreateApi.as_view())),
+    # active/inactive agent
+    path('admin/update/<int:pk>/', AdminUpdateAPIView.as_view(), name='update_admin'),
     # active/inactive agent
     path('agent/update/<int:pk>/', AgentUpdateAPIView.as_view(), name='update_agent'),
     # create customer
@@ -33,6 +37,8 @@ urlpatterns = [
     path('admin/farmer/list/', FarmerListAPI.as_view(), name='farmer_list'),
     # farmer list for agent to create product
     path('agent/farmer/list/', AgentFarmerListAPI.as_view(), name='agent_farmer_list'),
+    # agent list for superadmin
+    path('admin/admin/list/', AdminListAPI.as_view(), name='admin_list'),
     # agent list for superadmin
     path('admin/agent/list/', AgentListAPI.as_view(), name='agent_list'),
     # division, district and upazilla list api for storefront

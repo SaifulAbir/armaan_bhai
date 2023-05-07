@@ -71,6 +71,52 @@ class UserRegSerializer(serializers.ModelSerializer):
         return user
 
 
+class SuperUserRegSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(
+        write_only=True,
+        required=True,
+        style={'input_type': 'password', 'placeholder': 'Password'}
+    )
+    phone_number = serializers.CharField(required=True, validators=[UniqueValidator(queryset=User.objects.all())])
+
+    class Meta:
+        model = User
+        fields = ['full_name', 'gender', 'organization_name', 'address', 'division', 'district', 'upazilla',
+                  'password', 'village', 'postcode', 'phone_number', 'terms_and_conditions', 'image', 'user_type',
+                  'username']
+        extra_kwargs = {"full_name": {"required": True},
+                        "gender": {"required": True},
+                        "division": {"required": True},
+                        "district": {"required": True},
+                        "upazilla": {"required": True},
+                        "village": {"required": False},
+                        "address": {"required": True},
+                        "postcode": {"required": False},
+                        "terms_and_conditions": {"required": True},
+                        "image": {"required": False},
+                        "user_type": {"required": True},
+                        "phone_number": {"required": True},
+                        'username': {'read_only': True}
+                        }
+
+    def create(self, validated_data):
+        # if validated_data["user_type"] == 'ADMIN' and not self.context['request'].user.is_authenticated:
+        #     raise serializers.ValidationError("Only Admin is Possible")
+
+        user = super().create(validated_data)
+        user.set_password(validated_data['password'])
+        user.is_active = True
+        user.is_admin = True
+        user.is_superuser = True
+        user.user_type = 'ADMIN'
+        user.username = UserIDManager().generate_user_id()
+        # if user.user_type == 'ADMIN' and self.context['request'].user.is_authenticated:
+            # user.agent_user_id = self.context['request'].user.id
+
+        user.save()
+        return user
+
+
 class FarmerCreateSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         write_only=True,
@@ -289,6 +335,13 @@ class AgentUpdateSerializer(serializers.ModelSerializer):
         fields = ['id', 'full_name', 'is_active', 'phone_number']
 
 
+class AdminUpdateSerializer(serializers.ModelSerializer):
+    phone_number = serializers.CharField(required=True, validators=[UniqueValidator(queryset=User.objects.all())])
+    class Meta:
+        model = User
+        fields = ['id', 'full_name', 'is_active', 'phone_number']
+
+
 class CustomerProfileDetailSerializer(serializers.ModelSerializer):
     gender_display_value = serializers.CharField(
         source='get_gender_display', read_only=True
@@ -386,6 +439,20 @@ class AgentFarmerListSerializer(serializers.ModelSerializer):
 
 
 class AgentListSerializer(serializers.ModelSerializer):
+    gender_display_value = serializers.CharField(
+        source='get_gender_display', read_only=True
+    )
+    division = DivisionSerializer(many=False, read_only=True)
+    district = DistrictSerializer(many=False, read_only=True)
+    upazilla = UpazillaSerializer(many=False, read_only=True)
+
+    class Meta:
+        model = User
+        fields = ['id', 'full_name', 'username', 'gender', 'organization_name', 'address', 'division', 'district', 'upazilla',
+                  'village', 'postcode', 'phone_number', 'image', 'gender_display_value', 'is_active']
+        
+
+class AdminListSerializer(serializers.ModelSerializer):
     gender_display_value = serializers.CharField(
         source='get_gender_display', read_only=True
     )

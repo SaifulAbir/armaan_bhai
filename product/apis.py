@@ -48,7 +48,7 @@ class CustomerProductListAPI(ListAPIView):
         if status:
             queryset = queryset.filter(status=status)
 
-        if district:
+        if district != "undefined":
             queryset = queryset.filter(user__district=district)
 
         if price:

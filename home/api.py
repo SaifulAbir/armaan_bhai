@@ -38,6 +38,7 @@ class AdminDashboardDataAPIView(APIView):
 
     def get(self, request):
         if self.request.user.is_superuser == True:
+            
             # total farmer
             if User.objects.filter(user_type="FARMER").exists():
                 total_farmer = User.objects.filter(user_type="FARMER").count()

@@ -251,6 +251,7 @@ class SubOrder(AbstractTimeStamp):
         DeliveryAddress, on_delete=models.CASCADE)
     # delivery_agent = models.CharField(max_length=100, null=True, blank=True)
     delivery_date = models.DateTimeField(null=True, blank=True)
+    delivery_charge = models.FloatField(max_length=255, null=True, blank=True)
     comment = models.TextField(null=True, blank=True)
     is_qc_passed = models.CharField(
         max_length=20, choices=QC_TYPES, default=QC_TYPES[0][0])

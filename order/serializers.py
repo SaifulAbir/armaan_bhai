@@ -691,9 +691,11 @@ class FarmerProductionProductsSerializer(serializers.ModelSerializer):
     quantity = serializers.SerializerMethodField('get_quantity')
     unit = serializers.CharField(source='unit.title')
     date = serializers.SerializerMethodField('get_date')
+    pickup_location = serializers.SerializerMethodField('get_pickup_location')
+    pickup_location_address = serializers.SerializerMethodField('get_pickup_location_address')
     class Meta:
         model = Product
-        fields = ['id', 'title', 'quantity', 'unit', 'date']
+        fields = ['id', 'title', 'quantity', 'unit', 'date', 'pickup_location', 'pickup_location_address']
 
     def get_quantity(self, obj):
         try:
@@ -708,7 +710,21 @@ class FarmerProductionProductsSerializer(serializers.ModelSerializer):
     def get_date(self, obj):
         today = datetime.today().date()
         return today
-    
+
+
+    def get_pickup_location(self, obj):
+        query = OrderItem.objects.filter(Q(product=obj.id), Q(is_qc_passed='NEUTRAL')).order_by('id').distinct()
+        for i in query:
+            if i.pickup_location:
+                pickup_location = i.pickup_location.id
+                return pickup_location
+
+    def get_pickup_location_address(self, obj):
+        query = OrderItem.objects.filter(Q(product=obj.id), Q(is_qc_passed='NEUTRAL')).order_by('id').distinct()
+        for i in query:
+            if i.pickup_location:
+                pickup_location_address = i.pickup_location.address
+                return pickup_location_address
 
 class AdminCouponSerializer(serializers.ModelSerializer):
     amount = serializers.FloatField(required=True)

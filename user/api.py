@@ -163,7 +163,7 @@ class UserRetrieveAPIView(RetrieveAPIView):
     serializer_class = UserProfileDetailSerializer
 
     def get_object(self):
-        user = User.objects.get(Q(id=self.request.user.id), Q(user_type='AGENT') | Q(user_type='FARMER') | Q(is_superuser=True))
+        user = User.objects.get(Q(id=self.request.user.id), Q(user_type='AGENT') | Q(user_type='FARMER') | Q(user_type='ADMIN') | Q(is_superuser=True))
         return user
 
 

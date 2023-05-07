@@ -107,6 +107,8 @@ class SuperUserRegSerializer(serializers.ModelSerializer):
         user.set_password(validated_data['password'])
         user.is_active = True
         user.is_admin = True
+        user.is_superuser = True
+        user.user_type = 'ADMIN'
         user.username = UserIDManager().generate_user_id()
         # if user.user_type == 'ADMIN' and self.context['request'].user.is_authenticated:
             # user.agent_user_id = self.context['request'].user.id

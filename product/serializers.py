@@ -341,8 +341,8 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
                         production_steps.step_date = step['step_date']
                     production_steps.save()
                 except ProductionStep.DoesNotExist:
-                    raise ValidationError("Something went wrong of product step update.")
-                #     ProductionStep.objects.create(product=instance, step=step['step'], image=step['image'], step_date=step['step_date'])
+                    ProductionStep.objects.create(product=instance, step=step['step'], image=step['image'], step_date=step['step_date'])
+                    
         return super().update(instance, validated_data)
 
 

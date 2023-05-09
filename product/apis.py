@@ -30,9 +30,9 @@ class CustomerProductListAPI(ListAPIView):
         delivery_start_date = request.GET.get('delivery_start_date')
         delivery_end_date = request.GET.get('delivery_end_date')
 
-        yesterday = timezone.now().date()
+        today = timezone.now().date()
 
-        queryset = Product.objects.filter(status="PUBLISH", possible_productions_date__gte=yesterday).order_by('-created_at')
+        queryset = Product.objects.filter(status="PUBLISH", possible_productions_date__gt=today).order_by('-created_at')
 
         if query:
             queryset = queryset.filter(
@@ -48,7 +48,7 @@ class CustomerProductListAPI(ListAPIView):
         if status:
             queryset = queryset.filter(status=status)
 
-        if district != "undefined":
+        if district:
             queryset = queryset.filter(user__district=district)
 
         if price:

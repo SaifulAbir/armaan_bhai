@@ -655,6 +655,8 @@ class SalesOfAnAgentSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         this_week = request.GET.get('this_week')
         this_month = request.GET.get('this_month')
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
 
         if this_week:
             today_date = datetime.today().date()
@@ -669,6 +671,8 @@ class SalesOfAnAgentSerializer(serializers.ModelSerializer):
             first = first_date_of_current_month(current_year, current_month)
             last = last_date_of_month(current_year, current_month)
             total_amount = OrderItem.objects.filter(product__user__agent_user_id=obj.id, suborder__payment_status='PAID', created_at__range=(first,last)).aggregate(total=Sum('total_price'))['total'] or 0
+        elif start_date and end_date:
+            total_amount = OrderItem.objects.filter(product__user__agent_user_id=obj.id, suborder__payment_status='PAID', created_at__range=(start_date,end_date)).aggregate(total=Sum('total_price'))['total'] or 0
         else:
             total_amount = OrderItem.objects.filter(product__user__agent_user_id=obj.id, suborder__payment_status='PAID').aggregate(total=Sum('total_price'))['total'] or 0
 

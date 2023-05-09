@@ -467,6 +467,8 @@ class AdminOrderListOfQcPassedOrderAPIView(ListAPIView):
             request = self.request
             today = request.GET.get('today')
             this_week = request.GET.get('this_week')
+            start_date = request.GET.get('start_date')
+            end_date = request.GET.get('end_date')
 
             queryset = SubOrder.objects.filter(order_status='ON_TRANSIT')
             if today:
@@ -479,6 +481,8 @@ class AdminOrderListOfQcPassedOrderAPIView(ListAPIView):
                 week_start = dt - (timedelta(days=dt.weekday()) + timedelta(days=2))
                 week_end = week_start + timedelta(days=6)
                 queryset = queryset.filter(Q(delivery_date__range=(week_start,week_end)))
+            if start_date and end_date:
+                queryset = queryset.filter(Q(delivery_date__range=(start_date,end_date)))
 
             return queryset
         # else:

@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from product.models import Product, Category, SubCategory, Units, Inventory, ProductImage, ProductionStep
 from user.models import User, Division, District, Upazilla
+from order.models import Setting
 from user.serializers import FarmerListSerializer
 from rest_framework.exceptions import ValidationError
 from django.db.models import Sum
@@ -115,17 +116,30 @@ class ProductCreateSerializer(serializers.ModelSerializer):
         except:
             production_steps = None
 
+        # get vat from settings 
+        vat_value = 0
+        vat_values = Setting.objects.filter(is_active=True).order_by('id')[:1]
+        for vat_v in vat_values:
+            vat_value = vat_v.vat
+
+
         # create product
-        if not (self.context['request'].user.user_type == 'FARMER' or self.context['request'].user.user_type == 'AGENT'):
-            raise serializers.ValidationError("Product only will be uploaded by agent or farmer")
-        elif self.context['request'].user.user_type == 'FARMER':
-            product_instance = Product.objects.create(**validated_data, user=self.context['request'].user)
+        if self.context['request'].user.user_type == 'FARMER' or self.context['request'].user.user_type == 'ADMIN':
+            product_instance = Product.objects.create(**validated_data, user=self.context['request'].user, vat=vat_value)
         else:
-            farmer = validated_data.get('user')
-            if farmer:
-                product_instance = Product.objects.create(**validated_data)
-            else:
-                raise serializers.ValidationError("Farmer id is missing")
+            product_instance = Product.objects.create(**validated_data, vat=vat_value)
+
+        # old logic 
+        # if not (self.context['request'].user.user_type == 'FARMER' or self.context['request'].user.user_type == 'AGENT'):
+        #     raise serializers.ValidationError("Product only will be uploaded by agent or farmer")
+        # elif self.context['request'].user.user_type == 'FARMER':
+        #     product_instance = Product.objects.create(**validated_data, user=self.context['request'].user)
+        # else:
+        #     farmer = validated_data.get('user')
+        #     if farmer:
+        #         product_instance = Product.objects.create(**validated_data)
+        #     else:
+        #         raise serializers.ValidationError("Farmer id is missing")
 
         # product inventory
         try:
@@ -238,7 +252,8 @@ class ProductViewSerializer(serializers.ModelSerializer):
             'possible_productions_date',
             'possible_delivery_date',
             'production_steps',
-            'related_products'
+            'related_products',
+            'vat'
         ]
 
     def get_related_products(self, obj):
@@ -280,7 +295,8 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
             'quantity',
             'possible_productions_date',
             'possible_delivery_date',
-            'production_steps'
+            'production_steps',
+            'vat'
         ]
 
     def update(self, instance, validated_data):

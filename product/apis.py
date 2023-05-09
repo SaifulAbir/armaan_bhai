@@ -84,6 +84,8 @@ class AgentProductListAPI(ListAPIView):
             queryset = Product.objects.filter(user__agent_user_id=user.id).order_by('-created_at')
         elif user.user_type == "FARMER":
             queryset = Product.objects.filter(user=user).order_by('-created_at')
+        elif user.user_type == "ADMIN":
+            queryset = Product.objects.filter(user=user).order_by('-created_at')
         else:
             queryset = Product.objects.all().order_by('-created_at')
 

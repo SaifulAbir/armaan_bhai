@@ -124,7 +124,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
 
 
         # create product
-        if self.context['request'].user.user_type == 'FARMER':
+        if self.context['request'].user.user_type == 'FARMER' or self.context['request'].user.user_type == 'ADMIN':
             product_instance = Product.objects.create(**validated_data, user=self.context['request'].user, vat=vat_value)
         else:
             product_instance = Product.objects.create(**validated_data, vat=vat_value)
@@ -252,7 +252,8 @@ class ProductViewSerializer(serializers.ModelSerializer):
             'possible_productions_date',
             'possible_delivery_date',
             'production_steps',
-            'related_products'
+            'related_products',
+            'vat'
         ]
 
     def get_related_products(self, obj):
@@ -294,7 +295,8 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
             'quantity',
             'possible_productions_date',
             'possible_delivery_date',
-            'production_steps'
+            'production_steps',
+            'vat'
         ]
 
     def update(self, instance, validated_data):

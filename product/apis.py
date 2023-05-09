@@ -5,7 +5,7 @@ from armaan_bhai.pagination import ProductCustomPagination
 from product.serializers import *
 from django.db.models import Q
 from django.utils import timezone
-# from fuzzywuzzy import fuzz
+from fuzzywuzzy import fuzz
 
 
 class ProductCreateAPIView(CreateAPIView):

@@ -5,6 +5,8 @@ from order.models import Setting
 from user.serializers import FarmerListSerializer
 from rest_framework.exceptions import ValidationError
 from django.db.models import Sum
+from django.utils import timezone
+
 
 
 
@@ -258,8 +260,10 @@ class ProductViewSerializer(serializers.ModelSerializer):
 
     def get_related_products(self, obj):
         try:
+            today = timezone.now().date()
             queryset = Product.objects.filter(
-                sub_category=obj.sub_category.id, status='PUBLISH', quantity__gt = 0)
+                sub_category=obj.sub_category.id, status='PUBLISH', quantity__gt = 0,
+                possible_productions_date__gt=today).exclude(id=obj.id)
             serializer = RelatedProductInfo(instance=queryset, many=True, context={'request': self.context['request']})
             return serializer.data
         except:

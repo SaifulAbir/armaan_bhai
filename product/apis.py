@@ -5,6 +5,7 @@ from armaan_bhai.pagination import ProductCustomPagination
 from product.serializers import *
 from django.db.models import Q
 from django.utils import timezone
+from fuzzywuzzy import fuzz
 
 
 class ProductCreateAPIView(CreateAPIView):
@@ -38,6 +39,11 @@ class CustomerProductListAPI(ListAPIView):
             queryset = queryset.filter(
                 Q(title__icontains=query) | Q(full_description__icontains=query)
             )
+            # if queryset.count() == 0:
+            #     title_matches = [(product, fuzz.ratio(query, product.title)) for product in Product.objects.all()]
+            #     title_matches.sort(key=lambda x: x[1], reverse=True)
+            #     top_match = title_matches[0][0]
+            #     queryset = Product.objects.filter(title__icontains=top_match.title)
 
         if category:
             queryset = queryset.filter(category__id=category)
@@ -184,6 +190,7 @@ class CustomerBestSellingProductListAPI(ListAPIView):
     serializer_class = BestSellingProductListSerializer
 
     def get_queryset(self):
-        queryset = Product.objects.filter(status='PUBLISH', ).order_by('-sell_count')
+        today = timezone.now().date()
+        queryset = Product.objects.filter(status='PUBLISH', possible_productions_date__gt=today).order_by('-sell_count')
 
         return queryset

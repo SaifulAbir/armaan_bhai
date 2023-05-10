@@ -235,8 +235,11 @@ class ProductListSerializer(serializers.ModelSerializer):
     def get_sell_price_with_vat(self, obj):
         vat = obj.vat  # assuming vat is defined in the Product model
         sell_price = obj.sell_price_per_unit
-        sell_price_with_vat = sell_price * (1 + vat / 100)
-        return sell_price_with_vat
+        if vat is not None:
+            sell_price_with_vat = sell_price * (1 + vat / 100)
+            return round(sell_price_with_vat, 2)
+        else:
+            return sell_price
 
 
 class ProductViewSerializer(serializers.ModelSerializer):
@@ -275,8 +278,11 @@ class ProductViewSerializer(serializers.ModelSerializer):
     def get_sell_price_with_vat(self, obj):
         vat = obj.vat  # assuming vat is defined in the Product model
         sell_price = obj.sell_price_per_unit
-        sell_price_with_vat = sell_price * (1 + vat / 100)
-        return sell_price_with_vat
+        if vat is not None:
+            sell_price_with_vat = sell_price * (1 + vat / 100)
+            return round(sell_price_with_vat, 2)
+        else:
+            return sell_price
 
     def get_related_products(self, obj):
         try:
@@ -428,7 +434,10 @@ class BestSellingProductListSerializer(serializers.ModelSerializer):
     def get_sell_price_with_vat(self, obj):
         vat = obj.vat  # assuming vat is defined in the Product model
         sell_price = obj.sell_price_per_unit
-        sell_price_with_vat = sell_price * (1 + vat / 100)
-        return sell_price_with_vat
+        if vat is not None:
+            sell_price_with_vat = sell_price * (1 + vat / 100)
+            return round(sell_price_with_vat, 2)
+        else:
+            return sell_price
 
 

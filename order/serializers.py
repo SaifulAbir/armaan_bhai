@@ -84,6 +84,19 @@ class CheckoutSerializer(serializers.ModelSerializer):
             order_instance = Order.objects.create(
                 **validated_data, user=self.context['request'].user, payment_status='DUE', order_status='ON_PROCESS')
 
+        # Retrieve the relevant Setting object
+        setting = Setting.objects.get(is_active=True)
+
+        # Calculate the delivery charge for the suborder
+        delivery_charge = setting.delivery_charge
+
+        # Create the suborder with the calculated delivery charge
+        suborder = SubOrder.objects.create(
+            # other fields for the suborder
+            setting=setting,
+            delivery_charge=delivery_charge,
+        )
+
 
         if order_items:
             suborder_instance_count = 0

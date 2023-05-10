@@ -85,17 +85,16 @@ class CheckoutSerializer(serializers.ModelSerializer):
                 **validated_data, user=self.context['request'].user, payment_status='DUE', order_status='ON_PROCESS')
 
         # Retrieve the relevant Setting object
-        setting = Setting.objects.get(is_active=True)
+        # setting = Setting.objects.get(is_active=True)
 
         # Calculate the delivery charge for the suborder
-        delivery_charge = setting.delivery_charge
+        delivery_charge = 0
+        delivery_charges = Setting.objects.filter(is_active=True).order_by('id')[:1]
+        for delivery_char in delivery_charges:
+            delivery_charge = delivery_char.delivery_charge
+        print(delivery_charge)
+        # print(delivery_charge)
 
-        # Create the suborder with the calculated delivery charge
-        suborder = SubOrder.objects.create(
-            # other fields for the suborder
-            setting=setting,
-            delivery_charge=delivery_charge,
-        )
 
 
         if order_items:
@@ -113,14 +112,14 @@ class CheckoutSerializer(serializers.ModelSerializer):
                         suborder_obj = SubOrder.objects.create(order=order_instance, user=self.context['request'].user, product_count=1,
                                             total_price=total_price, delivery_address=validated_data.get('delivery_address'),
                                             delivery_date=product.possible_delivery_date, payment_status='PAID',
-                                                order_status='ON_PROCESS')
+                                                order_status='ON_PROCESS', delivery_charge=delivery_charge)
                     else:
                         suborder_obj = SubOrder.objects.create(order=order_instance, user=self.context['request'].user,
                                                 product_count=1,
                                                 total_price=total_price,
                                                 delivery_address=validated_data.get('delivery_address'),
                                                 delivery_date=product.possible_delivery_date, payment_status='DUE',
-                                                order_status='ON_PROCESS')
+                                                order_status='ON_PROCESS', delivery_charge=delivery_charge)
                     OrderItem.objects.create(order=order_instance, suborder=suborder_obj, product=product, quantity=int(
                                      quantity), unit_price=unit_price, total_price=total_price)
                     suborder_instance_count += 1
@@ -168,7 +167,7 @@ class CheckoutSerializer(serializers.ModelSerializer):
                                                         delivery_address=validated_data.get('delivery_address'),
                                                         delivery_date=product.possible_delivery_date,
                                                         payment_status='PAID',
-                                                        order_status='ON_PROCESS')
+                                                        order_status='ON_PROCESS', delivery_charge=delivery_charge)
                             else:
                                 suborder_obj = SubOrder.objects.create(order=order_instance, user=self.context['request'].user,
                                                         product_count=1,
@@ -176,7 +175,7 @@ class CheckoutSerializer(serializers.ModelSerializer):
                                                         delivery_address=validated_data.get('delivery_address'),
                                                         delivery_date=product.possible_delivery_date,
                                                         payment_status='DUE',
-                                                        order_status='ON_PROCESS')
+                                                        order_status='ON_PROCESS', delivery_charge=delivery_charge)
                             OrderItem.objects.create(order=order_instance, suborder=suborder_obj, product=product,
                                                      quantity=int(
                                                          quantity), unit_price=unit_price, total_price=total_price)

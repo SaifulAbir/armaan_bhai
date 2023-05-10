@@ -169,6 +169,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
 
 
 class RelatedProductInfo(serializers.ModelSerializer):
+    sell_price_per_unit = serializers.SerializerMethodField('get_sell_price_with_vat')
     class Meta:
         model = Product
         fields = [
@@ -177,8 +178,13 @@ class RelatedProductInfo(serializers.ModelSerializer):
             'slug',
             'category',
             'sub_category',
-            'thumbnail'
+            'thumbnail',
+            'sell_price_per_unit'
         ]
+
+    def get_sell_price_with_vat(self, obj):
+        vat = obj.vat / 100.0 if obj.vat else 0
+        return round(obj.sell_price_per_unit * (1 + vat), 2)
 
 
 class ProductListSerializer(serializers.ModelSerializer):
@@ -189,6 +195,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     sub_category = SubCategoryListSerializer(many=False, read_only=True)
     unit = UnitListSerializer(many=False, read_only=True)
     related_products = serializers.SerializerMethodField('get_related_products')
+    sell_price_per_unit = serializers.SerializerMethodField('get_sell_price_with_vat')
 
     class Meta:
         model = Product
@@ -225,6 +232,12 @@ class ProductListSerializer(serializers.ModelSerializer):
         except:
             return []
 
+    def get_sell_price_with_vat(self, obj):
+        vat = obj.vat  # assuming vat is defined in the Product model
+        sell_price = obj.sell_price_per_unit
+        sell_price_with_vat = sell_price * (1 + vat / 100)
+        return sell_price_with_vat
+
 
 class ProductViewSerializer(serializers.ModelSerializer):
     production_steps = ProductionStepSerializer(many=True, read_only=True)
@@ -232,6 +245,7 @@ class ProductViewSerializer(serializers.ModelSerializer):
     user = FarmerListSerializer(many=False, read_only=True)
     category_title = serializers.CharField(source="category.title", read_only=True)
     related_products = serializers.SerializerMethodField('get_related_products')
+    sell_price_per_unit = serializers.SerializerMethodField('get_sell_price_with_vat')
 
     class Meta:
         model = Product
@@ -257,6 +271,12 @@ class ProductViewSerializer(serializers.ModelSerializer):
             'related_products',
             'vat'
         ]
+
+    def get_sell_price_with_vat(self, obj):
+        vat = obj.vat  # assuming vat is defined in the Product model
+        sell_price = obj.sell_price_per_unit
+        sell_price_with_vat = sell_price * (1 + vat / 100)
+        return sell_price_with_vat
 
     def get_related_products(self, obj):
         try:
@@ -389,6 +409,7 @@ class PublishProductSerializer(serializers.ModelSerializer):
 
 
 class BestSellingProductListSerializer(serializers.ModelSerializer):
+    sell_price_per_unit = serializers.SerializerMethodField('get_sell_price_with_vat')
 
     class Meta:
         model = Product
@@ -403,5 +424,11 @@ class BestSellingProductListSerializer(serializers.ModelSerializer):
             'unit',
             'sell_count'
         ]
+
+    def get_sell_price_with_vat(self, obj):
+        vat = obj.vat  # assuming vat is defined in the Product model
+        sell_price = obj.sell_price_per_unit
+        sell_price_with_vat = sell_price * (1 + vat / 100)
+        return sell_price_with_vat
 
 

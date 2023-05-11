@@ -253,9 +253,15 @@ class CheckoutDetailsSerializer(serializers.ModelSerializer):
     user = CustomerProfileDetailSerializer(many=False, read_only=True)
     order_item_order = ProductItemCheckoutSerializer(many=True, read_only=True)
     delivery_address = DeliveryAddressSerializer(many=False, read_only=True)
+    total_delivery_charges = serializers.SerializerMethodField()
     class Meta:
         model = Order
-        fields = ['id', 'user', 'order_id', 'order_date', 'delivery_date', 'order_status', 'order_item_order', 'delivery_address', 'payment_type', 'coupon', 'coupon_discount_amount', 'coupon_status', 'total_price', 'is_qc_passed']
+        fields = ['id', 'user', 'order_id', 'order_date', 'delivery_date', 'order_status', 'order_item_order', 'delivery_address', 'payment_type', 'coupon', 'coupon_discount_amount', 'coupon_status', 'total_price', 'is_qc_passed', 'total_delivery_charges']
+
+    def get_delivery_charges(self, obj):
+        suborders = SubOrder.objects.filter(order_id=obj.id)
+        delivery_charges_sum = suborders.aggregate(Sum('delivery_charge'))['delivery_charge__sum'] or 0
+        return delivery_charges_sum
 
 
 class OrderUpdateSerializer(serializers.ModelSerializer):
@@ -278,10 +284,14 @@ class CustomerOrderListSerializer(serializers.ModelSerializer):
         source='get_payment_status_display', read_only=True
     )
     order_number = serializers.CharField(source='order.order_id')
+    total_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     class Meta:
         model = SubOrder
         fields = ['id', 'user', 'order_number', 'suborder_number', 'order_date', 'delivery_date', 'order_status', 'order_status_value', 'order_item_suborder', 'delivery_address', 'payment_type',
-        'coupon_discount_amount', 'total_price', 'payment_status', 'payment_status_value']
+        'coupon_discount_amount', 'total_price', 'payment_status', 'payment_status_value', 'delivery_charge']
+
+    def get_total_price(self, suborder):
+        return suborder.total_price + suborder.delivery_charge
 
 
 class AgentOrderListSerializer(serializers.ModelSerializer):

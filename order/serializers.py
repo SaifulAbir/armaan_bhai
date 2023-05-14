@@ -294,7 +294,7 @@ class CustomerOrderListSerializer(serializers.ModelSerializer):
     class Meta:
         model = SubOrder
         fields = ['id', 'user', 'order_number', 'suborder_number', 'order_date', 'delivery_date', 'order_status', 'order_status_value', 'order_item_suborder', 'delivery_address', 'payment_type',
-        'coupon_discount_amount', 'total_price', 'payment_status', 'payment_status_value', 'delivery_charge']
+        'coupon_discount_amount', 'total_price', 'payment_status', 'payment_status_value', 'delivery_charge', 'divided_discount_amount']
 
     def get_total_price(self, suborder):
         # print(stotal_price)

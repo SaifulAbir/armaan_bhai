@@ -297,8 +297,10 @@ class CustomerOrderListSerializer(serializers.ModelSerializer):
         'coupon_discount_amount', 'total_price', 'payment_status', 'payment_status_value', 'delivery_charge', 'divided_discount_amount']
 
     def get_total_price(self, suborder):
-        # print(stotal_price)
-        return suborder.total_price + Decimal(suborder.delivery_charge) - Decimal(suborder.divided_discount_amount)
+        total_price = suborder.total_price + Decimal(suborder.delivery_charge)
+        if suborder.divided_discount_amount:
+            total_price -= Decimal(suborder.divided_discount_amount)
+        return total_price
 
 
 class AgentOrderListSerializer(serializers.ModelSerializer):

@@ -173,7 +173,7 @@ class CheckoutSerializer(serializers.ModelSerializer):
                                                         delivery_address=validated_data.get('delivery_address'),
                                                         delivery_date=product.possible_delivery_date,
                                                         payment_status='PAID',
-                                                        order_status='ON_PROCESS', delivery_charge=delivery_charge)
+                                                        order_status='ON_PROCESS', delivery_charge=delivery_charge, divided_discount_amount=sub_discount_amount)
                             else:
                                 suborder_obj = SubOrder.objects.create(order=order_instance, user=self.context['request'].user,
                                                         product_count=1,
@@ -181,7 +181,7 @@ class CheckoutSerializer(serializers.ModelSerializer):
                                                         delivery_address=validated_data.get('delivery_address'),
                                                         delivery_date=product.possible_delivery_date,
                                                         payment_status='DUE',
-                                                        order_status='ON_PROCESS', delivery_charge=delivery_charge)
+                                                        order_status='ON_PROCESS', delivery_charge=delivery_charge, divided_discount_amount=sub_discount_amount)
                             OrderItem.objects.create(order=order_instance, suborder=suborder_obj, product=product,
                                                      quantity=int(
                                                          quantity), unit_price=unit_price, total_price=total_price)
@@ -259,7 +259,7 @@ class CheckoutDetailsSerializer(serializers.ModelSerializer):
     user = CustomerProfileDetailSerializer(many=False, read_only=True)
     order_item_order = ProductItemCheckoutSerializer(many=True, read_only=True)
     delivery_address = DeliveryAddressSerializer(many=False, read_only=True)
-    total_delivery_charges = serializers.SerializerMethodField()
+    total_delivery_charges = serializers.SerializerMethodField('get_delivery_charges')
     class Meta:
         model = Order
         fields = ['id', 'user', 'order_id', 'order_date', 'delivery_date', 'order_status', 'order_item_order', 'delivery_address', 'payment_type', 'coupon', 'coupon_discount_amount', 'coupon_status', 'total_price', 'is_qc_passed', 'total_delivery_charges']

@@ -256,6 +256,7 @@ class SubOrder(AbstractTimeStamp):
     is_qc_passed = models.CharField(
         max_length=20, choices=QC_TYPES, default=QC_TYPES[0][0])
     pickup_request = models.BooleanField(default=False)
+    divided_discount_amount = models.FloatField(null=True, blank=True)
 
     class Meta:
         verbose_name = 'Sub Order'

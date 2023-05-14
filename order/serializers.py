@@ -99,6 +99,10 @@ class CheckoutSerializer(serializers.ModelSerializer):
 
         if order_items:
             suborder_instance_count = 0
+            total_discount_amount = validated_data.get('coupon_discount_amount', 0.0)
+            num_suborders = len(order_items)
+            sub_discount_amount = total_discount_amount / num_suborders
+            print(sub_discount_amount)
             for order_item in order_items:
                 product = order_item['product']
                 quantity = order_item['quantity']
@@ -112,14 +116,14 @@ class CheckoutSerializer(serializers.ModelSerializer):
                         suborder_obj = SubOrder.objects.create(order=order_instance, user=self.context['request'].user, product_count=1,
                                             total_price=total_price, delivery_address=validated_data.get('delivery_address'),
                                             delivery_date=product.possible_delivery_date, payment_status='PAID',
-                                                order_status='ON_PROCESS', delivery_charge=delivery_charge)
+                                                order_status='ON_PROCESS', delivery_charge=delivery_charge, divided_discount_amount=sub_discount_amount)
                     else:
                         suborder_obj = SubOrder.objects.create(order=order_instance, user=self.context['request'].user,
                                                 product_count=1,
                                                 total_price=total_price,
                                                 delivery_address=validated_data.get('delivery_address'),
                                                 delivery_date=product.possible_delivery_date, payment_status='DUE',
-                                                order_status='ON_PROCESS', delivery_charge=delivery_charge)
+                                                order_status='ON_PROCESS', delivery_charge=delivery_charge, divided_discount_amount=sub_discount_amount)
                     OrderItem.objects.create(order=order_instance, suborder=suborder_obj, product=product, quantity=int(
                                      quantity), unit_price=unit_price, total_price=total_price)
                     suborder_instance_count += 1
@@ -256,7 +260,7 @@ class CheckoutDetailsSerializer(serializers.ModelSerializer):
     total_delivery_charges = serializers.SerializerMethodField()
     class Meta:
         model = Order
-        fields = ['id', 'user', 'order_id', 'order_date', 'delivery_date', 'order_status', 'order_item_order', 'delivery_address', 'payment_type', 'coupon', 'coupon_discount_amount', 'coupon_status', 'total_price', 'is_qc_passed', 'total_delivery_charges']
+        fields = ['id', 'user', 'order_id', 'order_date', 'delivery_date', 'order_status', 'order_item_order', 'delivery_address', 'payment_type', 'coupon', 'coupon_discount_amount', 'coupon_status', 'total_price', 'is_qc_passed', 'total_delivery_charges', 'divided_discount_amount']
 
     def get_delivery_charges(self, obj):
         suborders = SubOrder.objects.filter(order_id=obj.id)

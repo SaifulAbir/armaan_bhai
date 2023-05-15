@@ -260,6 +260,7 @@ class CheckoutDetailsSerializer(serializers.ModelSerializer):
     order_item_order = ProductItemCheckoutSerializer(many=True, read_only=True)
     delivery_address = DeliveryAddressSerializer(many=False, read_only=True)
     total_delivery_charges = serializers.SerializerMethodField('get_delivery_charges')
+    total_price = serializers.SerializerMethodField('get_total_price')
     class Meta:
         model = Order
         fields = ['id', 'user', 'order_id', 'order_date', 'delivery_date', 'order_status', 'order_item_order', 'delivery_address', 'payment_type', 'coupon', 'coupon_discount_amount', 'coupon_status', 'total_price', 'is_qc_passed', 'total_delivery_charges']
@@ -268,6 +269,12 @@ class CheckoutDetailsSerializer(serializers.ModelSerializer):
         suborders = SubOrder.objects.filter(order_id=obj.id)
         delivery_charges_sum = suborders.aggregate(Sum('delivery_charge'))['delivery_charge__sum'] or 0
         return delivery_charges_sum
+    def get_total_price(self, order):
+        total_price = order.total_price or 0
+        total_price += Decimal(self.get_delivery_charges(order))
+        if order.coupon_discount_amount:
+            total_price -= Decimal(order.coupon_discount_amount)
+        return total_price
 
 
 class OrderUpdateSerializer(serializers.ModelSerializer):

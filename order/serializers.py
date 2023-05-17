@@ -145,7 +145,8 @@ class CheckoutSerializer(serializers.ModelSerializer):
                     count = 0
                     for suborder_object in suborder_objects:
                         count += 1
-                        if suborder_object.delivery_date.date() == product.possible_delivery_date and suborder_object.user == self.context['request'].user:
+                        if suborder_object.delivery_date.date() == product.possible_delivery_date:
+                                # and suborder_object.user == self.context['request'].user:
                             suborder_object.product_count += 1
                             suborder_object.total_price += decimal.Decimal(total_price)
                             suborder_object.save()
@@ -271,7 +272,7 @@ class CheckoutDetailsSerializer(serializers.ModelSerializer):
         return delivery_charges_sum
     def get_total_price(self, order):
         total_price = order.total_price or 0
-        total_price += Decimal(self.get_delivery_charges(order))
+        # total_price += Decimal(self.get_delivery_charges(order))
         if order.coupon_discount_amount:
             total_price -= Decimal(order.coupon_discount_amount)
         return total_price

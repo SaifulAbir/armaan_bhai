@@ -146,25 +146,28 @@ class CheckoutSerializer(serializers.ModelSerializer):
                     for suborder_object in suborder_objects:
                         count += 1
                         if suborder_object.delivery_date.date() == product.possible_delivery_date:
+                            is_existing_order = OrderItem.objects.filter(order=order_instance, suborder=suborder_object,
+                                                                         product=product).exists()
+                            if not is_existing_order:
                                 # and suborder_object.user == self.context['request'].user:
-                            suborder_object.product_count += 1
-                            suborder_object.total_price += decimal.Decimal(total_price)
-                            suborder_object.save()
-                            OrderItem.objects.create(order=order_instance, suborder=suborder_object, product=product,
-                                                     quantity=int(
-                                                         quantity), unit_price=unit_price, total_price=total_price)
-                            if order_instance:
-                                product_obj = Product.objects.filter(id=product.id)
-                                inventory_obj = Inventory.objects.filter(product=product).latest('created_at')
-                                update_quantity = int(inventory_obj.current_quantity) - int(quantity)
-                                product_obj.update(quantity = update_quantity)
-                                inventory_obj.current_quantity = update_quantity
-                                inventory_obj.save()
+                                suborder_object.product_count += 1
+                                suborder_object.total_price += decimal.Decimal(total_price)
+                                suborder_object.save()
+                                OrderItem.objects.create(order=order_instance, suborder=suborder_object, product=product,
+                                                         quantity=int(
+                                                             quantity), unit_price=unit_price, total_price=total_price)
+                                if order_instance:
+                                    product_obj = Product.objects.filter(id=product.id)
+                                    inventory_obj = Inventory.objects.filter(product=product).latest('created_at')
+                                    update_quantity = int(inventory_obj.current_quantity) - int(quantity)
+                                    product_obj.update(quantity = update_quantity)
+                                    inventory_obj.current_quantity = update_quantity
+                                    inventory_obj.save()
 
-                                # product sell count
-                                sell_count = product_obj[0].sell_count + 1
-                                product_obj.update(sell_count=sell_count)
-                            break
+                                    # product sell count
+                                    sell_count = product_obj[0].sell_count + 1
+                                    product_obj.update(sell_count=sell_count)
+                                break
 
                         if count == suborder_objects.count():
                             if payment_type == 'PG':

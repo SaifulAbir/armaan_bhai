@@ -65,6 +65,34 @@ class CustomerProductListAPI(ListAPIView):
 
         return queryset
 
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        page = self.paginate_queryset(queryset)
+
+        # Serialize the products
+        serializer = self.get_serializer(page, many=True)
+
+        # Get the category
+        category = self.request.GET.get('sub_category_id')
+        category_logo = None
+        print(category, "1")
+        if category:
+            try:
+                print(category)
+                category_obj = SubCategory.objects.get(id=category)
+                print(category_obj)
+                category_logo = category_obj.logo.url
+            except Category.DoesNotExist:
+                pass
+
+        # Get the paginated response
+        response = self.get_paginated_response(serializer.data)
+
+        # Add category logo to the response
+        if category_logo:
+            response.data['logo'] = category_logo
+
+        return response
 
 class FarmerProductListAPI(ListAPIView):
     serializer_class = ProductListSerializer

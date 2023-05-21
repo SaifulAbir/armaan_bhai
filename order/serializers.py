@@ -98,158 +98,103 @@ class CheckoutSerializer(serializers.ModelSerializer):
         # print(delivery_charge)
 
         if order_items:
+            suborder_instance_count = 0
             total_discount_amount = validated_data.get('coupon_discount_amount', 0.0)
             num_suborders = len(order_items)
             sub_discount_amount = total_discount_amount / num_suborders
             print(sub_discount_amount)
-
             for order_item in order_items:
                 product = order_item['product']
                 quantity = order_item['quantity']
                 unit_price = order_item['unit_price']
                 total_price = float(unit_price) * float(quantity)
-
                 if int(quantity) > product.quantity:
                     raise ValidationError("Ordered quantity is greater than inventory")
 
-                delivery_date = product.possible_delivery_date
+                if suborder_instance_count == 0:
+                    if payment_type == 'PG':
+                        suborder_obj = SubOrder.objects.create(order=order_instance, user=self.context['request'].user, product_count=1,
+                                            total_price=total_price, delivery_address=validated_data.get('delivery_address'),
+                                            delivery_date=product.possible_delivery_date, payment_status='PAID',
+                                                order_status='ON_PROCESS', delivery_charge=delivery_charge, divided_discount_amount=sub_discount_amount)
+                    else:
+                        suborder_obj = SubOrder.objects.create(order=order_instance, user=self.context['request'].user,
+                                                product_count=1,
+                                                total_price=total_price,
+                                                delivery_address=validated_data.get('delivery_address'),
+                                                delivery_date=product.possible_delivery_date, payment_status='DUE',
+                                                order_status='ON_PROCESS', delivery_charge=delivery_charge, divided_discount_amount=sub_discount_amount)
+                    OrderItem.objects.create(order=order_instance, suborder=suborder_obj, product=product, quantity=int(
+                                     quantity), unit_price=unit_price, total_price=total_price)
+                    suborder_instance_count += 1
+                    if order_instance:
+                        product_obj = Product.objects.filter(id=product.id)
+                        inventory_obj = Inventory.objects.filter(product=product).latest('created_at')
+                        update_quantity = int(inventory_obj.current_quantity) - int(quantity)
+                        product_obj.update(quantity = update_quantity)
+                        inventory_obj.current_quantity = update_quantity
+                        inventory_obj.save()
 
-                if payment_type == 'PG':
-                    suborder_obj = SubOrder.objects.create(
-                        order=order_instance, user=self.context['request'].user,
-                        product_count=1, total_price=total_price,
-                        delivery_address=validated_data.get('delivery_address'),
-                        delivery_date=delivery_date, payment_status='PAID',
-                        order_status='ON_PROCESS', delivery_charge=delivery_charge,
-                        divided_discount_amount=sub_discount_amount
-                    )
+                        # product sell count
+                        sell_count = product_obj[0].sell_count + 1
+                        product_obj.update(sell_count=sell_count)
                 else:
-                    suborder_obj = SubOrder.objects.create(
-                        order=order_instance, user=self.context['request'].user,
-                        product_count=1, total_price=total_price,
-                        delivery_address=validated_data.get('delivery_address'),
-                        delivery_date=delivery_date, payment_status='DUE',
-                        order_status='ON_PROCESS', delivery_charge=delivery_charge,
-                        divided_discount_amount=sub_discount_amount
-                    )
+                    suborder_objects = SubOrder.objects.all().order_by('-created_at')[:suborder_instance_count]
+                    count = 0
+                    for suborder_object in suborder_objects:
+                        count += 1
+                        if suborder_object.delivery_date.date() == product.possible_delivery_date and suborder_object.user == self.context['request'].user:
+                            suborder_object.product_count += 1
+                            suborder_object.total_price += decimal.Decimal(total_price)
+                            suborder_object.save()
+                            OrderItem.objects.create(order=order_instance, suborder=suborder_object, product=product,
+                                                     quantity=int(
+                                                         quantity), unit_price=unit_price, total_price=total_price)
+                            if order_instance:
+                                product_obj = Product.objects.filter(id=product.id)
+                                inventory_obj = Inventory.objects.filter(product=product).latest('created_at')
+                                update_quantity = int(inventory_obj.current_quantity) - int(quantity)
+                                product_obj.update(quantity = update_quantity)
+                                inventory_obj.current_quantity = update_quantity
+                                inventory_obj.save()
 
-                OrderItem.objects.create(
-                    order=order_instance, suborder=suborder_obj, product=product,
-                    quantity=int(quantity), unit_price=unit_price, total_price=total_price
-                )
+                                # product sell count
+                                sell_count = product_obj[0].sell_count + 1
+                                product_obj.update(sell_count=sell_count)
+                            break
 
-                if order_instance:
-                    product_obj = Product.objects.filter(id=product.id)
-                    inventory_obj = Inventory.objects.filter(product=product).latest('created_at')
-                    update_quantity = int(inventory_obj.current_quantity) - int(quantity)
-                    product_obj.update(quantity=update_quantity)
-                    inventory_obj.current_quantity = update_quantity
-                    inventory_obj.save()
+                        if count == suborder_objects.count():
+                            if payment_type == 'PG':
+                                suborder_obj = SubOrder.objects.create(order=order_instance, user=self.context['request'].user,
+                                                        product_count=1,
+                                                        total_price=total_price,
+                                                        delivery_address=validated_data.get('delivery_address'),
+                                                        delivery_date=product.possible_delivery_date,
+                                                        payment_status='PAID',
+                                                        order_status='ON_PROCESS', delivery_charge=delivery_charge, divided_discount_amount=sub_discount_amount)
+                            else:
+                                suborder_obj = SubOrder.objects.create(order=order_instance, user=self.context['request'].user,
+                                                        product_count=1,
+                                                        total_price=total_price,
+                                                        delivery_address=validated_data.get('delivery_address'),
+                                                        delivery_date=product.possible_delivery_date,
+                                                        payment_status='DUE',
+                                                        order_status='ON_PROCESS', delivery_charge=delivery_charge, divided_discount_amount=sub_discount_amount)
+                            OrderItem.objects.create(order=order_instance, suborder=suborder_obj, product=product,
+                                                     quantity=int(
+                                                         quantity), unit_price=unit_price, total_price=total_price)
+                            suborder_instance_count += 1
+                            if order_instance:
+                                product_obj = Product.objects.filter(id=product.id)
+                                inventory_obj = Inventory.objects.filter(product=product).latest('created_at')
+                                update_quantity = int(inventory_obj.current_quantity) - int(quantity)
+                                product_obj.update(quantity = update_quantity)
+                                inventory_obj.current_quantity = update_quantity
+                                inventory_obj.save()
 
-                    # product sell count
-                    sell_count = product_obj[0].sell_count + 1
-                    product_obj.update(sell_count=sell_count)
-
-
-
-        # if order_items:
-        #     suborder_instance_count = 0
-        #     total_discount_amount = validated_data.get('coupon_discount_amount', 0.0)
-        #     num_suborders = len(order_items)
-        #     sub_discount_amount = total_discount_amount / num_suborders
-        #     print(sub_discount_amount)
-        #     for order_item in order_items:
-        #         product = order_item['product']
-        #         quantity = order_item['quantity']
-        #         unit_price = order_item['unit_price']
-        #         total_price = float(unit_price) * float(quantity)
-        #         if int(quantity) > product.quantity:
-        #             raise ValidationError("Ordered quantity is greater than inventory")
-        #
-        #         if suborder_instance_count == 0:
-        #             if payment_type == 'PG':
-        #                 suborder_obj = SubOrder.objects.create(order=order_instance, user=self.context['request'].user, product_count=1,
-        #                                     total_price=total_price, delivery_address=validated_data.get('delivery_address'),
-        #                                     delivery_date=product.possible_delivery_date, payment_status='PAID',
-        #                                         order_status='ON_PROCESS', delivery_charge=delivery_charge, divided_discount_amount=sub_discount_amount)
-        #             else:
-        #                 suborder_obj = SubOrder.objects.create(order=order_instance, user=self.context['request'].user,
-        #                                         product_count=1,
-        #                                         total_price=total_price,
-        #                                         delivery_address=validated_data.get('delivery_address'),
-        #                                         delivery_date=product.possible_delivery_date, payment_status='DUE',
-        #                                         order_status='ON_PROCESS', delivery_charge=delivery_charge, divided_discount_amount=sub_discount_amount)
-        #             OrderItem.objects.create(order=order_instance, suborder=suborder_obj, product=product, quantity=int(
-        #                              quantity), unit_price=unit_price, total_price=total_price)
-        #             suborder_instance_count += 1
-        #             if order_instance:
-        #                 product_obj = Product.objects.filter(id=product.id)
-        #                 inventory_obj = Inventory.objects.filter(product=product).latest('created_at')
-        #                 update_quantity = int(inventory_obj.current_quantity) - int(quantity)
-        #                 product_obj.update(quantity = update_quantity)
-        #                 inventory_obj.current_quantity = update_quantity
-        #                 inventory_obj.save()
-        #
-        #                 # product sell count
-        #                 sell_count = product_obj[0].sell_count + 1
-        #                 product_obj.update(sell_count=sell_count)
-        #         else:
-        #             suborder_objects = SubOrder.objects.all().order_by('-created_at')[:suborder_instance_count]
-        #             count = 0
-        #             for suborder_object in suborder_objects:
-        #                 count += 1
-        #                 if suborder_object.delivery_date.date() == product.possible_delivery_date and suborder_object.user == self.context['request'].user:
-        #                     suborder_object.product_count += 1
-        #                     suborder_object.total_price += decimal.Decimal(total_price)
-        #                     suborder_object.save()
-        #                     OrderItem.objects.create(order=order_instance, suborder=suborder_object, product=product,
-        #                                              quantity=int(
-        #                                                  quantity), unit_price=unit_price, total_price=total_price)
-        #                     if order_instance:
-        #                         product_obj = Product.objects.filter(id=product.id)
-        #                         inventory_obj = Inventory.objects.filter(product=product).latest('created_at')
-        #                         update_quantity = int(inventory_obj.current_quantity) - int(quantity)
-        #                         product_obj.update(quantity = update_quantity)
-        #                         inventory_obj.current_quantity = update_quantity
-        #                         inventory_obj.save()
-        #
-        #                         # product sell count
-        #                         sell_count = product_obj[0].sell_count + 1
-        #                         product_obj.update(sell_count=sell_count)
-        #                     break
-        #
-        #                 if count == suborder_objects.count():
-        #                     if payment_type == 'PG':
-        #                         suborder_obj = SubOrder.objects.create(order=order_instance, user=self.context['request'].user,
-        #                                                 product_count=1,
-        #                                                 total_price=total_price,
-        #                                                 delivery_address=validated_data.get('delivery_address'),
-        #                                                 delivery_date=product.possible_delivery_date,
-        #                                                 payment_status='PAID',
-        #                                                 order_status='ON_PROCESS', delivery_charge=delivery_charge, divided_discount_amount=sub_discount_amount)
-        #                     else:
-        #                         suborder_obj = SubOrder.objects.create(order=order_instance, user=self.context['request'].user,
-        #                                                 product_count=1,
-        #                                                 total_price=total_price,
-        #                                                 delivery_address=validated_data.get('delivery_address'),
-        #                                                 delivery_date=product.possible_delivery_date,
-        #                                                 payment_status='DUE',
-        #                                                 order_status='ON_PROCESS', delivery_charge=delivery_charge, divided_discount_amount=sub_discount_amount)
-        #                     OrderItem.objects.create(order=order_instance, suborder=suborder_obj, product=product,
-        #                                              quantity=int(
-        #                                                  quantity), unit_price=unit_price, total_price=total_price)
-        #                     suborder_instance_count += 1
-        #                     if order_instance:
-        #                         product_obj = Product.objects.filter(id=product.id)
-        #                         inventory_obj = Inventory.objects.filter(product=product).latest('created_at')
-        #                         update_quantity = int(inventory_obj.current_quantity) - int(quantity)
-        #                         product_obj.update(quantity = update_quantity)
-        #                         inventory_obj.current_quantity = update_quantity
-        #                         inventory_obj.save()
-        #
-        #                         # product sell count
-        #                         sell_count = product_obj[0].sell_count + 1
-        #                         product_obj.update(sell_count=sell_count)
+                                # product sell count
+                                sell_count = product_obj[0].sell_count + 1
+                                product_obj.update(sell_count=sell_count)
 
         # apply coupon
         try:

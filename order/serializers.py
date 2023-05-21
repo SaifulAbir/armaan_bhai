@@ -112,7 +112,7 @@ class CheckoutSerializer(serializers.ModelSerializer):
                 if int(quantity) > product.quantity:
                     raise ValidationError("Ordered quantity is greater than inventory")
 
-                delivery_date = product.possible_delivery_date.date()
+                delivery_date = product.possible_delivery_date
 
                 if payment_type == 'PG':
                     suborder_obj = SubOrder.objects.create(

@@ -16,7 +16,7 @@ from armaan_bhai.pagination import CustomPagination
 from product.serializers import DivisionListSerializer, DistrictListSerializer, UpazillaListSerializer
 from user.serializers import *
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, generics
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.exceptions import ValidationError
 from django.http import Http404
@@ -321,6 +321,15 @@ class UpazillaListAPIView(ListAPIView):
 class UpazillaUpdateAPIView(UpdateAPIView):
     serializer_class = UpazillaListSerializer
     queryset = Division.objects.all()
+
+
+class ChangePasswordView(generics.UpdateAPIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = ChangePasswordSerializer
+
+    def get_object(self):
+        return self.request.user
+
 
 # class SocialSignupAPIView(CreateAPIView):
 #     permission_classes = [AllowAny]

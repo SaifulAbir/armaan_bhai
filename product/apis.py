@@ -75,22 +75,22 @@ class CustomerProductListAPI(ListAPIView):
         # Get the category
         category = self.request.GET.get('sub_category_id')
         category_logo = None
-        print(category, "1")
+
         if category:
             try:
-                print(category)
                 category_obj = SubCategory.objects.get(id=category)
-                print(category_obj)
                 category_logo = category_obj.logo.url
-            except Category.DoesNotExist:
+                # Create the full URL for the logo
+                category_logo_url = request.build_absolute_uri(category_logo)
+            except SubCategory.DoesNotExist:
                 pass
 
         # Get the paginated response
         response = self.get_paginated_response(serializer.data)
 
-        # Add category logo to the response
-        if category_logo:
-            response.data['logo'] = category_logo
+        # Add category logo URL to the response
+        if category_logo_url:
+            response.data['logo'] = category_logo_url
 
         return response
 

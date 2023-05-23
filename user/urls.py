@@ -58,6 +58,7 @@ urlpatterns = [
     path('admin/create/upazilla/', UpazillaCreateAPIView.as_view()),
     path('admin/upazilla/list/', UpazillaListAPIView.as_view()),
     path('admin/update/upazilla/<int:pk>/', UpazillaUpdateAPIView.as_view()),
+    path('change_password/', ChangePasswordView.as_view(), name='auth_change_password'),
     # path('update-user/', UserUpdateAPIView.as_view()),
     # path('user-detail/', UserUpdateAPIView.as_view()),
     # path('donor-profile/<int:pk>/', DonorProfileAPIView.as_view()),

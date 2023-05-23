@@ -19,6 +19,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.exceptions import ValidationError
+from django.http import Http404
 # from user.utils import profile_view_count
 
 
@@ -47,10 +48,11 @@ class AgentUpdateAPIView(UpdateAPIView):
     lookup_field = 'pk'
 
     def get_object(self):
-    # def get_queryset(self):
-        # TODO sent sms to agent
         pk = self.kwargs['pk']
-        agent = User.objects.get(id=pk, user_type="AGENT")
+        try:
+            agent = User.objects.get(id=pk, user_type="AGENT")  
+        except User.DoesNotExist:
+            raise Http404("Agent does not exist")
         return agent
     
 
@@ -138,6 +140,18 @@ class CustomerUpdateAPIView(UpdateAPIView):
         customer = User.objects.get(id=self.request.user.id, user_type="CUSTOMER")
         return customer
 
+class FarmerUpdateAPIView(UpdateAPIView):
+    queryset = User.objects.all()
+    serializer_class = FarmerProfileUpdateSerializer
+    lookup_field = 'pk'
+
+    def get_object(self):
+        pk = self.kwargs['pk']
+        try:
+            farmer = User.objects.get(id=pk, user_type="FARMER")
+        except User.DoesNotExist:
+            return Http404("Farmer does not exist")
+        return farmer
 
 class CustomerRetrieveAPIView(RetrieveAPIView):
     serializer_class = CustomerProfileDetailSerializer

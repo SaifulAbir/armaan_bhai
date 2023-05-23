@@ -37,6 +37,7 @@ urlpatterns = [
     path('admin/farmer/list/', FarmerListAPI.as_view(), name='farmer_list'),
     # farmer list for agent to create product
     path('agent/farmer/list/', AgentFarmerListAPI.as_view(), name='agent_farmer_list'),
+    path('update/farmer/<int:pk>/', FarmerUpdateAPIView.as_view(), name='update_farmer'),
     # agent list for superadmin
     path('admin/admin/list/', AdminListAPI.as_view(), name='admin_list'),
     # agent list for superadmin

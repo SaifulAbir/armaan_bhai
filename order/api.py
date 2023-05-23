@@ -7,7 +7,7 @@ from armaan_bhai.pagination import CustomPagination
 from rest_framework.response import Response
 from rest_framework.exceptions import NotFound
 from order.serializers import *
-from django.db.models import Q
+from django.db.models import Q, ProtectedError
 from order.models import *
 from user.models import *
 from rest_framework import status
@@ -53,7 +53,11 @@ class DeliveryAddressDeleteAPIView(DestroyAPIView):
     lookup_url_kwarg = "id"
 
     def delete(self, request, *args, **kwargs):
-        return super(DeliveryAddressDeleteAPIView, self).delete(request, *args, **kwargs)
+        try:
+            return super(DeliveryAddressDeleteAPIView, self).delete(request, *args, **kwargs)
+        except ProtectedError:
+            return Response({"message": "This address is used in an order. So you can't delete this address."},
+                            status=status.HTTP_400_BAD_REQUEST)
 
 
 class CheckoutAPIView(CreateAPIView):

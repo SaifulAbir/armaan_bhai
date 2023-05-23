@@ -322,25 +322,25 @@ class FarmerPaymentListAPIView(ListAPIView):
             for order in order_list:
                 farmer_id = order.product.user.id
                 if farmer_id in farmer_dict:
-                    farmer_dict[farmer_id]["total_amount"] += order.total_price
+                    farmer_dict[farmer_id]["total_amount"] += order.product.price_per_unit * order.quantity
                     farmer_dict[farmer_id]["item_list"].append({
                         "product_id": order.id,
                         "product_name": order.product.title,
                         "quantity": order.quantity,
-                        "price": order.unit_price,
-                        "total_price": order.total_price
+                        "price": order.product.price_per_unit,
+                        "total_price": order.product.price_per_unit * order.quantity
                     })
                 else:
                     farmer_dict[farmer_id] = {
                         "farmer_id": farmer_id,
-                        "total_amount": order.total_price,
+                        "total_amount": order.product.price_per_unit * order.quantity,
                         "item_list": [
                             {
                                 "product_id": order.id,
                                 "product_name": order.product.title,
                                 "quantity": order.quantity,
-                                "price": order.unit_price,
-                                "total_price": order.total_price
+                                "price": order.product.price_per_unit,
+                                "total_price": order.product.price_per_unit * order.quantity
                             }
                         ]
                     }

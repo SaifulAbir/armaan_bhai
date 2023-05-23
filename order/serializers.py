@@ -336,7 +336,7 @@ class CheckoutDetailsSerializer(serializers.ModelSerializer):
         return delivery_charges_sum
     def get_total_price(self, order):
         total_price = order.total_price or 0
-        # total_price += Decimal(self.get_delivery_charges(order))
+        total_price += Decimal(self.get_delivery_charges(order))
         if order.coupon_discount_amount:
             total_price -= Decimal(order.coupon_discount_amount)
         return total_price
@@ -382,11 +382,18 @@ class AgentOrderListSerializer(serializers.ModelSerializer):
     user = CustomerProfileDetailSerializer(many=False, read_only=True)
     # order_item_suborder = ProductItemCheckoutSerializer(many=True, read_only=True)
     delivery_address = DeliveryAddressSerializer(many=False, read_only=True)
+    total_price = serializers.SerializerMethodField('get_total_price')
     class Meta:
         model = SubOrder
         # fields = ['id', 'user', 'order', 'suborder_number', 'order_date', 'delivery_date', 'order_status', 'payment_status', 'order_status_value', 'order_item_suborder', 'delivery_address', 'payment_type',
         # 'coupon_discount_amount', 'total_price', 'is_qc_passed']
         fields = ['id', 'user', 'order', 'suborder_number', 'order_date', 'delivery_date', 'order_status', 'payment_status', 'order_status_value', 'delivery_address', 'payment_type', 'total_price']
+
+    def get_total_price(self, suborder):
+        total_price = suborder.total_price + Decimal(suborder.delivery_charge)
+        if suborder.divided_discount_amount:
+            total_price -= Decimal(suborder.divided_discount_amount)
+        return total_price
 
 
 # Pickup Location
@@ -620,12 +627,16 @@ class AdminOrdersListByPickupPointsListSerializer(serializers.ModelSerializer):
 
 class ProductItemSerializer(serializers.ModelSerializer):
     product_title = serializers.SerializerMethodField('get_product_title')
+    farmer_unit_price = serializers.SerializerMethodField('get_farmer_unit_price')
     class Meta:
         model = OrderItem
-        fields = ['id', 'product','product_title', 'quantity', 'unit_price', 'total_price', 'is_qc_passed','payment_status']
+        fields = ['id', 'product','product_title', 'quantity', 'unit_price','farmer_unit_price', 'total_price', 'is_qc_passed','payment_status']
 
     def get_product_title(self, obj):
         return obj.product.title
+    
+    def get_farmer_unit_price(self, obj):
+        return obj.product.price_per_unit
 
 
 class UserSerializer(serializers.ModelSerializer):

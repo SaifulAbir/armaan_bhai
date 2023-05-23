@@ -332,7 +332,24 @@ class AgentUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'full_name', 'is_active', 'phone_number']
+        fields = ['id', 'full_name', 'is_active', 'phone_number','address']
+
+    def update(self, instance, validated_data):
+        validated_data['is_active'] = instance.is_active
+        return super().update(instance, validated_data)
+
+        
+class FarmerProfileUpdateSerializer(serializers.ModelSerializer):
+    phone_number = serializers.CharField(required=True,
+                                         validators=[UniqueValidator(queryset=User.objects.all())])
+
+    class Meta:
+        model = User
+        fields = ['id', 'full_name', 'is_active', 'phone_number','address']
+
+    def update(self, instance, validated_data):
+        validated_data['is_active'] = instance.is_active
+        return super().update(instance, validated_data)
 
 
 class AdminUpdateSerializer(serializers.ModelSerializer):
@@ -464,6 +481,8 @@ class AdminListSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'full_name', 'username', 'gender', 'organization_name', 'address', 'division', 'district', 'upazilla',
                   'village', 'postcode', 'phone_number', 'image', 'gender_display_value', 'is_active']
+
+
 
 
 # class UserSocialRegSerializer(serializers.ModelSerializer):

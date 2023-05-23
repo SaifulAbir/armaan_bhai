@@ -56,7 +56,7 @@ class DeliveryAddressDeleteAPIView(DestroyAPIView):
         try:
             return super(DeliveryAddressDeleteAPIView, self).delete(request, *args, **kwargs)
         except ProtectedError:
-            return Response({"message": "This address is used in an order. So you can't delete this address."},
+            return Response({"error": "This address is used in an order. So you can't delete this address."},
                             status=status.HTTP_400_BAD_REQUEST)
 
 

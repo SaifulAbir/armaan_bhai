@@ -75,6 +75,7 @@ class CustomerProductListAPI(ListAPIView):
         # Get the category
         category = self.request.GET.get('sub_category_id')
         category_logo = None
+        category_logo_url = None
 
         if category:
             try:

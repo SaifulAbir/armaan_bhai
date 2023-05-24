@@ -404,10 +404,10 @@ class AgentOrderListSerializer(serializers.ModelSerializer):
     def get_farmer_total_price(self, suborder):
         user = self.context['request'].user
         if user.is_authenticated:
-            # Get the order items associated with the suborder
-            order_items = suborder.order_item_suborder.all()
-            # Calculate the total price based on the order items' unit prices
-            order_items_total = sum(item.product.price_per_unit for item in order_items)
+            # Get the order items associated with the suborder and belong to the authenticated user
+            order_items = suborder.order_item_suborder.filter(product__user=user)
+            # Calculate the total price based on the order items' unit prices and quantities
+            order_items_total = sum(item.product.price_per_unit * item.quantity for item in order_items)
             return Decimal(order_items_total)
 
         return suborder.total_price or Decimal('0')

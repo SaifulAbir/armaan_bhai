@@ -383,11 +383,12 @@ class AgentOrderListSerializer(serializers.ModelSerializer):
     # order_item_suborder = ProductItemCheckoutSerializer(many=True, read_only=True)
     delivery_address = DeliveryAddressSerializer(many=False, read_only=True)
     total_price = serializers.SerializerMethodField('get_total_price')
+    farmer_total_price = serializers.SerializerMethodField('get_farmer_total_price')
     class Meta:
         model = SubOrder
         # fields = ['id', 'user', 'order', 'suborder_number', 'order_date', 'delivery_date', 'order_status', 'payment_status', 'order_status_value', 'order_item_suborder', 'delivery_address', 'payment_type',
         # 'coupon_discount_amount', 'total_price', 'is_qc_passed']
-        fields = ['id', 'user', 'order', 'suborder_number', 'order_date', 'delivery_date', 'order_status', 'payment_status', 'order_status_value', 'delivery_address', 'payment_type', 'total_price']
+        fields = ['id', 'user', 'order', 'suborder_number', 'order_date', 'delivery_date', 'order_status', 'payment_status', 'order_status_value', 'delivery_address', 'payment_type', 'total_price', 'farmer_total_price']
 
     def get_total_price(self, suborder):
         total_price = suborder.total_price or Decimal('0')
@@ -399,6 +400,17 @@ class AgentOrderListSerializer(serializers.ModelSerializer):
             total_price -= Decimal(suborder.divided_discount_amount)
 
         return total_price
+
+    def get_farmer_total_price(self, suborder):
+        user = self.context['request'].user
+        if user.is_authenticated:
+            # Get the order items associated with the suborder
+            order_items = suborder.order_item_suborder.all()
+            # Calculate the total price based on the order items' unit prices
+            order_items_total = sum(item.product.price_per_unit for item in order_items)
+            return Decimal(order_items_total)
+
+        return suborder.total_price or Decimal('0')
 
 
 # Pickup Location

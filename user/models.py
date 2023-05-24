@@ -80,7 +80,7 @@ class User(AbstractUser):
         db_table = 'users'
 
     def __str__(self):
-        return ('SuperUser' if self.user_type == 'ADMIN' else self.username) + "-" + str(self.id) + "-" + (self.agent_user_id if self.agent_user_id else "No Agent") + "-" + str(self.phone_number)
+        return ('SuperUser' if self.user_type == 'ADMIN' else self.username) + "-" + str(self.id) + "-" + (self.agent_user_id if self.agent_user_id else "No Agent") + "-" + str(self.phone_number) + "-" + str(self.user_type)
 
 
 class AgentFarmer(AbstractTimeStamp):

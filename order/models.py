@@ -346,8 +346,12 @@ class CouponStat(AbstractTimeStamp):
 
 class FarmerAccountInfo(AbstractTimeStamp):
     PAYMENT_CHOICES = [
+        ('BKASH', 'bKash'),
+        ('NAGAD', 'Nagad'),
+        ('ROCKET', 'Rocket'),
+        ('UPAY', 'Upay'),
         ('BANK_ACCOUNT', 'Bank Account'),
-        ('MFS', 'Mobile Financial Services'),
+        # ('MFS', 'Mobile Financial Services'),
     ]
     account_type = models.CharField(
         max_length=20, null=True, blank=True, choices=PAYMENT_CHOICES)

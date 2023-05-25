@@ -126,10 +126,13 @@ class ProductCreateSerializer(serializers.ModelSerializer):
 
 
         # create product
-        if self.context['request'].user.user_type == 'FARMER' or self.context['request'].user.user_type == 'ADMIN':
-            product_instance = Product.objects.create(**validated_data, user=self.context['request'].user, vat=vat_value)
+        if not (self.context['request'].user.user_type == 'FARMER' or self.context['request'].user.user_type == 'AGENT' or self.context['request'].user.user_type == 'ADMIN' ):
+            raise serializers.ValidationError("Product only will be uploaded by agent or farmer or admin")
         else:
-            product_instance = Product.objects.create(**validated_data, vat=vat_value)
+            if self.context['request'].user.user_type == 'FARMER':
+                product_instance = Product.objects.create(**validated_data, user=self.context['request'].user, vat=vat_value, created_by=self.context['request'].user )
+            else:
+                product_instance = Product.objects.create(**validated_data, vat=vat_value, created_by=self.context['request'].user)
 
         # old logic 
         # if not (self.context['request'].user.user_type == 'FARMER' or self.context['request'].user.user_type == 'AGENT'):
@@ -153,6 +156,15 @@ class ProductCreateSerializer(serializers.ModelSerializer):
             # create inventory
             Inventory.objects.create(product=product_instance, initial_quantity=quantity,
                                      current_quantity=quantity)
+
+        # update status and sell_price_per_unit
+        Product.objects.filter(id=product_instance.id).update(status='PUBLISH')
+        try:
+            price_per_unit = validated_data["price_per_unit"]
+        except:
+            price_per_unit = None
+        if price_per_unit:
+            Product.objects.filter(id=product_instance.id).update(price_per_unit=price_per_unit, sell_price_per_unit=price_per_unit)
 
         # product_images
         if product_images:

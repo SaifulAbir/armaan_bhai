@@ -333,7 +333,8 @@ class AgentUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'full_name', 'is_active', 'phone_number','address']
+        fields = ['id', 'full_name', 'is_active', 'phone_number','address','image','gender','division',
+                  'district','upazilla','village','postcode']
 
     def update(self, instance, validated_data):
         validated_data['is_active'] = instance.is_active
@@ -346,7 +347,8 @@ class FarmerProfileUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'full_name', 'is_active', 'phone_number','address']
+        fields = ['id', 'full_name', 'is_active', 'phone_number','address','gender','image','nid_front','nid_back','division',
+                  'district','upazilla','village','postcode']
 
     def update(self, instance, validated_data):
         validated_data['is_active'] = instance.is_active

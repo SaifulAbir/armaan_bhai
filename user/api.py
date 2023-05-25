@@ -16,9 +16,10 @@ from armaan_bhai.pagination import CustomPagination
 from product.serializers import DivisionListSerializer, DistrictListSerializer, UpazillaListSerializer
 from user.serializers import *
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, generics
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.exceptions import ValidationError
+from django.http import Http404
 # from user.utils import profile_view_count
 
 
@@ -28,16 +29,41 @@ class UserRegApi(CreateAPIView):
     permission_classes = [AllowAny]
 
 
+class SuperUserRegApi(CreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = SuperUserRegSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        if self.request.user.is_superuser == True:
+            return super(SuperUserRegApi, self).post(request, *args, **kwargs)
+        else:
+            raise ValidationError(
+                {"msg": 'You can not add super user, because you are not an Admin!'})
+
+
 class AgentUpdateAPIView(UpdateAPIView):
     queryset = User.objects.all()
     serializer_class = AgentUpdateSerializer
     lookup_field = 'pk'
 
     def get_object(self):
-    # def get_queryset(self):
-        # TODO sent sms to agent
         pk = self.kwargs['pk']
-        agent = User.objects.get(id=pk, user_type="AGENT")
+        try:
+            agent = User.objects.get(id=pk, user_type="AGENT")  
+        except User.DoesNotExist:
+            raise Http404("Agent does not exist")
+        return agent
+    
+
+class AdminUpdateAPIView(UpdateAPIView):
+    queryset = User.objects.all()
+    serializer_class = AdminUpdateSerializer
+    lookup_field = 'pk'
+
+    def get_object(self):
+        pk = self.kwargs['pk']
+        agent = User.objects.get(id=pk, user_type="ADMIN")
         return agent
 
 
@@ -114,6 +140,18 @@ class CustomerUpdateAPIView(UpdateAPIView):
         customer = User.objects.get(id=self.request.user.id, user_type="CUSTOMER")
         return customer
 
+class FarmerUpdateAPIView(UpdateAPIView):
+    queryset = User.objects.all()
+    serializer_class = FarmerProfileUpdateSerializer
+    lookup_field = 'pk'
+
+    def get_object(self):
+        pk = self.kwargs['pk']
+        try:
+            farmer = User.objects.get(id=pk, user_type="FARMER")
+        except User.DoesNotExist:
+            return Http404("Farmer does not exist")
+        return farmer
 
 class CustomerRetrieveAPIView(RetrieveAPIView):
     serializer_class = CustomerProfileDetailSerializer
@@ -139,7 +177,7 @@ class UserRetrieveAPIView(RetrieveAPIView):
     serializer_class = UserProfileDetailSerializer
 
     def get_object(self):
-        user = User.objects.get(Q(id=self.request.user.id), Q(user_type='AGENT') | Q(user_type='FARMER') | Q(is_superuser=True))
+        user = User.objects.get(Q(id=self.request.user.id), Q(user_type='AGENT') | Q(user_type='FARMER') | Q(user_type='ADMIN') | Q(is_superuser=True))
         return user
 
 
@@ -178,6 +216,19 @@ class AgentListAPI(ListAPIView):
         user = self.request.user
         if user.is_superuser:
             queryset = User.objects.filter(user_type="AGENT")
+        else:
+            queryset = None
+        return queryset
+
+
+class AdminListAPI(ListAPIView):
+    serializer_class = AdminListSerializer
+    pagination_class = CustomPagination
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser:
+            queryset = User.objects.filter(user_type="ADMIN")
         else:
             queryset = None
         return queryset
@@ -270,6 +321,15 @@ class UpazillaListAPIView(ListAPIView):
 class UpazillaUpdateAPIView(UpdateAPIView):
     serializer_class = UpazillaListSerializer
     queryset = Division.objects.all()
+
+
+class ChangePasswordView(generics.UpdateAPIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = ChangePasswordSerializer
+
+    def get_object(self):
+        return self.request.user
+
 
 # class SocialSignupAPIView(CreateAPIView):
 #     permission_classes = [AllowAny]

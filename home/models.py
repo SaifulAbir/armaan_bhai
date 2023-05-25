@@ -15,4 +15,4 @@ class TotalVisit(AbstractTimeStamp):
         db_table = 'total_visits'
 
     def __str__(self):
-        return self.visitor
+        return f"{self.pk}"

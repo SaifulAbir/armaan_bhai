@@ -1,9 +1,12 @@
 from rest_framework import serializers
 from product.models import Product, Category, SubCategory, Units, Inventory, ProductImage, ProductionStep
 from user.models import User, Division, District, Upazilla
+from order.models import Setting
 from user.serializers import FarmerListSerializer
 from rest_framework.exceptions import ValidationError
 from django.db.models import Sum
+from django.utils import timezone
+
 
 
 
@@ -115,17 +118,33 @@ class ProductCreateSerializer(serializers.ModelSerializer):
         except:
             production_steps = None
 
+        # get vat from settings 
+        vat_value = 0
+        vat_values = Setting.objects.filter(is_active=True).order_by('id')[:1]
+        for vat_v in vat_values:
+            vat_value = vat_v.vat
+
+
         # create product
-        if not (self.context['request'].user.user_type == 'FARMER' or self.context['request'].user.user_type == 'AGENT'):
-            raise serializers.ValidationError("Product only will be uploaded by agent or farmer")
-        elif self.context['request'].user.user_type == 'FARMER':
-            product_instance = Product.objects.create(**validated_data, user=self.context['request'].user)
+        if not (self.context['request'].user.user_type == 'FARMER' or self.context['request'].user.user_type == 'AGENT' or self.context['request'].user.user_type == 'ADMIN' ):
+            raise serializers.ValidationError("Product only will be uploaded by agent or farmer or admin")
         else:
-            farmer = validated_data.get('user')
-            if farmer:
-                product_instance = Product.objects.create(**validated_data)
+            if self.context['request'].user.user_type == 'FARMER':
+                product_instance = Product.objects.create(**validated_data, user=self.context['request'].user, vat=vat_value, created_by=self.context['request'].user )
             else:
-                raise serializers.ValidationError("Farmer id is missing")
+                product_instance = Product.objects.create(**validated_data, vat=vat_value, created_by=self.context['request'].user)
+
+        # old logic 
+        # if not (self.context['request'].user.user_type == 'FARMER' or self.context['request'].user.user_type == 'AGENT'):
+        #     raise serializers.ValidationError("Product only will be uploaded by agent or farmer")
+        # elif self.context['request'].user.user_type == 'FARMER':
+        #     product_instance = Product.objects.create(**validated_data, user=self.context['request'].user)
+        # else:
+        #     farmer = validated_data.get('user')
+        #     if farmer:
+        #         product_instance = Product.objects.create(**validated_data)
+        #     else:
+        #         raise serializers.ValidationError("Farmer id is missing")
 
         # product inventory
         try:
@@ -137,6 +156,15 @@ class ProductCreateSerializer(serializers.ModelSerializer):
             # create inventory
             Inventory.objects.create(product=product_instance, initial_quantity=quantity,
                                      current_quantity=quantity)
+
+        # update status and sell_price_per_unit
+        Product.objects.filter(id=product_instance.id).update(status='PUBLISH')
+        try:
+            price_per_unit = validated_data["price_per_unit"]
+        except:
+            price_per_unit = None
+        if price_per_unit:
+            Product.objects.filter(id=product_instance.id).update(price_per_unit=price_per_unit, sell_price_per_unit=price_per_unit)
 
         # product_images
         if product_images:
@@ -153,6 +181,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
 
 
 class RelatedProductInfo(serializers.ModelSerializer):
+    sell_price_per_unit = serializers.SerializerMethodField('get_sell_price_with_vat')
     class Meta:
         model = Product
         fields = [
@@ -161,8 +190,13 @@ class RelatedProductInfo(serializers.ModelSerializer):
             'slug',
             'category',
             'sub_category',
-            'thumbnail'
+            'thumbnail',
+            'sell_price_per_unit'
         ]
+
+    def get_sell_price_with_vat(self, obj):
+        vat = obj.vat / 100.0 if obj.vat else 0
+        return round(obj.sell_price_per_unit * (1 + vat), 2)
 
 
 class ProductListSerializer(serializers.ModelSerializer):
@@ -173,6 +207,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     sub_category = SubCategoryListSerializer(many=False, read_only=True)
     unit = UnitListSerializer(many=False, read_only=True)
     related_products = serializers.SerializerMethodField('get_related_products')
+    sell_price_per_unit = serializers.SerializerMethodField('get_sell_price_with_vat')
 
     class Meta:
         model = Product
@@ -209,6 +244,15 @@ class ProductListSerializer(serializers.ModelSerializer):
         except:
             return []
 
+    def get_sell_price_with_vat(self, obj):
+        vat = obj.vat  # assuming vat is defined in the Product model
+        sell_price = obj.sell_price_per_unit
+        if vat is not None:
+            sell_price_with_vat = sell_price * (1 + vat / 100)
+            return round(sell_price_with_vat, 2)
+        else:
+            return sell_price
+
 
 class ProductViewSerializer(serializers.ModelSerializer):
     production_steps = ProductionStepSerializer(many=True, read_only=True)
@@ -216,6 +260,7 @@ class ProductViewSerializer(serializers.ModelSerializer):
     user = FarmerListSerializer(many=False, read_only=True)
     category_title = serializers.CharField(source="category.title", read_only=True)
     related_products = serializers.SerializerMethodField('get_related_products')
+    sell_price_per_unit = serializers.SerializerMethodField('get_sell_price_with_vat')
 
     class Meta:
         model = Product
@@ -238,13 +283,25 @@ class ProductViewSerializer(serializers.ModelSerializer):
             'possible_productions_date',
             'possible_delivery_date',
             'production_steps',
-            'related_products'
+            'related_products',
+            'vat'
         ]
+
+    def get_sell_price_with_vat(self, obj):
+        vat = obj.vat  # assuming vat is defined in the Product model
+        sell_price = obj.sell_price_per_unit
+        if vat is not None:
+            sell_price_with_vat = sell_price * (1 + vat / 100)
+            return round(sell_price_with_vat, 2)
+        else:
+            return sell_price
 
     def get_related_products(self, obj):
         try:
+            today = timezone.now().date()
             queryset = Product.objects.filter(
-                sub_category=obj.sub_category.id, status='PUBLISH', quantity__gt = 0)
+                sub_category=obj.sub_category.id, status='PUBLISH', quantity__gt = 0,
+                possible_productions_date__gt=today).exclude(id=obj.id)
             serializer = RelatedProductInfo(instance=queryset, many=True, context={'request': self.context['request']})
             return serializer.data
         except:
@@ -275,11 +332,13 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
             'product_images',
             'thumbnail',
             'price_per_unit',
+            'sell_price_per_unit',
             'full_description',
             'quantity',
             'possible_productions_date',
             'possible_delivery_date',
-            'production_steps'
+            'production_steps',
+            'vat'
         ]
 
     def update(self, instance, validated_data):
@@ -317,7 +376,17 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
             Inventory.objects.create(initial_quantity=initial_quantity, current_quantity=quantity, product=instance)
             total_quantity = Inventory.objects.filter(product=instance).aggregate(total_quantity=Sum('initial_quantity'))
             validated_data.update({'total_quantity': total_quantity['total_quantity']})
-           
+
+        # price_per_unit & quantity validation
+        price_per_unit = validated_data.get("price_per_unit", instance.price_per_unit)
+        sell_price_per_unit = validated_data.get("sell_price_per_unit", instance.sell_price_per_unit)
+        quantity = validated_data.get("quantity", instance.quantity)
+        if price_per_unit < 0:
+            raise serializers.ValidationError("Price per unit cannot be negative.")
+        if sell_price_per_unit < 0:
+            raise serializers.ValidationError("Sell Price per unit cannot be negative.")
+        if quantity < 0:
+            raise serializers.ValidationError("Quantity cannot be negative.")
 
         # new product_images
         if new_product_images:
@@ -358,6 +427,7 @@ class PublishProductSerializer(serializers.ModelSerializer):
 
 
 class BestSellingProductListSerializer(serializers.ModelSerializer):
+    sell_price_per_unit = serializers.SerializerMethodField('get_sell_price_with_vat')
 
     class Meta:
         model = Product
@@ -372,5 +442,14 @@ class BestSellingProductListSerializer(serializers.ModelSerializer):
             'unit',
             'sell_count'
         ]
+
+    def get_sell_price_with_vat(self, obj):
+        vat = obj.vat  # assuming vat is defined in the Product model
+        sell_price = obj.sell_price_per_unit
+        if vat is not None:
+            sell_price_with_vat = sell_price * (1 + vat / 100)
+            return round(sell_price_with_vat, 2)
+        else:
+            return sell_price
 
 

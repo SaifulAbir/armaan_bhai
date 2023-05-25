@@ -2,7 +2,7 @@ import decimal
 
 from rest_framework import serializers
 from order.models import DeliveryAddress, OrderItem, Order, CouponStat, Coupon, PickupLocation, AgentPickupLocation, \
-    FarmerAccountInfo, SubOrder, PaymentHistory
+    FarmerAccountInfo, SubOrder, PaymentHistory, Setting
 from product.models import Inventory, Product
 from product.serializers import ProductViewSerializer
 from user.models import User, AgentFarmer
@@ -16,6 +16,8 @@ from datetime import date
 from django.template.loader import render_to_string
 from django.core.mail import send_mail
 from django.conf import settings
+from decimal import Decimal
+
 
 
 class DeliveryAddressSerializer(serializers.ModelSerializer):
@@ -84,6 +86,11 @@ class CheckoutSerializer(serializers.ModelSerializer):
             order_instance = Order.objects.create(
                 **validated_data, user=self.context['request'].user, payment_status='DUE', order_status='ON_PROCESS')
 
+        # Calculate the delivery charge for the suborder
+        delivery_charge = 0
+        delivery_charges = Setting.objects.filter(is_active=True).order_by('id')[:1]
+        for delivery_char in delivery_charges:
+            delivery_charge = delivery_char.delivery_charge
 
         if order_items:
             suborder_instance_count = 0
@@ -97,25 +104,29 @@ class CheckoutSerializer(serializers.ModelSerializer):
 
                 if suborder_instance_count == 0:
                     if payment_type == 'PG':
-                        suborder_obj = SubOrder.objects.create(order=order_instance, user=self.context['request'].user, product_count=1,
-                                            total_price=total_price, delivery_address=validated_data.get('delivery_address'),
-                                            delivery_date=product.possible_delivery_date, payment_status='PAID',
-                                                order_status='ON_PROCESS')
+                        suborder_obj = SubOrder.objects.create(order=order_instance, user=self.context['request'].user,
+                                                               product_count=1,
+                                                               total_price=total_price,
+                                                               delivery_address=validated_data.get('delivery_address'),
+                                                               delivery_date=product.possible_delivery_date,
+                                                               payment_status='PAID',
+                                                               order_status='ON_PROCESS')
                     else:
                         suborder_obj = SubOrder.objects.create(order=order_instance, user=self.context['request'].user,
-                                                product_count=1,
-                                                total_price=total_price,
-                                                delivery_address=validated_data.get('delivery_address'),
-                                                delivery_date=product.possible_delivery_date, payment_status='DUE',
-                                                order_status='ON_PROCESS')
+                                                               product_count=1,
+                                                               total_price=total_price,
+                                                               delivery_address=validated_data.get('delivery_address'),
+                                                               delivery_date=product.possible_delivery_date,
+                                                               payment_status='DUE',
+                                                               order_status='ON_PROCESS')
                     OrderItem.objects.create(order=order_instance, suborder=suborder_obj, product=product, quantity=int(
-                                     quantity), unit_price=unit_price, total_price=total_price)
+                        quantity), unit_price=unit_price, total_price=total_price)
                     suborder_instance_count += 1
                     if order_instance:
                         product_obj = Product.objects.filter(id=product.id)
                         inventory_obj = Inventory.objects.filter(product=product).latest('created_at')
                         update_quantity = int(inventory_obj.current_quantity) - int(quantity)
-                        product_obj.update(quantity = update_quantity)
+                        product_obj.update(quantity=update_quantity)
                         inventory_obj.current_quantity = update_quantity
                         inventory_obj.save()
 
@@ -127,7 +138,8 @@ class CheckoutSerializer(serializers.ModelSerializer):
                     count = 0
                     for suborder_object in suborder_objects:
                         count += 1
-                        if suborder_object.delivery_date.date() == product.possible_delivery_date and suborder_object.user == self.context['request'].user:
+                        if suborder_object.delivery_date.date() == product.possible_delivery_date and suborder_object.user == \
+                                self.context['request'].user:
                             suborder_object.product_count += 1
                             suborder_object.total_price += decimal.Decimal(total_price)
                             suborder_object.save()
@@ -138,7 +150,7 @@ class CheckoutSerializer(serializers.ModelSerializer):
                                 product_obj = Product.objects.filter(id=product.id)
                                 inventory_obj = Inventory.objects.filter(product=product).latest('created_at')
                                 update_quantity = int(inventory_obj.current_quantity) - int(quantity)
-                                product_obj.update(quantity = update_quantity)
+                                product_obj.update(quantity=update_quantity)
                                 inventory_obj.current_quantity = update_quantity
                                 inventory_obj.save()
 
@@ -149,21 +161,25 @@ class CheckoutSerializer(serializers.ModelSerializer):
 
                         if count == suborder_objects.count():
                             if payment_type == 'PG':
-                                suborder_obj = SubOrder.objects.create(order=order_instance, user=self.context['request'].user,
-                                                        product_count=1,
-                                                        total_price=total_price,
-                                                        delivery_address=validated_data.get('delivery_address'),
-                                                        delivery_date=product.possible_delivery_date,
-                                                        payment_status='PAID',
-                                                        order_status='ON_PROCESS')
+                                suborder_obj = SubOrder.objects.create(order=order_instance,
+                                                                       user=self.context['request'].user,
+                                                                       product_count=1,
+                                                                       total_price=total_price,
+                                                                       delivery_address=validated_data.get(
+                                                                           'delivery_address'),
+                                                                       delivery_date=product.possible_delivery_date,
+                                                                       payment_status='PAID',
+                                                                       order_status='ON_PROCESS')
                             else:
-                                suborder_obj = SubOrder.objects.create(order=order_instance, user=self.context['request'].user,
-                                                        product_count=1,
-                                                        total_price=total_price,
-                                                        delivery_address=validated_data.get('delivery_address'),
-                                                        delivery_date=product.possible_delivery_date,
-                                                        payment_status='DUE',
-                                                        order_status='ON_PROCESS')
+                                suborder_obj = SubOrder.objects.create(order=order_instance,
+                                                                       user=self.context['request'].user,
+                                                                       product_count=1,
+                                                                       total_price=total_price,
+                                                                       delivery_address=validated_data.get(
+                                                                           'delivery_address'),
+                                                                       delivery_date=product.possible_delivery_date,
+                                                                       payment_status='DUE',
+                                                                       order_status='ON_PROCESS')
                             OrderItem.objects.create(order=order_instance, suborder=suborder_obj, product=product,
                                                      quantity=int(
                                                          quantity), unit_price=unit_price, total_price=total_price)
@@ -172,7 +188,7 @@ class CheckoutSerializer(serializers.ModelSerializer):
                                 product_obj = Product.objects.filter(id=product.id)
                                 inventory_obj = Inventory.objects.filter(product=product).latest('created_at')
                                 update_quantity = int(inventory_obj.current_quantity) - int(quantity)
-                                product_obj.update(quantity = update_quantity)
+                                product_obj.update(quantity=update_quantity)
                                 inventory_obj.current_quantity = update_quantity
                                 inventory_obj.save()
 
@@ -209,20 +225,21 @@ class CheckoutSerializer(serializers.ModelSerializer):
             order_id = order_instance.order_id
             created_at = order_instance.created_at.strftime("%Y-%m-%d")
             payment_type = order_instance.payment_type
-            sub_total = OrderItem.objects.filter(order=order_instance).aggregate(total=Sum('total_price'))['total'] or 0.0
+            sub_total = OrderItem.objects.filter(order=order_instance).aggregate(total=Sum('total_price'))[
+                            'total'] or 0.0
 
             order_items = OrderItem.objects.filter(order=order_instance)
             subject = "Your order has been successfully placed."
             html_message = render_to_string('order_details.html',
-                {
-                    'email' : email,
-                    'order_id': order_id,
-                    'created_at': created_at,
-                    'order_items': order_items,
-                    'payment_type': payment_type,
-                    'sub_total': sub_total if sub_total else 0.0,
-                    'total': sub_total + 60.0 if sub_total  else 0.0
-                })
+                                            {
+                                                'email': email,
+                                                'order_id': order_id,
+                                                'created_at': created_at,
+                                                'order_items': order_items,
+                                                'payment_type': payment_type,
+                                                'sub_total': sub_total if sub_total else 0.0,
+                                                'total': sub_total + 60.0 if sub_total else 0.0
+                                            })
 
             send_mail(
                 subject=subject,
@@ -241,10 +258,22 @@ class CheckoutDetailsSerializer(serializers.ModelSerializer):
     user = CustomerProfileDetailSerializer(many=False, read_only=True)
     order_item_order = ProductItemCheckoutSerializer(many=True, read_only=True)
     delivery_address = DeliveryAddressSerializer(many=False, read_only=True)
+    total_delivery_charges = serializers.SerializerMethodField('get_delivery_charges')
+    total_price = serializers.SerializerMethodField('get_total_price')
     class Meta:
         model = Order
-        fields = ['id', 'user', 'order_id', 'order_date', 'delivery_date', 'order_status', 'order_item_order', 'delivery_address', 'payment_type',
-        'coupon_discount_amount', 'total_price', 'is_qc_passed']
+        fields = ['id', 'user', 'order_id', 'order_date', 'delivery_date', 'order_status', 'order_item_order', 'delivery_address', 'payment_type', 'coupon', 'coupon_discount_amount', 'coupon_status', 'total_price', 'is_qc_passed', 'total_delivery_charges']
+
+    def get_delivery_charges(self, obj):
+        suborders = SubOrder.objects.filter(order_id=obj.id)
+        delivery_charges_sum = suborders.aggregate(Sum('delivery_charge'))['delivery_charge__sum'] or 0
+        return delivery_charges_sum
+    def get_total_price(self, order):
+        total_price = order.total_price or 0
+        total_price += Decimal(self.get_delivery_charges(order))
+        if order.coupon_discount_amount:
+            total_price -= Decimal(order.coupon_discount_amount)
+        return total_price
 
 
 class OrderUpdateSerializer(serializers.ModelSerializer):
@@ -253,7 +282,7 @@ class OrderUpdateSerializer(serializers.ModelSerializer):
     delivery_address = DeliveryAddressSerializer(many=False, read_only=True)
     class Meta:
         model = SubOrder
-        fields = ['is_qc_passed', 'delivery_address', 'order_item_suborder', 'user']
+        fields = ['is_qc_passed', 'delivery_address', 'order_item_suborder', 'user', 'order_status', 'payment_status']
 
 
 class CustomerOrderListSerializer(serializers.ModelSerializer):
@@ -267,10 +296,17 @@ class CustomerOrderListSerializer(serializers.ModelSerializer):
         source='get_payment_status_display', read_only=True
     )
     order_number = serializers.CharField(source='order.order_id')
+    total_price = serializers.SerializerMethodField('get_total_price')
     class Meta:
         model = SubOrder
         fields = ['id', 'user', 'order_number', 'suborder_number', 'order_date', 'delivery_date', 'order_status', 'order_status_value', 'order_item_suborder', 'delivery_address', 'payment_type',
-        'coupon_discount_amount', 'total_price', 'payment_status_value']
+        'coupon_discount_amount', 'total_price', 'payment_status', 'payment_status_value', 'delivery_charge', 'divided_discount_amount']
+
+    def get_total_price(self, suborder):
+        total_price = suborder.total_price + Decimal(suborder.delivery_charge)
+        if suborder.divided_discount_amount:
+            total_price -= Decimal(suborder.divided_discount_amount)
+        return total_price
 
 
 class AgentOrderListSerializer(serializers.ModelSerializer):
@@ -278,12 +314,37 @@ class AgentOrderListSerializer(serializers.ModelSerializer):
         source='get_order_status_display', read_only=True
     )
     user = CustomerProfileDetailSerializer(many=False, read_only=True)
-    order_item_suborder = ProductItemCheckoutSerializer(many=True, read_only=True)
+    # order_item_suborder = ProductItemCheckoutSerializer(many=True, read_only=True)
     delivery_address = DeliveryAddressSerializer(many=False, read_only=True)
+    total_price = serializers.SerializerMethodField('get_total_price')
+    farmer_total_price = serializers.SerializerMethodField('get_farmer_total_price')
     class Meta:
         model = SubOrder
-        fields = ['id', 'user', 'order', 'suborder_number', 'order_date', 'delivery_date', 'order_status', 'order_status_value', 'order_item_suborder', 'delivery_address', 'payment_type',
-        'coupon_discount_amount', 'total_price', 'is_qc_passed']
+        # fields = ['id', 'user', 'order', 'suborder_number', 'order_date', 'delivery_date', 'order_status', 'payment_status', 'order_status_value', 'order_item_suborder', 'delivery_address', 'payment_type',
+        # 'coupon_discount_amount', 'total_price', 'is_qc_passed']
+        fields = ['id', 'user', 'order', 'suborder_number', 'order_date', 'delivery_date', 'order_status', 'payment_status', 'order_status_value', 'delivery_address', 'payment_type', 'total_price', 'farmer_total_price']
+
+    def get_total_price(self, suborder):
+        total_price = suborder.total_price or Decimal('0')
+        delivery_charge = suborder.delivery_charge or Decimal('0')
+
+        total_price += Decimal(delivery_charge)
+
+        if suborder.divided_discount_amount:
+            total_price -= Decimal(suborder.divided_discount_amount)
+
+        return total_price
+
+    def get_farmer_total_price(self, suborder):
+        user = self.context['request'].user
+        if user.is_authenticated:
+            # Get the order items associated with the suborder and belong to the authenticated user
+            order_items = suborder.order_item_suborder.filter(product__user=user)
+            # Calculate the total price based on the order items' unit prices and quantities
+            order_items_total = sum(item.product.price_per_unit * item.quantity for item in order_items)
+            return Decimal(order_items_total)
+
+        return suborder.total_price or Decimal('0')
 
 
 # Pickup Location
@@ -354,7 +415,7 @@ class PickupLocationQcPassedInfoUpdateSerializer(serializers.ModelSerializer):
             if is_qc_passed == 'PASS':
                 SubOrder.objects.filter(order_item_suborder__product__user=instance.id, order_item_suborder__product__possible_productions_date = tomorrow).update(order_status='ON_TRANSIT')
             if is_qc_passed == 'FAIL':
-                Order.objects.filter(order_item_order__product__user=instance.id, order_item_order__product__possible_productions_date = tomorrow).update(order_status='CANCELED')
+                SubOrder.objects.filter(order_item_suborder__product__user=instance.id, order_item_suborder__product__possible_productions_date = tomorrow).update(order_status='CANCELED')
 
         return super().update(instance, validated_data)
 
@@ -414,13 +475,13 @@ class AgentOrderListForSetupPickupLocationSerializer(serializers.ModelSerializer
 
     def get_products(self, obj):
         tomorrow = datetime.today() + timedelta(days=1)
-        query = Product.objects.filter(Q(user = obj), Q(possible_productions_date=tomorrow), Q(order_item_product__isnull=False) ).annotate(whole_quantity=Sum('order_item_product__quantity', filter=Q(order_item_product__suborder__order_status='ON_PROCESS') | Q(order_item_product__suborder__order_status='ON_TRANSIT')))
+        query = Product.objects.filter(Q(user = obj), Q(possible_productions_date=tomorrow), Q(order_item_product__isnull=False) ).annotate(whole_quantity=Sum('order_item_product__quantity', filter=Q(order_item_product__suborder__order_status='ON_PROCESS') | Q(order_item_product__suborder__order_status='ON_TRANSIT') | Q(order_item_product__suborder__order_status='CANCELED')))
         serializer = AgentMukamLocationSetupDataSerializer(instance=query, many=True)
         return serializer.data
 
     def get_pickup_location(self, obj):
         tomorrow = datetime.today() + timedelta(days=1)
-        query = OrderItem.objects.filter(Q(product__user = obj), Q(product__possible_productions_date=tomorrow), Q(suborder__order_status='ON_PROCESS') | Q(suborder__order_status='ON_TRANSIT')).distinct('pickup_location')
+        query = OrderItem.objects.filter(Q(product__user = obj), Q(product__possible_productions_date=tomorrow), Q(suborder__order_status='ON_PROCESS') | Q(suborder__order_status='ON_TRANSIT') | Q(suborder__order_status='CANCELED')).distinct('pickup_location')
         for i in query:
             if i.pickup_location:
                 pickup_location = i.pickup_location.id
@@ -428,7 +489,7 @@ class AgentOrderListForSetupPickupLocationSerializer(serializers.ModelSerializer
 
     def get_is_qc_passed(self, obj):
         tomorrow = datetime.today() + timedelta(days=1)
-        query = OrderItem.objects.filter(Q(product__user = obj), Q(product__possible_productions_date=tomorrow), Q(suborder__order_status='ON_PROCESS') | Q(suborder__order_status='ON_TRANSIT')).distinct('is_qc_passed')
+        query = OrderItem.objects.filter(Q(product__user = obj), Q(product__possible_productions_date=tomorrow), Q(suborder__order_status='ON_PROCESS') | Q(suborder__order_status='ON_TRANSIT') | Q(suborder__order_status='CANCELED')).distinct('is_qc_passed')
         for i in query:
             is_qc_passed = i.is_qc_passed
             return is_qc_passed
@@ -517,12 +578,16 @@ class AdminOrdersListByPickupPointsListSerializer(serializers.ModelSerializer):
 
 class ProductItemSerializer(serializers.ModelSerializer):
     product_title = serializers.SerializerMethodField('get_product_title')
+    farmer_unit_price = serializers.SerializerMethodField('get_farmer_unit_price')
     class Meta:
         model = OrderItem
-        fields = ['id', 'product','product_title', 'quantity', 'unit_price', 'total_price', 'is_qc_passed','payment_status']
+        fields = ['id', 'product','product_title', 'quantity', 'unit_price','farmer_unit_price', 'total_price', 'is_qc_passed','payment_status']
 
     def get_product_title(self, obj):
         return obj.product.title
+    
+    def get_farmer_unit_price(self, obj):
+        return obj.product.price_per_unit
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -655,6 +720,8 @@ class SalesOfAnAgentSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         this_week = request.GET.get('this_week')
         this_month = request.GET.get('this_month')
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
 
         if this_week:
             today_date = datetime.today().date()
@@ -669,7 +736,275 @@ class SalesOfAnAgentSerializer(serializers.ModelSerializer):
             first = first_date_of_current_month(current_year, current_month)
             last = last_date_of_month(current_year, current_month)
             total_amount = OrderItem.objects.filter(product__user__agent_user_id=obj.id, suborder__payment_status='PAID', created_at__range=(first,last)).aggregate(total=Sum('total_price'))['total'] or 0
+        elif start_date and end_date:
+            total_amount = OrderItem.objects.filter(product__user__agent_user_id=obj.id, suborder__payment_status='PAID', created_at__range=(start_date,end_date)).aggregate(total=Sum('total_price'))['total'] or 0
         else:
             total_amount = OrderItem.objects.filter(product__user__agent_user_id=obj.id, suborder__payment_status='PAID').aggregate(total=Sum('total_price'))['total'] or 0
 
         return total_amount
+
+
+class FarmerOwnPaymentListSerializer(serializers.ModelSerializer):
+    order_items = serializers.SerializerMethodField('get_order_items')
+
+    class Meta:
+        model = PaymentHistory
+        fields = ['id', 'amount', 'status', 'date', 'order_items']
+
+    def get_order_items(self, obj):
+        serializer = ProductItemSerializer(instance=obj.order_items, many=True)
+        return serializer.data
+
+
+class FarmerProductionProductsSerializer(serializers.ModelSerializer):
+    quantity = serializers.SerializerMethodField('get_quantity')
+    unit = serializers.CharField(source='unit.title')
+    date = serializers.SerializerMethodField('get_date')
+    pickup_location = serializers.SerializerMethodField('get_pickup_location')
+    pickup_location_address = serializers.SerializerMethodField('get_pickup_location_address')
+    class Meta:
+        model = Product
+        fields = ['id', 'title', 'quantity', 'unit', 'date', 'pickup_location', 'pickup_location_address']
+
+    def get_quantity(self, obj):
+        try:
+            quantity = 0
+            order_items = OrderItem.objects.filter(product=obj.id, is_qc_passed='NEUTRAL')
+            for order_item in order_items:
+                quantity += order_item.quantity
+            return quantity
+        except:
+            return 0
+
+    def get_date(self, obj):
+        today = datetime.today().date()
+        return today
+
+
+    def get_pickup_location(self, obj):
+        query = OrderItem.objects.filter(Q(product=obj.id), Q(is_qc_passed='NEUTRAL')).order_by('id').distinct()
+        for i in query:
+            if i.pickup_location:
+                pickup_location = i.pickup_location.id
+                return pickup_location
+
+    def get_pickup_location_address(self, obj):
+        query = OrderItem.objects.filter(Q(product=obj.id), Q(is_qc_passed='NEUTRAL')).order_by('id').distinct()
+        for i in query:
+            if i.pickup_location:
+                pickup_location_address = i.pickup_location.address
+                return pickup_location_address
+
+class AdminCouponSerializer(serializers.ModelSerializer):
+    amount = serializers.FloatField(required=True)
+    class Meta:
+        model = Coupon
+        fields = [  'id',
+                    'code',
+                    'coupon_title',
+                    'min_shopping',
+                    'amount',
+                    'max_time',
+                    'start_time',
+                    'end_time',
+                    'is_active'
+                ]
+        read_only_fields = ['id', 'usage_count']
+
+    def create(self, validated_data):
+        code_get = validated_data.pop('code')
+        if code_get:
+            code_get_for_check = Coupon.objects.filter(code=code_get)
+            if code_get_for_check:
+                raise ValidationError('Code already exists')
+            else:
+                coupon_instance = Coupon.objects.create(**validated_data, code=code_get)
+                return coupon_instance
+
+
+class AdminCouponUpdateSerializer(serializers.ModelSerializer):
+    amount = serializers.FloatField(required=True)
+    code = serializers.CharField(required=False)
+    coupon_title = serializers.CharField(required=False)
+    class Meta:
+        model = Coupon
+        fields = [  'id',
+                    'code',
+                    'coupon_title',
+                    'min_shopping',
+                    'amount',
+                    'max_time',
+                    'start_time',
+                    'end_time',
+                    'is_active'
+                ]
+        read_only_fields = ['id', 'usage_count']
+
+
+class ApplyCouponSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Coupon
+        fields = ['id', 'code', 'coupon_title', 'min_shopping', 'amount', 'max_time', 'usage_count', 'start_time', 'end_time', 'is_active']
+
+
+class WebsiteConfigurationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Setting
+        fields = [
+            'id',
+            'vat',
+            'delivery_charge',
+            'is_active'
+        ]
+
+        # def create(self, validated_data):
+        #     try:
+        #         order_items = validated_data.pop('order_item_order')
+        #     except KeyError:
+        #         raise serializers.ValidationError('Order items are missing')
+        #
+        #     payment_type = validated_data.get('payment_type')
+        #
+        #     if payment_type == 'PG':
+        #         order_instance = Order.objects.create(
+        #             **validated_data, user=self.context['request'].user, payment_status='PAID',
+        #             order_status='ON_PROCESS')
+        #     else:
+        #         order_instance = Order.objects.create(
+        #             **validated_data, user=self.context['request'].user, payment_status='DUE',
+        #             order_status='ON_PROCESS')
+        #
+        #     # Retrieve the relevant Setting object
+        #     # setting = Setting.objects.get(is_active=True)
+        #
+        #     # Calculate the delivery charge for the suborder
+        #     delivery_charge = 0
+        #     delivery_charges = Setting.objects.filter(is_active=True).order_by('id')[:1]
+        #     for delivery_char in delivery_charges:
+        #         delivery_charge = delivery_char.delivery_charge
+        #     print(delivery_charge)
+        #     # print(delivery_charge)
+        #
+        #     if order_items:
+        #         suborder_instance_count = 0
+        #         total_discount_amount = validated_data.get('coupon_discount_amount', 0.0)
+        #         num_suborders = len(order_items)
+        #         sub_discount_amount = total_discount_amount / num_suborders
+        #         print(sub_discount_amount)
+        #
+        #         for order_item in order_items:
+        #             product = order_item['product']
+        #             quantity = order_item['quantity']
+        #             unit_price = order_item['unit_price']
+        #             total_price = float(unit_price) * float(quantity)
+        #
+        #             if int(quantity) > product.quantity:
+        #                 raise ValidationError("Ordered quantity is greater than inventory")
+        #
+        #             delivery_date = product.possible_delivery_date
+        #
+        #             # Check if there's an existing suborder with the same delivery date within the same order
+        #             existing_suborder = SubOrder.objects.filter(
+        #                 order=order_instance,
+        #                 delivery_date=delivery_date
+        #             ).first()
+        #
+        #             if existing_suborder:
+        #                 # Add the order item to the existing suborder
+        #                 existing_suborder.product_count += 1
+        #                 existing_suborder.total_price += decimal.Decimal(total_price)
+        #                 existing_suborder.save()
+        #
+        #             else:
+        #                 # Create a new suborder for the unique delivery date
+        #                 payment_status = 'PAID' if payment_type == 'PG' else 'DUE'
+        #
+        #                 suborder_obj = SubOrder.objects.create(
+        #                     order=order_instance,
+        #                     user=self.context['request'].user,
+        #                     product_count=1,
+        #                     total_price=total_price,
+        #                     delivery_address=validated_data.get('delivery_address'),
+        #                     delivery_date=delivery_date,
+        #                     payment_status=payment_status,
+        #                     order_status='ON_PROCESS',
+        #                     delivery_charge=delivery_charge,
+        #                     divided_discount_amount=sub_discount_amount
+        #                 )
+        #
+        #                 OrderItem.objects.create(
+        #                     order=order_instance,
+        #                     suborder=suborder_obj,
+        #                     product=product,
+        #                     quantity=int(quantity),
+        #                     unit_price=unit_price,
+        #                     total_price=total_price
+        #                 )
+        #
+        #                 # Update inventory, sell count, etc. (assuming order_instance exists)
+        #                 product_obj = Product.objects.filter(id=product.id)
+        #                 inventory_obj = Inventory.objects.filter(product=product).latest('created_at')
+        #                 update_quantity = int(inventory_obj.current_quantity) - int(quantity)
+        #                 product_obj.update(quantity=update_quantity)
+        #                 inventory_obj.current_quantity = update_quantity
+        #                 inventory_obj.save()
+        #
+        #                 sell_count = product_obj[0].sell_count + 1
+        #                 product_obj.update(sell_count=sell_count)
+        #
+        #     # apply coupon
+        #     try:
+        #         coupon_status = validated_data.pop('coupon_status')
+        #     except KeyError:
+        #         coupon_status = None
+        #
+        #     if coupon_status == True:
+        #         coupon = validated_data.pop('coupon')
+        #         if coupon.usage_count != coupon.max_time:
+        #             coupon_obj = Coupon.objects.filter(id=coupon.id)
+        #             coupon_stat = CouponStat.objects.filter(
+        #                 coupon=coupon.id, user=self.context['request'].user).exists()
+        #             if not coupon_stat:
+        #                 CouponStat.objects.create(
+        #                     coupon=coupon, user=self.context['request'].user, order=order_instance)
+        #                 usage_count = int(coupon.usage_count)
+        #                 coupon_obj.update(usage_count=usage_count + 1)
+        #             else:
+        #                 raise serializers.ValidationError("Usage limit exceeded")
+        #         else:
+        #             raise serializers.ValidationError("Usage limit exceeded")
+        #
+        #     # send email to the user
+        #     user = self.context['request'].user
+        #     email = user.email
+        #     if email:
+        #         order_id = order_instance.order_id
+        #         created_at = order_instance.created_at.strftime("%Y-%m-%d")
+        #         payment_type = order_instance.payment_type
+        #         sub_total = OrderItem.objects.filter(order=order_instance).aggregate(total=Sum('total_price'))[
+        #                         'total'] or 0.0
+        #
+        #         order_items = OrderItem.objects.filter(order=order_instance)
+        #         subject = "Your order has been successfully placed."
+        #         html_message = render_to_string('order_details.html',
+        #                                         {
+        #                                             'email': email,
+        #                                             'order_id': order_id,
+        #                                             'created_at': created_at,
+        #                                             'order_items': order_items,
+        #                                             'payment_type': payment_type,
+        #                                             'sub_total': sub_total if sub_total else 0.0,
+        #                                             'total': sub_total + 60.0 if sub_total else 0.0
+        #                                         })
+        #
+        #         send_mail(
+        #             subject=subject,
+        #             message=None,
+        #             from_email=settings.EMAIL_HOST_USER,
+        #             recipient_list=[email],
+        #             html_message=html_message
+        #         )
+        #
+        #         return order_instance
+        #     else:
+        #         return order_instance

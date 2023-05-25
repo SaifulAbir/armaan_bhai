@@ -50,6 +50,8 @@ class DeliveryAddress(AbstractTimeStamp):
 
 class Setting(AbstractTimeStamp):
     vat = models.FloatField(max_length=255, null=True, blank=True)
+    delivery_charge = models.FloatField(max_length=255, null=True, blank=True)
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = 'Setting'
@@ -249,10 +251,12 @@ class SubOrder(AbstractTimeStamp):
         DeliveryAddress, on_delete=models.CASCADE)
     # delivery_agent = models.CharField(max_length=100, null=True, blank=True)
     delivery_date = models.DateTimeField(null=True, blank=True)
+    delivery_charge = models.FloatField(max_length=255, null=True, blank=True)
     comment = models.TextField(null=True, blank=True)
     is_qc_passed = models.CharField(
         max_length=20, choices=QC_TYPES, default=QC_TYPES[0][0])
     pickup_request = models.BooleanField(default=False)
+    divided_discount_amount = models.FloatField(null=True, blank=True)
 
     class Meta:
         verbose_name = 'Sub Order'
@@ -342,8 +346,12 @@ class CouponStat(AbstractTimeStamp):
 
 class FarmerAccountInfo(AbstractTimeStamp):
     PAYMENT_CHOICES = [
+        ('BKASH', 'bKash'),
+        ('NAGAD', 'Nagad'),
+        ('ROCKET', 'Rocket'),
+        ('UPAY', 'Upay'),
         ('BANK_ACCOUNT', 'Bank Account'),
-        ('MFS', 'Mobile Financial Services'),
+        # ('MFS', 'Mobile Financial Services'),
     ]
     account_type = models.CharField(
         max_length=20, null=True, blank=True, choices=PAYMENT_CHOICES)

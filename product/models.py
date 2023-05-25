@@ -83,6 +83,9 @@ class Product(AbstractTimeStamp):
     status = models.CharField(
         max_length=20, choices=PRODUCT_STATUSES, default=PRODUCT_STATUSES[0][0])
     sell_count = models.IntegerField(default=0)
+    vat = models.FloatField(max_length=255, null=True, blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT,
+                               related_name='product_creator', blank=True, null=True)
 
 
     class Meta:

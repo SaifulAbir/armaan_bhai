@@ -2,7 +2,7 @@ import datetime
 from django.utils import timezone
 from datetime import date
 
-from django.db.models import Sum
+from django.db.models import Sum, F
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
@@ -10,7 +10,7 @@ from rest_framework.response import Response
 
 from home.models import TotalVisit
 from home.serializers import CategoryListSerializer
-from order.models import Order, PaymentHistory, OrderItem
+from order.models import Order, PaymentHistory, OrderItem, SubOrder
 from product.models import Category, Product
 from product.serializers import ProductListSerializer
 from user.models import User, District, Upazilla
@@ -38,6 +38,7 @@ class AdminDashboardDataAPIView(APIView):
 
     def get(self, request):
         if self.request.user.is_superuser == True:
+            
             # total farmer
             if User.objects.filter(user_type="FARMER").exists():
                 total_farmer = User.objects.filter(user_type="FARMER").count()
@@ -142,11 +143,17 @@ class AdminDashboardDataAPIView(APIView):
                 total_sales = 0
 
             # total delivered order
-            if Order.objects.filter(order_item_order__product__user__agent_user_id=self.request.user.id).exists():
-                total_delivered_order = Order.objects.filter(
-                    order_item_order__product__user__agent_user_id=self.request.user.id, order_status="DELIVERED").count()
+            if SubOrder.objects.filter(order_item_suborder__product__user__agent_user_id=self.request.user.id).exists():
+                total_delivered_order = SubOrder.objects.filter(
+                    order_item_suborder__product__user__agent_user_id=self.request.user.id,
+                    order_status="DELIVERED").count()
             else:
                 total_delivered_order = 0
+            # if Order.objects.filter(order_item_order__product__user__agent_user_id=self.request.user.id).exists():
+            #     total_delivered_order = Order.objects.filter(
+            #         order_item_order__product__user__agent_user_id=self.request.user.id, order_status="DELIVERED").count()
+            # else:
+            #     total_delivered_order = 0
 
             # Top published products
             if Product.objects.filter(user__agent_user_id=self.request.user.id, status='PUBLISH').exists():
@@ -200,9 +207,9 @@ class AdminDashboardDataAPIView(APIView):
                 total_sales = None
 
             # total delivered order
-            if Order.objects.filter(order_item_order__product__user=self.request.user).exists():
-                total_delivered_order = Order.objects.filter(
-                    order_item_order__product__user=self.request.user, order_status="DELIVERED").count()
+            if SubOrder.objects.filter(order_item_suborder__product__user=self.request.user).exists():
+                total_delivered_order = SubOrder.objects.filter(
+                    order_item_suborder__product__user=self.request.user, order_status="DELIVERED").count()
             else:
                 total_delivered_order = 0
 
@@ -221,14 +228,14 @@ class AdminDashboardDataAPIView(APIView):
                 total_unpublished_product = 0
 
             # total sale amount
-            total_sale_amount = OrderItem.objects.filter(product__user=self.request.user.id,suborder__payment_status='PAID').aggregate(total=Sum('total_price'))['total'] or 0
+            total_sale_amount = OrderItem.objects.filter(product__user=self.request.user.id,suborder__payment_status='PAID').aggregate(total=Sum( F('product__price_per_unit') * F('quantity') ))['total'] or 0
 
             # total sale amount this month
             current_month = timezone.now().month
             start_of_month = date(year=timezone.now().year, month=current_month, day=1)
             end_of_month = start_of_month.replace(day=28) + datetime.timedelta(days=4)
             end_of_month = end_of_month - datetime.timedelta(days=end_of_month.day)
-            total_sale_amount_of_this_month = OrderItem.objects.filter(product__user=self.request.user.id, suborder__payment_status='PAID', created_at__gte=start_of_month, created_at__lte=end_of_month).aggregate(total=Sum('total_price'))['total'] or 0
+            total_sale_amount_of_this_month = OrderItem.objects.filter(product__user=self.request.user.id, suborder__payment_status='PAID', created_at__gte=start_of_month, created_at__lte=end_of_month).aggregate(total=Sum( F('product__price_per_unit') * F('quantity') ))['total'] or 0
 
             return Response({
                 "total_delivered_order": total_delivered_order,

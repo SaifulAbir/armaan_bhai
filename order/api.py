@@ -1,5 +1,6 @@
 from rest_framework.generics import CreateAPIView, RetrieveUpdateAPIView, ListAPIView, DestroyAPIView, RetrieveAPIView, \
     UpdateAPIView
+from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from datetime import datetime, timedelta
 from armaan_bhai.pagination import CustomPagination
@@ -11,7 +12,7 @@ from order.models import *
 from user.models import *
 from rest_framework import status
 from django.db.models import Sum
-
+from django.utils import timezone
 from decimal import Decimal
 
 
@@ -40,7 +41,7 @@ class DeliveryAddressListAPIView(ListAPIView):
     serializer_class = DeliveryAddressListSerializer
 
     def get_queryset(self):
-        queryset = DeliveryAddress.objects.filter(user=self.request.user)
+        queryset = DeliveryAddress.objects.filter(user=self.request.user).order_by('-created_at')
         return queryset
 
 
@@ -258,7 +259,8 @@ class OrderUpdateAPIView(UpdateAPIView):
 
     def get_object(self):
         id = self.kwargs['id']
-        query = Order.objects.get(id=id)
+        # query = Order.objects.get(id=id)
+        query = SubOrder.objects.get(id=id)
         return query
 
 
@@ -296,11 +298,11 @@ class AdminOrdersListByPickupPointsListAPIView(ListAPIView):
 
     def get_queryset(self):
        today = datetime.today()
-       pickup_points = PickupLocation.objects.filter(Q(status=True), Q(order_item_pickup_location__product__possible_productions_date=today))
+       pickup_points = PickupLocation.objects.filter(Q(status=True), Q(order_item_pickup_location__product__possible_productions_date=today), Q(order_item_pickup_location__is_qc_passed='PASS'))
        location = []
        for pickup_point in pickup_points:
-           order = OrderItem.objects.filter(pickup_location=pickup_point)
-           if order.exists():
+           order_item = OrderItem.objects.filter(pickup_location=pickup_point)
+           if order_item.exists():
                location.append(pickup_point.id)
 
        queryset = PickupLocation.objects.filter(id__in=location)
@@ -320,25 +322,25 @@ class FarmerPaymentListAPIView(ListAPIView):
             for order in order_list:
                 farmer_id = order.product.user.id
                 if farmer_id in farmer_dict:
-                    farmer_dict[farmer_id]["total_amount"] += order.total_price
+                    farmer_dict[farmer_id]["total_amount"] += order.product.price_per_unit * order.quantity
                     farmer_dict[farmer_id]["item_list"].append({
                         "product_id": order.id,
                         "product_name": order.product.title,
                         "quantity": order.quantity,
-                        "price": order.unit_price,
-                        "total_price": order.total_price
+                        "price": order.product.price_per_unit,
+                        "total_price": order.product.price_per_unit * order.quantity
                     })
                 else:
                     farmer_dict[farmer_id] = {
                         "farmer_id": farmer_id,
-                        "total_amount": order.total_price,
+                        "total_amount": order.product.price_per_unit * order.quantity,
                         "item_list": [
                             {
                                 "product_id": order.id,
                                 "product_name": order.product.title,
                                 "quantity": order.quantity,
-                                "price": order.unit_price,
-                                "total_price": order.total_price
+                                "price": order.product.price_per_unit,
+                                "total_price": order.product.price_per_unit * order.quantity
                             }
                         ]
                     }
@@ -465,6 +467,8 @@ class AdminOrderListOfQcPassedOrderAPIView(ListAPIView):
             request = self.request
             today = request.GET.get('today')
             this_week = request.GET.get('this_week')
+            start_date = request.GET.get('start_date')
+            end_date = request.GET.get('end_date')
 
             queryset = SubOrder.objects.filter(order_status='ON_TRANSIT')
             if today:
@@ -477,6 +481,8 @@ class AdminOrderListOfQcPassedOrderAPIView(ListAPIView):
                 week_start = dt - (timedelta(days=dt.weekday()) + timedelta(days=2))
                 week_end = week_start + timedelta(days=6)
                 queryset = queryset.filter(Q(delivery_date__range=(week_start,week_end)))
+            if start_date and end_date:
+                queryset = queryset.filter(Q(delivery_date__range=(start_date,end_date)))
 
             return queryset
         # else:
@@ -527,3 +533,191 @@ class AdminSalesOfAnAgentAPIView(ListAPIView):
             return queryset
         else:
             return []
+
+
+class FarmerOwnPaymentListAPIView(ListAPIView):
+    serializer_class = FarmerOwnPaymentListSerializer
+    pagination_class = CustomPagination
+
+    def get_queryset(self):
+        try:
+            user = self.request.user
+            if self.request.user.user_type == "FARMER":
+                queryset = PaymentHistory.objects.filter(farmer=self.request.user.id)
+                if queryset:
+                    return queryset
+                else:
+                    return []
+            else:
+                raise NotFound("You are not a farmer!")
+        except Exception as e:
+            raise NotFound("No payment data found!")
+
+
+class FarmerProductionProductsListAPIView(ListAPIView):
+    serializer_class = FarmerProductionProductsSerializer
+    pagination_class = CustomPagination
+
+    def get_queryset(self):
+        user = self.request.user
+        if self.request.user.user_type == "FARMER":
+            tomorrow = datetime.today() + timedelta(days=1)
+            # queryset = User.objects.filter(Q(agent_user_id=user.id), Q(user_type="FARMER"), Q(product_seller__order_item_product__isnull=False), Q(product_seller__possible_productions_date=tomorrow)).order_by('id').distinct()
+            queryset = Product.objects.filter(Q(user=user.id), Q(possible_productions_date=tomorrow), Q(order_item_product__isnull=False), Q(order_item_product__is_qc_passed='NEUTRAL')).order_by('id').distinct()
+        else:
+            queryset = None
+        return queryset
+
+
+class AdminCouponCreateAPIView(CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = AdminCouponSerializer
+
+    def post(self, request, *args, **kwargs):
+        if self.request.user.is_superuser == True:
+            return super(AdminCouponCreateAPIView, self).post(request, *args, **kwargs)
+        else:
+            raise ValidationError(
+                {"msg": 'You can not create coupon, because you are not an Admin!'})
+
+
+class AdminCouponListAPIView(ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = AdminCouponSerializer
+    pagination_class = CustomPagination
+
+    def get_queryset(self):
+        if self.request.user.is_superuser == True:
+            queryset = Coupon.objects.filter(is_active=True).order_by('-created_at')
+            if queryset:
+                return queryset
+            else:
+                raise ValidationError(
+                    {"msg": 'Coupon data does not exist!'})
+        else:
+            raise ValidationError({"msg": 'You can not view coupon list, because you are not an Admin!'})
+
+
+class AdminCouponUpdateAPIView(RetrieveUpdateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = AdminCouponUpdateSerializer
+    queryset = Coupon.objects.filter(is_active=True)
+    lookup_field = 'id'
+    lookup_url_kwarg = "id"
+
+    def put(self, request, *args, **kwargs):
+        if self.request.user.is_superuser == True:
+            return super(AdminCouponUpdateAPIView, self).put(request, *args, **kwargs)
+        else:
+            raise ValidationError(
+                {"msg": 'You can not update coupon, because you are not an Admin!'})
+
+
+class AdminCouponDeleteAPIView(ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = AdminCouponSerializer
+    lookup_field = 'id'
+    lookup_url_kwarg = 'id'
+
+    def get_queryset(self):
+        id = self.kwargs['id']
+        if self.request.user.is_superuser == True:
+            coupon_obj = Coupon.objects.filter(id=id).exists()
+            if coupon_obj:
+                Coupon.objects.filter(id=id).update(is_active=False)
+                queryset = Coupon.objects.filter(is_active=True).order_by('-created_at')
+                return queryset
+            else:
+                raise ValidationError(
+                    {"msg": 'Coupon data Does not exist!'}
+                )
+        else:
+            raise ValidationError({"msg": 'You can not delete coupon data, because you are not an Admin!'})
+        
+
+class ApplyCouponAPIView(APIView):
+    permission_classes = (AllowAny,)
+    serializer_class = ApplyCouponSerializer
+
+    def get(self, request, code, uid):
+        try:
+            code = self.kwargs['code']
+            uid = self.kwargs['uid']
+
+            code_exist = Coupon.objects.filter(code=code, is_active=True).exists()
+            if code_exist:
+                coupon_obj = Coupon.objects.filter(code=code)
+                start_date_time = coupon_obj[0].start_time
+                end_date_time = coupon_obj[0].end_time
+
+                current_time = timezone.now()
+
+                if current_time > start_date_time and current_time < end_date_time:
+                    max_time = int(coupon_obj[0].max_time)
+                    usage_count = int(coupon_obj[0].usage_count)
+                    if max_time > usage_count:
+                        user = User.objects.filter(id=uid).exists()
+                        if user:
+                            user_obj = User.objects.filter(id=uid)
+                            check_in_use_coupon_record = CouponStat.objects.filter(
+                                coupon_id=coupon_obj[0].id, user_id=user_obj[0].id).exists()
+                            if check_in_use_coupon_record:
+                                return Response({"status": "You already used this coupon!"})
+                            else:
+                                return Response({"status": "Authentic coupon.", "amount": coupon_obj[0].amount, "coupon_id": coupon_obj[0].id, "code": coupon_obj[0].code, "coupon_title": coupon_obj[0].coupon_title, "min_shopping": coupon_obj[0].min_shopping, "max_time": coupon_obj[0].max_time, "usage_count": coupon_obj[0].usage_count, "start_time": coupon_obj[0].start_time, "end_time": coupon_obj[0].end_time, "is_active": coupon_obj[0].is_active})
+                        else:
+                            return Response({"status": "User doesn't exist!"})
+                    else:
+                        coupon_obj.update(is_active=False)
+                        return Response({"status": "Invalid coupon!"})
+                else:
+                    if current_time > end_date_time:
+                        coupon_obj.update(is_active=False)
+                    return Response({"status": "Invalid coupon!"})
+            else:
+                return Response({"status": "Invalid coupon!"})
+        except:
+            return Response({"status": "Something went wrong!"})
+        
+
+class AdminWebsiteConfigurationCreateAPIView(CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = WebsiteConfigurationSerializer
+
+    def post(self, request, *args, **kwargs):
+        if self.request.user.is_superuser == True:
+            return super(AdminWebsiteConfigurationCreateAPIView, self).post(request, *args, **kwargs)
+        else:
+            raise ValidationError(
+                {"msg": 'You can not work on web Configuration, because you are not an Admin!'})
+        
+
+class AdminWebsiteConfigurationViewAPIView(RetrieveAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = WebsiteConfigurationSerializer
+    lookup_field = 'id'
+    lookup_url_kwarg = "id"
+
+    def get_object(self):
+        s_id = self.kwargs['id']
+        if self.request.user.is_superuser == True:
+            try:
+                query = Setting.objects.get(id=s_id)
+                return query
+            except:
+                raise ValidationError({"details": "Setting row doesn't exist!"})
+        else:
+            raise ValidationError(
+                {"msg": 'You can not see Offer details, because you are not an Admin or a Staff!'})
+
+class AdminWebsiteConfigurationUpdateAPIView(UpdateAPIView):
+    serializer_class = WebsiteConfigurationSerializer
+    queryset = Setting.objects.all()
+
+
+class VatAndDeliveryChargeAPIView(APIView):
+    permission_classes = [AllowAny]
+    def get(self, request, *args, **kwargs):
+            ticket_details_data = Setting.objects.filter(is_active=True).order_by('-created_at')[:1]
+            serializer = WebsiteConfigurationSerializer(ticket_details_data, many=True)
+            return Response(serializer.data)

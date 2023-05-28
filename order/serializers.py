@@ -92,6 +92,8 @@ class CheckoutSerializer(serializers.ModelSerializer):
         for delivery_char in delivery_charges:
             delivery_charge = delivery_char.delivery_charge
 
+            print(delivery_charge, "charge")
+
         if order_items:
             suborders = {}
             for order_item in order_items:
@@ -99,6 +101,7 @@ class CheckoutSerializer(serializers.ModelSerializer):
                 quantity = order_item['quantity']
                 unit_price = order_item['unit_price']
                 total_price = float(unit_price) * float(quantity)
+                print(total_price,"price")
                 if int(quantity) > product.quantity:
                     raise ValidationError("Ordered quantity is greater than inventory")
 
@@ -126,7 +129,10 @@ class CheckoutSerializer(serializers.ModelSerializer):
                                                                delivery_charge=delivery_charge,
                                                                order_status='ON_PROCESS')
                     suborders[suborder_key] = suborder_obj
-
+                else:
+                    suborder_obj.total_price += total_price
+                    suborder_obj.product_count += 1
+                    suborder_obj.save()
                 OrderItem.objects.create(order=order_instance, suborder=suborder_obj, product=product,
                                          quantity=int(quantity), unit_price=unit_price, total_price=total_price)
 
@@ -213,6 +219,7 @@ class CheckoutDetailsSerializer(serializers.ModelSerializer):
     def get_delivery_charges(self, obj):
         suborders = SubOrder.objects.filter(order_id=obj.id)
         delivery_charges_sum = suborders.aggregate(Sum('delivery_charge'))['delivery_charge__sum'] or 0
+        print(delivery_charges_sum, "Delivery Tanvir")
         return delivery_charges_sum
     def get_total_price(self, order):
         total_price = order.total_price or 0
@@ -243,16 +250,28 @@ class CustomerOrderListSerializer(serializers.ModelSerializer):
     )
     order_number = serializers.CharField(source='order.order_id')
     total_price = serializers.SerializerMethodField('get_total_price')
+    farmer_total_price = serializers.SerializerMethodField('get_farmer_total_price')
     class Meta:
         model = SubOrder
         fields = ['id', 'user', 'order_number', 'suborder_number', 'order_date', 'delivery_date', 'order_status', 'order_status_value', 'order_item_suborder', 'delivery_address', 'payment_type',
-        'coupon_discount_amount', 'total_price', 'payment_status', 'payment_status_value', 'delivery_charge', 'divided_discount_amount']
+        'coupon_discount_amount', 'total_price', 'payment_status', 'payment_status_value', 'delivery_charge', 'divided_discount_amount', 'farmer_total_price']
 
     def get_total_price(self, suborder):
         total_price = suborder.total_price + Decimal(suborder.delivery_charge)
         if suborder.divided_discount_amount:
             total_price -= Decimal(suborder.divided_discount_amount)
         return total_price
+
+    def get_farmer_total_price(self, suborder):
+        user = self.context['request'].user
+        if user.is_authenticated:
+            # Get the order items associated with the suborder and belong to the authenticated user
+            order_items = suborder.order_item_suborder.filter(product__user=user)
+            # Calculate the total price based on the order items' unit prices and quantities
+            order_items_total = sum(item.product.price_per_unit * item.quantity for item in order_items)
+            return Decimal(order_items_total)
+
+        return suborder.total_price or Decimal('0')
 
 
 class AgentOrderListSerializer(serializers.ModelSerializer):

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from product.models import Product, Category, SubCategory, Units, Inventory, ProductImage, ProductionStep
+from product.models import Product, Category, SubCategory, Units, Inventory, ProductImage, ProductionStep, Offer, OfferProduct
 from user.models import User, Division, District, Upazilla
 from order.models import Setting
 from user.serializers import FarmerListSerializer
@@ -453,3 +453,89 @@ class BestSellingProductListSerializer(serializers.ModelSerializer):
             return sell_price
 
 
+class AdminOfferProductsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OfferProduct
+        fields = ['id',
+                  'product',
+                  ]
+
+
+class AdminOfferSerializer(serializers.ModelSerializer):
+    offer_products = AdminOfferProductsSerializer(many=True, required=False)
+    existing_offer_products = serializers.SerializerMethodField(
+        'get_existing_offer_products')
+    start_date = serializers.DateTimeField(
+        format="%Y-%m-%d %H:%M:%S", required=False)
+    end_date = serializers.DateTimeField(
+        format="%Y-%m-%d %H:%M:%S", required=False)
+
+    class Meta:
+        model = Offer
+        read_only_field = ['id']
+        fields = ['id',
+                  'title',
+                  'start_date',
+                  'end_date',
+                  'thumbnail',
+                  'short_description',
+                  'full_description',
+                  'discount_price',
+                  'discount_price_type',
+                  'offer_products',
+                  'existing_offer_products'
+                  ]
+
+    def get_existing_offer_products(self, obj):
+        queryset = OfferProduct.objects.filter(offer=obj, is_active=True)
+        serializer = AdminOfferProductsSerializer(instance=queryset, many=True)
+        return serializer.data
+
+    def create(self, validated_data):
+        # offer_products
+        try:
+            offer_products = validated_data.pop('offer_products')
+        except:
+            offer_products = ''
+
+        offer_instance = Offer.objects.create(**validated_data)
+
+        try:
+            # offer_products
+            if offer_products:
+                for offer_product in offer_products:
+                    product = offer_product['product']
+                    OfferProduct.objects.create(
+                        offer=offer_instance, product=product)
+            return offer_instance
+        except:
+            return offer_instance
+
+    def update(self, instance, validated_data):
+        # offer_products
+        try:
+            offer_products = validated_data.pop('offer_products')
+        except:
+            offer_products = ''
+
+        try:
+            # offer_products
+            if offer_products:
+                o_p = OfferProduct.objects.filter(offer=instance).exists()
+                if o_p == True:
+                    OfferProduct.objects.filter(offer=instance).delete()
+
+                for offer_product in offer_products:
+                    product = offer_product['product']
+                    OfferProduct.objects.create(
+                        offer=instance, product=product)
+            else:
+                o_p = OfferProduct.objects.filter(offer=instance).exists()
+                if o_p == True:
+                    OfferProduct.objects.filter(offer=instance).delete()
+
+            validated_data.update({"updated_at": timezone.now()})
+            return super().update(instance, validated_data)
+        except:
+            validated_data.update({"updated_at": timezone.now()})
+            return super().update(instance, validated_data)

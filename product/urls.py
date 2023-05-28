@@ -18,4 +18,15 @@ urlpatterns = [
     path('customer/sub-category-list/<int:cid>/', SubCategoryListAPIView.as_view()),
 
     path('customer/best-selling-product-list/', CustomerBestSellingProductListAPI.as_view()),
+
+    path('offers-list/', OffersListAPIView.as_view()),
+    path('offer-details/<int:id>/', OfferDetailsAPIView.as_view()),
+    path('offer-products-list/<int:id>/<int:pagination>/', OfferProductsListAPIView.as_view()),
+    path('offer-products-all-list/', OfferProductsAllListAPIView.as_view()),
+
+    path('admin/offers-list/', AdminOffersListAPIView.as_view()),
+    path('admin/offer-create/', AdminOfferCreateAPIView.as_view()),
+    path('admin/offer-update/<int:id>/', AdminOfferUpdateAPIView.as_view()),
+    path('admin/offer-update-details/<int:id>/', AdminOfferUpdateDetailsAPIView.as_view()),
+    path('admin/offers-delete/<int:id>/', AdminOfferDeleteAPIView.as_view()),
 ]

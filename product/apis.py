@@ -384,15 +384,13 @@ class OfferProductsListAPIView(ListAPIView):
 
 class OfferProductsAllListAPIView(ListAPIView):
     permission_classes = (AllowAny,)
-    serializer_class = ProductListSerializer
+    serializer_class = OfferProductListSerializer
 
     def get_queryset(self):
         today = timezone.now().date()
-        # queryset = Product.objects.filter(status="PUBLISH", possible_productions_date__gt=today).order_by('-created_at')
-
         products = []
-        # offer_obj = Offer.objects.get(id=id)
-        offer_products = OfferProduct.objects.filter(offer__end_date__gt=today)
+        offers = Offer.objects.filter(end_date__gt=today, is_active=True).order_by('-created_at')[:1]
+        offer_products = OfferProduct.objects.filter(offer__in=offers)
         for offer_product in offer_products:
             products.append(offer_product.product.id)
 
@@ -403,3 +401,186 @@ class OfferProductsAllListAPIView(ListAPIView):
             queryset = []
 
         return queryset
+    
+
+class AdminProductListForOfferCreateAPI(ListAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = ProductListSerializer
+
+    def get_queryset(self):
+        offer_id = self.request.GET.get('offer_id')
+        today = timezone.now().date()
+        product_list = [p.id for p in Product.objects.filter(
+            status='PUBLISH', possible_productions_date__gt=today).order_by('-created_at')]
+
+        active_offers_products_list = [p.product.id for p in OfferProduct.objects.filter(
+            is_active=True, offer__is_active=True, offer__end_date__gte=datetime.today()
+        )]
+
+        offers_products_list = [p.product.id for p in
+                                OfferProduct.objects.filter(offer=offer_id, is_active=True)] if offer_id else []
+
+        list_joined = [i for i in product_list if
+                       i not in active_offers_products_list] + (
+            offers_products_list if offers_products_list else list())
+
+        return Product.objects.filter(id__in=list_joined).order_by(
+            '-created_at') if list_joined else []
+
+
+class AdminCategoryListAPIView(ListAPIView):
+    serializer_class = AdminCategorySerializer
+    pagination_class = ProductCustomPagination
+
+    def get_queryset(self):
+        if self.request.user.user_type == "ADMIN":
+            queryset = Category.objects.filter(is_active=True).order_by('-created_at')
+            if queryset:
+                return queryset
+            else:
+                raise ValidationError(
+                    {"msg": 'Category does not exist!'})
+        else:
+            raise ValidationError(
+                {"msg": 'You can not view Category list, because you are not an Admin!'})
+
+
+class AdminSubCategoryListAPIView(ListAPIView):
+    serializer_class = AdminSubCategorySerializer
+    pagination_class = ProductCustomPagination
+
+    def get_queryset(self):
+        if self.request.user.user_type == "ADMIN":
+            queryset = SubCategory.objects.filter(is_active=True).order_by('-created_at')
+            if queryset:
+                return queryset
+            else:
+                raise ValidationError(
+                    {"msg": 'Sub Category does not exist!'})
+        else:
+            raise ValidationError(
+                {"msg": 'You can not view Sub Category list, because you are not an Admin!'})
+        
+
+class AdminCategoryUpdateDetailsAPIView(RetrieveAPIView):
+    serializer_class = AdminCategorySerializer
+    lookup_field = 'id'
+    lookup_url_kwarg = "id"
+
+    def get_queryset(self):
+        id = self.kwargs['id']
+        if self.request.user.user_type == "ADMIN":
+            query = Category.objects.filter(id=id)
+            if query:
+                return query
+            else:
+                raise ValidationError(
+                    {"msg": 'Category does not exist!'})
+        else:
+            raise ValidationError(
+                {"msg": 'You can not see Update details, because you are not an Admin!'})
+        
+
+class AdminSubCategoryUpdateDetailsAPIView(RetrieveAPIView):
+    serializer_class = AdminSubCategorySerializer
+    lookup_field = 'id'
+    lookup_url_kwarg = "id"
+
+    def get_queryset(self):
+        id = self.kwargs['id']
+        if self.request.user.user_type == "ADMIN":
+            query = SubCategory.objects.filter(id=id)
+            if query:
+                return query
+            else:
+                raise ValidationError(
+                    {"msg": 'Sub Category does not exist!'})
+        else:
+            raise ValidationError(
+                {"msg": 'You can not see Update details, because you are not an Admin!'})
+        
+
+class AdminCategoryUpdateAPIView(UpdateAPIView):
+    serializer_class = AdminCategorySerializer
+    lookup_field = 'id'
+    lookup_url_kwarg = "id"
+
+    def get_queryset(self):
+        id = self.kwargs['id']
+        if self.request.user.user_type == "ADMIN":
+            query = Category.objects.filter(id=id)
+            if query:
+                return query
+            else:
+                raise ValidationError(
+                    {"msg": 'Category does not exist!'})
+        else:
+            raise ValidationError(
+                {"msg": 'You can not update Category, because you are not an Admin!'})
+        
+
+class AdminSubCategoryUpdateAPIView(UpdateAPIView):
+    serializer_class = AdminSubCategorySerializer
+    lookup_field = 'id'
+    lookup_url_kwarg = "id"
+
+    def get_queryset(self):
+        id = self.kwargs['id']
+        if self.request.user.user_type == "ADMIN":
+            query = SubCategory.objects.filter(id=id)
+            if query:
+                return query
+            else:
+                raise ValidationError(
+                    {"msg": 'Sub Category does not exist!'})
+        else:
+            raise ValidationError(
+                {"msg": 'You can not update Sub Category, because you are not an Admin!'})
+        
+
+class AdminCategoryDeleteAPIView(ListAPIView):
+    pagination_class = ProductCustomPagination
+    serializer_class = AdminCategorySerializer
+    lookup_field = 'id'
+    lookup_url_kwarg = 'id'
+
+    def get_queryset(self):
+        id = self.kwargs['id']
+        if self.request.user.user_type == "ADMIN":
+            category_obj = Category.objects.filter(id=id).exists()
+            if category_obj:
+                Category.objects.filter(id=id).update(is_active=False)
+                queryset = Category.objects.filter(
+                    is_active=True).order_by('-created_at')
+                return queryset
+            else:
+                raise ValidationError(
+                    {"msg": 'Category data Does not exist!'}
+                )
+        else:
+            raise ValidationError(
+                {"msg": 'You can not delete Category data, because you are not an Admin!'})
+        
+
+class AdminSubCategoryDeleteAPIView(ListAPIView):
+    pagination_class = ProductCustomPagination
+    serializer_class = AdminSubCategorySerializer
+    lookup_field = 'id'
+    lookup_url_kwarg = 'id'
+
+    def get_queryset(self):
+        id = self.kwargs['id']
+        if self.request.user.user_type == "ADMIN":
+            sub_category_obj = SubCategory.objects.filter(id=id).exists()
+            if sub_category_obj:
+                SubCategory.objects.filter(id=id).update(is_active=False)
+                queryset = SubCategory.objects.filter(
+                    is_active=True).order_by('-created_at')
+                return queryset
+            else:
+                raise ValidationError(
+                    {"msg": 'Sub Category data Does not exist!'}
+                )
+        else:
+            raise ValidationError(
+                {"msg": 'You can not delete Sub Category data, because you are not an Admin!'})

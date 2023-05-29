@@ -1,6 +1,6 @@
 from django.db import models
 
-# #
+# # Create your models here.
 from armaan_bhai.models import AbstractTimeStamp
 from user.models import User
 

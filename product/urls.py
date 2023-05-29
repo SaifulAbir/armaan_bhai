@@ -19,14 +19,24 @@ urlpatterns = [
 
     path('customer/best-selling-product-list/', CustomerBestSellingProductListAPI.as_view()),
 
-    path('offers-list/', OffersListAPIView.as_view()),
-    path('offer-details/<int:id>/', OfferDetailsAPIView.as_view()),
-    path('offer-products-list/<int:id>/<int:pagination>/', OfferProductsListAPIView.as_view()),
+    # path('offers-list/', OffersListAPIView.as_view()),
+    # path('offer-details/<int:id>/', OfferDetailsAPIView.as_view()),
+    # path('offer-products-list/<int:id>/<int:pagination>/', OfferProductsListAPIView.as_view()),
     path('offer-products-all-list/', OfferProductsAllListAPIView.as_view()),
 
     path('admin/offers-list/', AdminOffersListAPIView.as_view()),
     path('admin/offer-create/', AdminOfferCreateAPIView.as_view()),
+    path('admin/product-list-for-offer-create/', AdminProductListForOfferCreateAPI.as_view()),
     path('admin/offer-update/<int:id>/', AdminOfferUpdateAPIView.as_view()),
     path('admin/offer-update-details/<int:id>/', AdminOfferUpdateDetailsAPIView.as_view()),
     path('admin/offers-delete/<int:id>/', AdminOfferDeleteAPIView.as_view()),
+
+    path('admin/category-list/', AdminCategoryListAPIView.as_view()),
+    path('admin/sub-category-list/', AdminSubCategoryListAPIView.as_view()),
+    path('admin/category-update-details/<int:id>/', AdminCategoryUpdateDetailsAPIView.as_view()),
+    path('admin/sub-category-update-details/<int:id>/', AdminSubCategoryUpdateDetailsAPIView.as_view()),
+    path('admin/category-update/<int:id>/', AdminCategoryUpdateAPIView.as_view()),
+    path('admin/sub-category-update/<int:id>/', AdminSubCategoryUpdateAPIView.as_view()),
+    path('admin/category-delete/<int:id>/', AdminCategoryDeleteAPIView.as_view()),
+    path('admin/sub-category-delete/<int:id>/', AdminSubCategoryDeleteAPIView.as_view()),
 ]

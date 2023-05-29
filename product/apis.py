@@ -276,7 +276,7 @@ class AdminOfferUpdateAPIView(UpdateAPIView):
 
 
 class AdminOfferUpdateDetailsAPIView(RetrieveAPIView):
-    serializer_class = AdminOfferSerializer
+    serializer_class = AdminOfferUpdateDetailsSerializer
     lookup_field = 'id'
     lookup_url_kwarg = "id"
 

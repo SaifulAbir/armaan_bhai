@@ -39,8 +39,6 @@ urlpatterns = [
     path('agent/farmer/list/', AgentFarmerListAPI.as_view(), name='agent_farmer_list'),
     path('update/farmer/<int:pk>/', FarmerUpdateAPIView.as_view(), name='update_farmer'),
     # agent list for superadmin
-    path('admin/admin/list/', AdminListAPI.as_view(), name='admin_list'),
-    # agent list for superadmin
     path('admin/agent/list/', AgentListAPI.as_view(), name='agent_list'),
     # division, district and upazilla list api for storefront
     path('division/list/', DivisionListAPI.as_view(), name='division_list'),

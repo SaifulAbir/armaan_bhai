@@ -541,6 +541,35 @@ class AdminOfferSerializer(serializers.ModelSerializer):
             return super().update(instance, validated_data)
 
 
+class AdminOfferUpdateDetailsSerializer(serializers.ModelSerializer):
+    offer_products = serializers.SerializerMethodField(
+        'get_offer_products')
+    start_date = serializers.DateTimeField(
+        format="%Y-%m-%d %H:%M:%S", required=False)
+    end_date = serializers.DateTimeField(
+        format="%Y-%m-%d %H:%M:%S", required=False)
+
+    class Meta:
+        model = Offer
+        read_only_field = ['id']
+        fields = ['id',
+                  'title',
+                  'start_date',
+                  'end_date',
+                  'thumbnail',
+                  'short_description',
+                  'full_description',
+                  'discount_price',
+                  'discount_price_type',
+                  'offer_products',
+                  ]
+
+    def get_offer_products(self, obj):
+        queryset = OfferProduct.objects.filter(offer=obj, is_active=True)
+        serializer = AdminOfferProductsSerializer(instance=queryset, many=True)
+        return serializer.data
+
+
 class OfferInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Offer

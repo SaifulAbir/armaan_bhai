@@ -25,7 +25,8 @@ jobs:
 
     - name: Deploy to DigitalOcean
       run: |
-        rsync -r --quiet --delete . root@165.232.171.7:/home/armanbhaiapi.mwebservices.co/ArmanBhai/code
+        ssh root@165.232.171.7 'cd /home/armanbhaiapi.mwebservices.co/ArmanBhai/code && git pull origin main'
+#        rsync -r --quiet --delete . root@165.232.171.7:/home/armanbhaiapi.mwebservices.co/ArmanBhai/code
 
     - name: Install Python and dependencies
       run: |

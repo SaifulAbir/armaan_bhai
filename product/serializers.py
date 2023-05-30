@@ -483,7 +483,8 @@ class AdminOfferSerializer(serializers.ModelSerializer):
                   'discount_price',
                   'discount_price_type',
                   'offer_products',
-                  'existing_offer_products'
+                  'existing_offer_products',
+                  'is_active',
                   ]
 
     def get_existing_offer_products(self, obj):

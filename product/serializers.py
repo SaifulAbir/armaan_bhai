@@ -249,7 +249,7 @@ class ProductListSerializer(serializers.ModelSerializer):
         sell_price = obj.sell_price_per_unit
 
         # Check if there is an active offer for the product
-        offer = OfferProduct.objects.filter(product=obj, is_active=True).first()
+        offer = OfferProduct.objects.filter(product=obj, offer__is_active=True, offer__end_date__gte=timezone.now()).first()
 
         if offer:
             discount_type = offer.offer.discount_price_type

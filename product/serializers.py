@@ -208,6 +208,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     unit = UnitListSerializer(many=False, read_only=True)
     related_products = serializers.SerializerMethodField('get_related_products')
     sell_price_per_unit = serializers.SerializerMethodField('get_sell_price_with_vat')
+    offer_price = serializers.SerializerMethodField('get_sell_after_offer')
 
     class Meta:
         model = Product
@@ -232,7 +233,8 @@ class ProductListSerializer(serializers.ModelSerializer):
             'status',
             'sell_count',
             'created_at',
-            'related_products'
+            'related_products',
+            'offer_price'
         ]
 
     def get_related_products(self, obj):
@@ -243,6 +245,44 @@ class ProductListSerializer(serializers.ModelSerializer):
             return serializer.data
         except:
             return []
+
+    def get_sell_after_offer(self, obj):
+        print(obj.title)
+        sell_price = obj.sell_price_per_unit
+        print(sell_price)
+
+        # Check if there is an active offer for the product
+        offer = OfferProduct.objects.filter(product=obj, is_active=True).first()
+        print(offer)
+
+        if offer:
+            discount_type = offer.offer.discount_price_type
+            discount_value = offer.offer.discount_price
+
+            if discount_type == 'per':
+                offer_price = (1 - (discount_value / 100)) * sell_price
+                print(offer_price)
+            elif discount_type == 'flat':
+                offer_price = sell_price - discount_value
+            else:
+                offer_price = sell_price
+
+            vat = obj.vat
+            if vat is not None:
+                sell_price_with_vat = offer_price * (1 + vat/100)
+                print(sell_price_with_vat, "Meeeeeeeeeeee")
+                return round(sell_price_with_vat, 2)
+            else:
+                return round(offer_price, 2)
+        else:
+            vat = obj.vat
+            if vat is not None:
+                sell_price_with_vat = sell_price * (1 + vat/100)
+                print(sell_price_with_vat, "youuuuuuuuuuuuuu")
+                return round(sell_price_with_vat, 2)
+            else:
+                return round(sell_price, 2)
+
 
     def get_sell_price_with_vat(self, obj):
         vat = obj.vat  # assuming vat is defined in the Product model

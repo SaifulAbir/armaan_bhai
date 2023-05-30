@@ -31,8 +31,10 @@ urlpatterns = [
     path('admin/offer-update-details/<int:id>/', AdminOfferUpdateDetailsAPIView.as_view()),
     path('admin/offers-delete/<int:id>/', AdminOfferDeleteAPIView.as_view()),
 
+    path('admin/category-create/', AdminCategoryCreateAPIView.as_view()),
+    path('admin/sub-category-create/', AdminSubCategoryCreateAPIView.as_view()),
     path('admin/category-list/', AdminCategoryListAPIView.as_view()),
-    path('admin/sub-category-list/', AdminSubCategoryListAPIView.as_view()),
+    path('admin/sub-category-list/<int:id>/', AdminSubCategoryListAPIView.as_view()),
     path('admin/category-update-details/<int:id>/', AdminCategoryUpdateDetailsAPIView.as_view()),
     path('admin/sub-category-update-details/<int:id>/', AdminSubCategoryUpdateDetailsAPIView.as_view()),
     path('admin/category-update/<int:id>/', AdminCategoryUpdateAPIView.as_view()),

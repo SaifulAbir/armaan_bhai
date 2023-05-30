@@ -234,7 +234,7 @@ class AdminOffersListAPIView(ListAPIView):
         if self.request.user.user_type == "ADMIN" or self.request.user.user_type == "AGENT": 
             today_date = timezone.now().date()
             queryset = Offer.objects.filter(
-                end_date__gte=today_date, is_active=True).order_by('-created_at')
+                end_date__gte=today_date, is_active=True).order_by('-created_at')[:1]
             if queryset:
                 return queryset
             else:
@@ -254,7 +254,7 @@ class AdminOfferCreateAPIView(CreateAPIView):
         else:
             raise ValidationError(
                 {"msg": 'You can not create Offers, because you are not an Admin or an Agent!'})
-        
+
 
 class AdminOfferUpdateAPIView(UpdateAPIView):
     serializer_class = AdminOfferSerializer
@@ -292,7 +292,7 @@ class AdminOfferUpdateDetailsAPIView(RetrieveAPIView):
         else:
             raise ValidationError(
                 {"msg": 'You can not see Update details, because you are not an Admin or an Admin or an Agent!'})
-        
+
 
 class AdminOfferDeleteAPIView(ListAPIView):
     pagination_class = ProductCustomPagination
@@ -330,7 +330,7 @@ class OffersListAPIView(ListAPIView):
             return queryset
         else:
             raise ValidationError({"msg": "No offers available! "})
-        
+
 
 class OfferDetailsAPIView(RetrieveAPIView):
     permission_classes = [AllowAny]
@@ -345,7 +345,7 @@ class OfferDetailsAPIView(RetrieveAPIView):
             return query
         except:
             raise ValidationError({"details": "Offer doesn't exist!"})
-        
+
 
 class OfferProductsListAPIView(ListAPIView):
     permission_classes = (AllowAny,)
@@ -380,7 +380,7 @@ class OfferProductsListAPIView(ListAPIView):
             queryset = []
 
         return queryset
-    
+
 
 class OfferProductsAllListAPIView(ListAPIView):
     permission_classes = (AllowAny,)
@@ -401,7 +401,7 @@ class OfferProductsAllListAPIView(ListAPIView):
             queryset = []
 
         return queryset
-    
+
 
 class AdminProductListForOfferCreateAPI(ListAPIView):
     permission_classes = [AllowAny]
@@ -424,9 +424,33 @@ class AdminProductListForOfferCreateAPI(ListAPIView):
                        i not in active_offers_products_list] + (
             offers_products_list if offers_products_list else list())
 
-        return Product.objects.filter(id__in=list_joined).order_by(
-            '-created_at') if list_joined else []
+        # return Product.objects.filter(id__in=list_joined).order_by(
+        #     '-created_at') if list_joined else []
+        # return Product.objects.filter(id__in=list_joined).order_by(
+        #     '-created_at') if list_joined else Product.objects.filter(status='PUBLISH', possible_productions_date__gt=today).order_by('-created_at')
+        return Product.objects.filter(status='PUBLISH', possible_productions_date__gt=today).order_by('-created_at')
 
+
+class AdminCategoryCreateAPIView(CreateAPIView):
+    serializer_class = AdminCategorySerializer
+
+    def post(self, request, *args, **kwargs):
+        if self.request.user.user_type == "ADMIN":
+            return super(AdminCategoryCreateAPIView, self).post(request, *args, **kwargs)
+        else:
+            raise ValidationError(
+                {"msg": 'You can not create Category, because you are not an Admin!'})
+        
+
+class AdminSubCategoryCreateAPIView(CreateAPIView):
+    serializer_class = AdminSubCategorySerializer
+
+    def post(self, request, *args, **kwargs):
+        if self.request.user.user_type == "ADMIN":
+            return super(AdminSubCategoryCreateAPIView, self).post(request, *args, **kwargs)
+        else:
+            raise ValidationError(
+                {"msg": 'You can not create Sub Category, because you are not an Admin!'})
 
 class AdminCategoryListAPIView(ListAPIView):
     serializer_class = AdminCategorySerializer
@@ -448,10 +472,13 @@ class AdminCategoryListAPIView(ListAPIView):
 class AdminSubCategoryListAPIView(ListAPIView):
     serializer_class = AdminSubCategorySerializer
     pagination_class = ProductCustomPagination
+    lookup_field = 'id'
+    lookup_url_kwarg = "id"
 
     def get_queryset(self):
+        id = self.kwargs['id']
         if self.request.user.user_type == "ADMIN":
-            queryset = SubCategory.objects.filter(is_active=True).order_by('-created_at')
+            queryset = SubCategory.objects.filter(category=id ,is_active=True).order_by('-created_at')
             if queryset:
                 return queryset
             else:
@@ -460,7 +487,7 @@ class AdminSubCategoryListAPIView(ListAPIView):
         else:
             raise ValidationError(
                 {"msg": 'You can not view Sub Category list, because you are not an Admin!'})
-        
+
 
 class AdminCategoryUpdateDetailsAPIView(RetrieveAPIView):
     serializer_class = AdminCategorySerializer
@@ -479,7 +506,7 @@ class AdminCategoryUpdateDetailsAPIView(RetrieveAPIView):
         else:
             raise ValidationError(
                 {"msg": 'You can not see Update details, because you are not an Admin!'})
-        
+
 
 class AdminSubCategoryUpdateDetailsAPIView(RetrieveAPIView):
     serializer_class = AdminSubCategorySerializer
@@ -498,7 +525,7 @@ class AdminSubCategoryUpdateDetailsAPIView(RetrieveAPIView):
         else:
             raise ValidationError(
                 {"msg": 'You can not see Update details, because you are not an Admin!'})
-        
+
 
 class AdminCategoryUpdateAPIView(UpdateAPIView):
     serializer_class = AdminCategorySerializer

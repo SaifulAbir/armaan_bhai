@@ -249,7 +249,8 @@ class ProductListSerializer(serializers.ModelSerializer):
         sell_price = obj.sell_price_per_unit
 
         # Check if there is an active offer for the product
-        offer = OfferProduct.objects.filter(product=obj, is_active=True).first()
+        offer = OfferProduct.objects.filter(product=obj, offer__is_active=True, offer__end_date__gte=timezone.now()).first()
+        print(offer)
 
         if offer:
             discount_type = offer.offer.discount_price_type
@@ -257,6 +258,7 @@ class ProductListSerializer(serializers.ModelSerializer):
 
             if discount_type == 'per':
                 offer_price = (1 - (discount_value / 100)) * sell_price
+                print(offer_price, "offer price")
             elif discount_type == 'flat':
                 offer_price = sell_price - discount_value
             else:
@@ -265,6 +267,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             vat = obj.vat
             if vat is not None:
                 sell_price_with_vat = offer_price * (1 + vat/100)
+                print(sell_price_with_vat, "Final")
                 return round(sell_price_with_vat, 2)
             else:
                 return round(offer_price, 2)
@@ -272,6 +275,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             vat = obj.vat
             if vat is not None:
                 sell_price_with_vat = sell_price * (1 + vat/100)
+                print(sell_price_with_vat, "Print without offer")
                 return round(sell_price_with_vat, 2)
             else:
                 return round(sell_price, 2)

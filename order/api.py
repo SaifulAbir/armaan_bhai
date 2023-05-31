@@ -21,7 +21,6 @@ class DeliveryAddressCreateAPIView(CreateAPIView):
     serializer_class = DeliveryAddressSerializer
 
     def post(self, request, *args, **kwargs):
-        # request.data['user'] = request.user
         return super(DeliveryAddressCreateAPIView, self).post(request, *args, **kwargs)
 
 
@@ -157,15 +156,6 @@ class AgentOrderList(ListAPIView):
             queryset = queryset.filter(Q(delivery_address__district__id=district))
         return queryset
 
-#
-# class CollectOrderList(ListAPIView):
-#     serializer_class = AgentOrderListSerializer
-#     pagination_class = CustomPagination
-#
-#     def get_queryset(self):
-#         queryset = Order.objects.filter(order_date__lt=datetime.today()).order_by('-created_at')
-#         return queryset
-
 
 class PickupLocationCreateAPIView(CreateAPIView):
     serializer_class = PickupLocationSerializer
@@ -224,9 +214,20 @@ class AgentSetPickupLocationOnOrderListAPIView(ListAPIView):
         user = self.request.user
         if self.request.user.user_type == "AGENT":
             tomorrow = datetime.today() + timedelta(days=1)
-            # queryset = User.objects.filter(Q(agent_user_id=user.id), Q(user_type="FARMER"), Q(product_seller__order_item_product__isnull=False)).exclude(~Q(product_seller__possible_productions_date=tomorrow)).order_by('id').distinct()
-
             queryset = User.objects.filter(Q(agent_user_id=user.id), Q(user_type="FARMER"), Q(product_seller__order_item_product__isnull=False), Q(product_seller__possible_productions_date=tomorrow)).order_by('id').distinct()
+        else:
+            queryset = None
+        return queryset
+
+
+class AgentSetQcPassedOnOrderListAPIView(ListAPIView):
+    serializer_class = AgentOrderListForSetupQcPassedSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if self.request.user.user_type == "AGENT":
+            today = datetime.today()
+            queryset = User.objects.filter(Q(agent_user_id=user.id), Q(user_type="FARMER"), Q(product_seller__order_item_product__isnull=False), Q(product_seller__possible_productions_date=today), Q(product_seller__order_item_product__pickup_location__isnull=False) ).order_by('id').distinct()
         else:
             queryset = None
         return queryset
@@ -520,7 +521,6 @@ class DistrictInfoListAPIView(ListAPIView):
         if self.request.user.user_type == "ADMIN":
             queryset = District.objects.all()
         if self.request.user.user_type == "AGENT":
-            # queryset = District.objects.filter(division__division_user__id=self.request.user.id)
             queryset = District.objects.all()
         if queryset:
             return queryset
@@ -637,7 +637,7 @@ class AdminCouponDeleteAPIView(ListAPIView):
                 )
         else:
             raise ValidationError({"msg": 'You can not delete coupon data, because you are not an Admin!'})
-        
+
 
 class ApplyCouponAPIView(APIView):
     permission_classes = (AllowAny,)
@@ -682,7 +682,7 @@ class ApplyCouponAPIView(APIView):
                 return Response({"status": "Invalid coupon!"})
         except:
             return Response({"status": "Something went wrong!"})
-        
+
 
 class AdminWebsiteConfigurationCreateAPIView(CreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -694,7 +694,7 @@ class AdminWebsiteConfigurationCreateAPIView(CreateAPIView):
         else:
             raise ValidationError(
                 {"msg": 'You can not work on web Configuration, because you are not an Admin!'})
-        
+
 
 class AdminWebsiteConfigurationViewAPIView(RetrieveAPIView):
     permission_classes = [IsAuthenticated]
@@ -725,6 +725,28 @@ class VatAndDeliveryChargeAPIView(APIView):
             ticket_details_data = Setting.objects.filter(is_active=True).order_by('-created_at')[:1]
             serializer = WebsiteConfigurationSerializer(ticket_details_data, many=True)
             return Response(serializer.data)
+
+
+class AdminReportSellingRevenueAPIView(ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = AdminSellingRevenueReportSerializer
+
+    def get_queryset(self):
+        if self.request.user.user_type == "ADMIN":
+            start_date = self.request.GET.get('start_date')
+            end_date = self.request.GET.get('end_date')
+            sub_order_obj = SubOrder.objects.filter(order_status='DELIVERED', payment_status='PAID').exists()
+            if sub_order_obj:
+                queryset = SubOrder.objects.filter(order_status='DELIVERED', payment_status='PAID').order_by('-created_at')
+                if start_date and end_date:
+                    queryset = queryset.filter(Q(order_date__range=(start_date,end_date)))
+                return queryset
+            else:
+                raise ValidationError(
+                    {"msg": 'Sub orders data Does not exist!'}
+                )
+        else:
+            raise ValidationError({"msg": 'You can not see selling revenue data, because you are not an Admin!'})
 
 
 # Admin Farmers Payment Summary

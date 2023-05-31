@@ -973,3 +973,11 @@ class WebsiteConfigurationSerializer(serializers.ModelSerializer):
         #         return order_instance
         #     else:
         #         return order_instance
+
+
+class AdminSellingRevenueReportSerializer(serializers.ModelSerializer):
+    customer_name = serializers.CharField(source='user.full_name', read_only=True)
+    customer_phone = serializers.CharField(source='user.phone_number', read_only=True)
+    class Meta:
+        model = SubOrder
+        fields = ['id', 'customer_name', 'customer_phone']

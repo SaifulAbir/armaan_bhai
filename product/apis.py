@@ -233,8 +233,7 @@ class AdminOffersListAPIView(ListAPIView):
     def get_queryset(self):
         if self.request.user.user_type == "ADMIN" or self.request.user.user_type == "AGENT": 
             today_date = timezone.now().date()
-            queryset = Offer.objects.filter(
-                end_date__gte=today_date, is_active=True).order_by('-created_at')[:1]
+            queryset = Offer.objects.all().order_by('-created_at')
             if queryset:
                 return queryset
             else:
@@ -424,11 +423,11 @@ class AdminProductListForOfferCreateAPI(ListAPIView):
                        i not in active_offers_products_list] + (
             offers_products_list if offers_products_list else list())
 
-        # return Product.objects.filter(id__in=list_joined).order_by(
-        #     '-created_at') if list_joined else []
+        return Product.objects.filter(id__in=list_joined).order_by(
+            '-created_at') if list_joined else []
         # return Product.objects.filter(id__in=list_joined).order_by(
         #     '-created_at') if list_joined else Product.objects.filter(status='PUBLISH', possible_productions_date__gt=today).order_by('-created_at')
-        return Product.objects.filter(status='PUBLISH', possible_productions_date__gt=today).order_by('-created_at')
+        # return Product.objects.filter(status='PUBLISH', possible_productions_date__gt=today).order_by('-created_at')
 
 
 class AdminCategoryCreateAPIView(CreateAPIView):

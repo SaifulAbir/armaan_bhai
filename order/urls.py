@@ -27,6 +27,8 @@ urlpatterns = [
     # set pickup / Mukam location
     path('agent/agent-set-pickup-location-on-order/list/', AgentSetPickupLocationOnOrderListAPIView.as_view()),
     path('agent/agent-pickup-location/list/', AgentPickupLocationListOfAgentAPIView.as_view()),
+
+    path('agent/agent-set-qc-passed-on-order/list/', AgentSetQcPassedOnOrderListAPIView.as_view()),
     path('agent/update-pickup-location-qc-passed-info/<str:id>/', PickupLocationQcPassedInfoUpdateAPIView.as_view()),
     # add payment method
     path('agent/create-payment-method/', PaymentMethodCreateAPIView.as_view()),

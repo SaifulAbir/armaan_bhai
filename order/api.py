@@ -214,9 +214,20 @@ class AgentSetPickupLocationOnOrderListAPIView(ListAPIView):
         user = self.request.user
         if self.request.user.user_type == "AGENT":
             tomorrow = datetime.today() + timedelta(days=1)
-            # queryset = User.objects.filter(Q(agent_user_id=user.id), Q(user_type="FARMER"), Q(product_seller__order_item_product__isnull=False)).exclude(~Q(product_seller__possible_productions_date=tomorrow)).order_by('id').distinct()
-
             queryset = User.objects.filter(Q(agent_user_id=user.id), Q(user_type="FARMER"), Q(product_seller__order_item_product__isnull=False), Q(product_seller__possible_productions_date=tomorrow)).order_by('id').distinct()
+        else:
+            queryset = None
+        return queryset
+
+
+class AgentSetQcPassedOnOrderListAPIView(ListAPIView):
+    serializer_class = AgentOrderListForSetupQcPassedSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if self.request.user.user_type == "AGENT":
+            today = datetime.today()
+            queryset = User.objects.filter(Q(agent_user_id=user.id), Q(user_type="FARMER"), Q(product_seller__order_item_product__isnull=False), Q(product_seller__possible_productions_date=today), Q(product_seller__order_item_product__pickup_location__isnull=False) ).order_by('id').distinct()
         else:
             queryset = None
         return queryset
@@ -722,9 +733,13 @@ class AdminReportSellingRevenueAPIView(ListAPIView):
 
     def get_queryset(self):
         if self.request.user.user_type == "ADMIN":
+            start_date = self.request.GET.get('start_date')
+            end_date = self.request.GET.get('end_date')
             sub_order_obj = SubOrder.objects.filter(order_status='DELIVERED', payment_status='PAID').exists()
             if sub_order_obj:
                 queryset = SubOrder.objects.filter(order_status='DELIVERED', payment_status='PAID').order_by('-created_at')
+                if start_date and end_date:
+                    queryset = queryset.filter(Q(order_date__range=(start_date,end_date)))
                 return queryset
             else:
                 raise ValidationError(

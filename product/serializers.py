@@ -2,7 +2,7 @@ from rest_framework import serializers
 from product.models import Product, Category, SubCategory, Units, Inventory, ProductImage, ProductionStep
 from user.models import User, Division, District, Upazilla
 from order.models import Setting
-from user.serializers import FarmerListSerializer
+from user.serializers import FarmerListSerializer, FarmerListForBestSellingSerializer
 from rest_framework.exceptions import ValidationError
 from django.db.models import Sum
 from django.utils import timezone
@@ -428,6 +428,7 @@ class PublishProductSerializer(serializers.ModelSerializer):
 
 class BestSellingProductListSerializer(serializers.ModelSerializer):
     sell_price_per_unit = serializers.SerializerMethodField('get_sell_price_with_vat')
+    farmer = serializers.SerializerMethodField('get_farmer_info')
 
     class Meta:
         model = Product
@@ -440,7 +441,9 @@ class BestSellingProductListSerializer(serializers.ModelSerializer):
             'sell_price_per_unit',
             'quantity',
             'unit',
-            'sell_count'
+            'sell_count',
+            'full_description',
+            'farmer',
         ]
 
     def get_sell_price_with_vat(self, obj):
@@ -451,5 +454,14 @@ class BestSellingProductListSerializer(serializers.ModelSerializer):
             return round(sell_price_with_vat, 2)
         else:
             return sell_price
+        
+    def get_farmer_info(self, obj):
+        try:
+            farmer = obj.user
+            print(farmer)
+            serializer = FarmerListForBestSellingSerializer(instance=farmer)
+            return serializer.data
+        except:
+            return None
 
 

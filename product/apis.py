@@ -34,7 +34,7 @@ class CustomerProductListAPI(ListAPIView):
 
         today = timezone.now().date()
 
-        queryset = Product.objects.filter(status="PUBLISH", possible_productions_date__gt=today).order_by('-created_at')
+        queryset = Product.objects.filter(status="PUBLISH", possible_productions_date__gt=today, quantity__gt=0).order_by('-created_at')
 
         if query:
             queryset = queryset.filter(
@@ -221,7 +221,7 @@ class CustomerBestSellingProductListAPI(ListAPIView):
 
     def get_queryset(self):
         today = timezone.now().date()
-        queryset = Product.objects.filter(status='PUBLISH', possible_productions_date__gt=today).order_by('-sell_count')
+        queryset = Product.objects.filter(status='PUBLISH', possible_productions_date__gt=today, quantity__gt=0).order_by('-sell_count')
 
         return queryset
     

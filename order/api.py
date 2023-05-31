@@ -725,3 +725,79 @@ class VatAndDeliveryChargeAPIView(APIView):
             ticket_details_data = Setting.objects.filter(is_active=True).order_by('-created_at')[:1]
             serializer = WebsiteConfigurationSerializer(ticket_details_data, many=True)
             return Response(serializer.data)
+
+
+# Admin Farmers Payment Summary
+class FarmersPaymentSummaryAPIView(ListAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = FarmersPaymentSummarySerializer
+
+    def get_queryset(self):
+        queryset = PaymentHistory.objects.filter(status='PAID')
+
+        division_id = self.request.query_params.get('division_id')
+        district_id = self.request.query_params.get('district_id')
+        upazilla_id = self.request.query_params.get('upazilla_id')
+        farmer_name = self.request.query_params.get('farmer_name')
+        start_date = self.request.query_params.get('start_date')
+        end_date = self.request.query_params.get('end_date')
+
+        if division_id:
+            queryset = queryset.filter(farmer__division_id=division_id)
+
+        if district_id:
+            queryset = queryset.filter(farmer__district_id=district_id)
+
+        if upazilla_id:
+            queryset = queryset.filter(farmer__upazilla_id=upazilla_id)
+
+        if farmer_name:
+            queryset = queryset.filter(Q(farmer_account_info__farmer__full_name=farmer_name) | Q(farmer_account_info__farmer__full_name=farmer_name.replace(' ', '')))
+
+        if start_date and end_date:
+            oed = datetime.strptime(str(end_date), '%Y-%m-%d')
+            end_date = oed + timedelta(days=1)
+            queryset = queryset.filter(Q(date__range=(start_date, end_date)))
+
+        if not (division_id or district_id or upazilla_id or farmer_name or start_date or end_date):
+            # Get the initial date range (last 7 days)
+            initial_start_date = datetime.now().date() - timedelta(days=7)
+            initial_end_date = datetime.now().date() + timedelta(days=1)
+
+            # Apply the initial date range filter
+            queryset = queryset.filter(date__range=(initial_start_date, initial_end_date))
+
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+
+        serializer = self.get_serializer(queryset, many=True)
+
+        total_amount = queryset.aggregate(total_amount=Sum('amount'))['total_amount'] or 0
+
+        farmer_count = queryset.values('farmer_account_info__farmer').distinct().count()
+
+        # farmer_names = queryset.values_list('farmer_account_info__farmer__full_name', flat=True).distinct()
+
+        payment_history = serializer.data
+
+        included_farmer_names = set()
+        filtered_payment_history = []
+        for history in payment_history:
+            farmer_name = history['farmer_name']
+            if farmer_name not in included_farmer_names:
+                filtered_payment_history.append(history)
+                included_farmer_names.add(farmer_name)
+
+        response_data = {
+            'payment_history': filtered_payment_history,
+            'total_amount': total_amount,
+            'farmer_count': farmer_count,
+            # 'unique_farmer_names': farmer_names
+
+        }
+
+        return Response(response_data)
+
+

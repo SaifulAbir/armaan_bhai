@@ -458,6 +458,36 @@ class AgentOrderListForSetupPickupLocationSerializer(serializers.ModelSerializer
         for i in query:
             is_qc_passed = i.is_qc_passed
             return is_qc_passed
+        
+
+class AgentOrderListForSetupQcPassedSerializer(serializers.ModelSerializer):
+    products = serializers.SerializerMethodField('get_products')
+    pickup_location = serializers.SerializerMethodField()
+    is_qc_passed = serializers.SerializerMethodField()
+    class Meta:
+        model = User
+        fields = ['id', 'full_name', 'phone_number', 'products', 'pickup_location', 'is_qc_passed']
+
+    def get_products(self, obj):
+        today = datetime.today()
+        query = Product.objects.filter(Q(user = obj), Q(possible_productions_date=today), Q(order_item_product__isnull=False) ).annotate(whole_quantity=Sum('order_item_product__quantity', filter=Q(order_item_product__suborder__order_status='ON_PROCESS') | Q(order_item_product__suborder__order_status='ON_TRANSIT') | Q(order_item_product__suborder__order_status='CANCELED')))
+        serializer = AgentMukamLocationSetupDataSerializer(instance=query, many=True)
+        return serializer.data
+
+    def get_pickup_location(self, obj):
+        today = datetime.today()
+        query = OrderItem.objects.filter(Q(product__user = obj), Q(product__possible_productions_date=today), Q(suborder__order_status='ON_PROCESS') | Q(suborder__order_status='ON_TRANSIT') | Q(suborder__order_status='CANCELED')).distinct('pickup_location')
+        for i in query:
+            if i.pickup_location:
+                pickup_location = i.pickup_location.id
+                return pickup_location
+
+    def get_is_qc_passed(self, obj):
+        today = datetime.today()
+        query = OrderItem.objects.filter(Q(product__user = obj), Q(product__possible_productions_date=today), Q(suborder__order_status='ON_PROCESS') | Q(suborder__order_status='ON_TRANSIT') | Q(suborder__order_status='CANCELED')).distinct('is_qc_passed')
+        for i in query:
+            is_qc_passed = i.is_qc_passed
+            return is_qc_passed
 
 
 class PaymentDetailsSerializer(serializers.ModelSerializer):
@@ -978,6 +1008,13 @@ class WebsiteConfigurationSerializer(serializers.ModelSerializer):
 class AdminSellingRevenueReportSerializer(serializers.ModelSerializer):
     customer_name = serializers.CharField(source='user.full_name', read_only=True)
     customer_phone = serializers.CharField(source='user.phone_number', read_only=True)
+    products = serializers.SerializerMethodField('get_products')
     class Meta:
         model = SubOrder
-        fields = ['id', 'customer_name', 'customer_phone']
+        fields = ['id', 'customer_name', 'customer_phone', 'products', 'total_price', 'order_date']
+
+    def get_products(self, obj):
+        tomorrow = datetime.today() + timedelta(days=1)
+        query = Product.objects.filter(order_item_product__suborder = obj)
+        serializer = AgentMukamLocationSetupDataSerializer(instance=query, many=True)
+        return serializer.data

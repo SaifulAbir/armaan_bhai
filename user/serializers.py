@@ -444,6 +444,27 @@ class FarmerListSerializer(serializers.ModelSerializer):
         except User.DoesNotExist:
             full_name = None
         return full_name
+    
+class FarmerListForBestSellingSerializer(serializers.ModelSerializer):
+    gender_display_value = serializers.CharField(
+        source='get_gender_display', read_only=True
+    )
+    division = DivisionSerializer(many=False, read_only=True)
+    district = DistrictSerializer(many=False, read_only=True)
+    upazilla = UpazillaSerializer(many=False, read_only=True)
+    agent_full_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ['id', 'full_name', 'username', 'gender', 'user_type', 'organization_name', 'address', 'division', 'district', 'upazilla',
+                  'village', 'postcode', 'phone_number', 'image', 'gender_display_value', 'agent_full_name']
+
+    def get_agent_full_name(self, instance):
+        try:
+            full_name = User.objects.get(id=instance.agent_user_id).full_name
+        except User.DoesNotExist:
+            full_name = None
+        return full_name
 
 
 class AgentFarmerListSerializer(serializers.ModelSerializer):

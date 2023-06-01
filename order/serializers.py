@@ -893,6 +893,14 @@ class FarmersPaymentSummarySerializer(serializers.ModelSerializer):
         if start_date and end_date:
             queryset = queryset.filter(date__range=(start_date, end_date))
 
+        if not (division_id or district_id or upazilla_id or farmer_name or start_date or end_date):
+            # Get the initial date range (last 7 days)
+            initial_start_date = datetime.now().date() - timedelta(days=7)
+            initial_end_date = datetime.now().date() + timedelta(days=1)
+
+            # Apply the initial date range filter
+            queryset = queryset.filter(date__range=(initial_start_date, initial_end_date))
+
         amounts = queryset.values('date').annotate(total_amount=Sum('amount'))
         return amounts
 
@@ -927,6 +935,14 @@ class FarmersPaymentSummarySerializer(serializers.ModelSerializer):
         if start_date and end_date:
             queryset = queryset.filter(date__range=(start_date, end_date))
 
+        if not (division_id or district_id or upazilla_id or farmer_name or start_date or end_date):
+            # Get the initial date range (last 7 days)
+            initial_start_date = datetime.now().date() - timedelta(days=7)
+            initial_end_date = datetime.now().date() + timedelta(days=1)
+
+            # Apply the initial date range filter
+            queryset = queryset.filter(date__range=(initial_start_date, initial_end_date))
+
         products = queryset.values_list('order_items__product__title', flat=True).distinct()
         return products
 
@@ -954,6 +970,14 @@ class FarmersPaymentSummarySerializer(serializers.ModelSerializer):
 
         if start_date and end_date:
             queryset = queryset.filter(date__range=(start_date, end_date))
+
+        if not (division_id or district_id or upazilla_id or farmer_name or start_date or end_date):
+            # Get the initial date range (last 7 days)
+            initial_start_date = datetime.now().date() - timedelta(days=7)
+            initial_end_date = datetime.now().date() + timedelta(days=1)
+
+            # Apply the initial date range filter
+            queryset = queryset.filter(date__range=(initial_start_date, initial_end_date))
 
         sub_total_amount = queryset.aggregate(sum_amount=Sum('amount'))
         return sub_total_amount['sum_amount']

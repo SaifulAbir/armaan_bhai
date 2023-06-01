@@ -17,7 +17,7 @@ from django.template.loader import render_to_string
 from django.core.mail import send_mail
 from django.conf import settings
 from decimal import Decimal
-
+from itertools import groupby
 
 
 class DeliveryAddressSerializer(serializers.ModelSerializer):
@@ -860,6 +860,200 @@ class WebsiteConfigurationSerializer(serializers.ModelSerializer):
             'delivery_charge',
             'is_active'
         ]
+
+
+# Admin Farmers Payment Summary
+class FarmersPaymentSummarySerializer(serializers.ModelSerializer):
+    farmer_name = serializers.SerializerMethodField()
+    # dates = serializers.SerializerMethodField()
+    amounts = serializers.SerializerMethodField()
+    products_paid = serializers.SerializerMethodField()
+    sub_total_amount = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PaymentHistory
+        fields = ['farmer_name', 'amounts', 'products_paid', 'sub_total_amount']
+
+    def get_farmer_name(self, obj):
+        return obj.farmer_account_info.farmer.full_name
+
+    def get_amounts(self, obj):
+        queryset = PaymentHistory.objects.filter(farmer=obj.farmer, status='PAID')
+
+        division_id = self.context['request'].query_params.get('division_id')
+        district_id = self.context['request'].query_params.get('district_id')
+        upazilla_id = self.context['request'].query_params.get('upazilla_id')
+        farmer_name = self.context['request'].query_params.get('farmer_name')
+        start_date = self.context['request'].query_params.get('start_date')
+        end_date = self.context['request'].query_params.get('end_date')
+
+        if division_id:
+            queryset = queryset.filter(farmer__division_id=division_id)
+
+        if district_id:
+            queryset = queryset.filter(farmer__district_id=district_id)
+
+        if upazilla_id:
+            queryset = queryset.filter(farmer__upazilla_id=upazilla_id)
+
+        if farmer_name:
+            queryset = queryset.filter(Q(farmer_account_info__farmer__full_name=farmer_name) | Q(farmer_account_info__farmer__full_name=farmer_name.replace(' ', '')))
+
+        if start_date and end_date:
+            queryset = queryset.filter(date__range=(start_date, end_date))
+
+        amounts = queryset.values('date').annotate(total_amount=Sum('amount'))
+        return amounts
+
+    # def get_products_paid(self, obj):
+    #     # Assuming there is a many-to-many relationship between PaymentHistory and OrderItem
+    #     products = obj.order_items.all().values_list('product__title', flat=True).distinct()
+    #     return products
+
+    def get_products_paid(self, obj):
+        queryset = PaymentHistory.objects.filter(farmer=obj.farmer)
+
+        division_id = self.context['request'].query_params.get('division_id')
+        district_id = self.context['request'].query_params.get('district_id')
+        upazilla_id = self.context['request'].query_params.get('upazilla_id')
+        farmer_name = self.context['request'].query_params.get('farmer_name')
+        start_date = self.context['request'].query_params.get('start_date')
+        end_date = self.context['request'].query_params.get('end_date')
+
+        if division_id:
+            queryset = queryset.filter(farmer__division_id=division_id)
+
+        if district_id:
+            queryset = queryset.filter(farmer__district_id=district_id)
+
+        if upazilla_id:
+            queryset = queryset.filter(farmer__upazilla_id=upazilla_id)
+
+        if farmer_name:
+            queryset = queryset.filter(Q(farmer_account_info__farmer__full_name=farmer_name) | Q(
+                farmer_account_info__farmer__full_name=farmer_name.replace(' ', '')))
+
+        if start_date and end_date:
+            queryset = queryset.filter(date__range=(start_date, end_date))
+
+        products = queryset.values_list('order_items__product__title', flat=True).distinct()
+        return products
+
+    def get_sub_total_amount(self, obj):
+        queryset = PaymentHistory.objects.filter(farmer_account_info=obj.farmer_account_info, status='PAID')
+
+        division_id = self.context['request'].query_params.get('division_id')
+        district_id = self.context['request'].query_params.get('district_id')
+        upazilla_id = self.context['request'].query_params.get('upazilla_id')
+        farmer_name = self.context['request'].query_params.get('farmer_name')
+        start_date = self.context['request'].query_params.get('start_date')
+        end_date = self.context['request'].query_params.get('end_date')
+
+        if division_id:
+            queryset = queryset.filter(farmer__division_id=division_id)
+
+        if district_id:
+            queryset = queryset.filter(farmer__district_id=district_id)
+
+        if upazilla_id:
+            queryset = queryset.filter(farmer__upazilla_id=upazilla_id)
+
+        if farmer_name:
+            queryset = queryset.filter(Q(farmer_account_info__farmer__full_name=farmer_name) | Q(farmer_account_info__farmer__full_name=farmer_name.replace(' ', '')))
+
+        if start_date and end_date:
+            queryset = queryset.filter(date__range=(start_date, end_date))
+
+        sub_total_amount = queryset.aggregate(sum_amount=Sum('amount'))
+        return sub_total_amount['sum_amount']
+
+
+
+# class FarmersPaymentSummarySerializer(serializers.ModelSerializer):
+#     farmer_name = serializers.SerializerMethodField()
+#     date = serializers.DateField()
+#     products_paid = serializers.SerializerMethodField()
+#     total_amount = serializers.SerializerMethodField()
+#
+#     class Meta:
+#         model = PaymentHistory
+#         fields = ['farmer_name', 'date', 'amount', 'products_paid', 'total_amount']
+#
+#     def get_farmer_name(self, obj):
+#         return obj.farmer_account_info.farmer.full_name
+#
+#     def get_products_paid(self, obj):
+#         # Assuming there is a many-to-many relationship between PaymentHistory and OrderItem
+#         products = obj.order_items.all()
+#         product_names = [product.product.title for product in products]
+#         return product_names
+#
+#     def get_total_amount(self, obj):
+#         total_amount = PaymentHistory.objects.filter(farmer_account_info=obj.farmer_account_info).aggregate(
+#             sum_amount=Sum('amount'))
+#         return total_amount['sum_amount']
+#
+#     def to_representation(self, instance):
+#         representation = super().to_representation(instance)
+#         datewise_payments = []
+#         datewise_payment_fields = ['date', 'amount', 'products_paid']
+#
+#         for field in datewise_payment_fields:
+#             if field in representation:
+#                 del representation[field]
+#
+#         for key in representation:
+#             if key.startswith('date_wise_payment'):
+#                 datewise_payment = {
+#                     'date': representation[key]['date'],
+#                     'amount': representation[key]['amount'],
+#                     'products_paid': representation[key]['products_paid'],
+#                 }
+#                 datewise_payments.append(datewise_payment)
+#
+#         return {
+#             'farmer_name': representation['farmer_name'],
+#             'date_wise_payment': datewise_payments,
+#             'total_amount': representation['total_amount'],
+#         }
+
+# class FarmersPaymentSummarySerializer(serializers.ModelSerializer):
+#     farmer_name = serializers.SerializerMethodField()
+#     date = serializers.DateField()
+#     products_paid = serializers.SerializerMethodField()
+#     total_amount = serializers.SerializerMethodField()
+#
+#     class Meta:
+#         model = PaymentHistory
+#         fields = ['farmer_name', 'date', 'amount', 'products_paid', 'total_amount']
+#
+#     def get_farmer_name(self, obj):
+#         return obj.farmer_account_info.farmer.full_name
+#
+#     def get_products_paid(self, obj):
+#         # Assuming there is a many-to-many relationship between PaymentHistory and OrderItem
+#         products = obj.order_items.all()
+#         product_names = [product.product.title for product in
+#                          products]
+#         return product_names
+#
+#     def get_total_amount(self, obj):
+#         total_amount = PaymentHistory.objects.filter(farmer_account_info=obj.farmer_account_info).aggregate(
+#             sum_amount=Sum('amount'))
+#         return total_amount['sum_amount']
+#
+#     def to_representation(self, instance):
+#         representation = super().to_representation(instance)
+#         date_wise_payment = {
+#             'date': representation['date'],
+#             'amount': representation['amount'],
+#             'products_paid': representation['products_paid'],
+#         }
+#         return {
+#             'farmer_name': representation['farmer_name'],
+#             'date_wise_payment': date_wise_payment,
+#             'total_amount': representation['total_amount'],
+#         }
 
         # def create(self, validated_data):
         #     try:

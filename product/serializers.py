@@ -484,7 +484,7 @@ class PublishProductSerializer(serializers.ModelSerializer):
 
 class BestSellingProductListSerializer(serializers.ModelSerializer):
     sell_price_per_unit = serializers.SerializerMethodField('get_sell_price_with_vat')
-    farmer = serializers.SerializerMethodField('get_farmer_info')
+    user = serializers.SerializerMethodField('get_farmer_info')
 
     class Meta:
         model = Product
@@ -499,7 +499,7 @@ class BestSellingProductListSerializer(serializers.ModelSerializer):
             'unit',
             'sell_count',
             'full_description',
-            'farmer',
+            'user',
         ]
 
     def get_sell_price_with_vat(self, obj):

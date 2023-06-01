@@ -66,7 +66,10 @@ urlpatterns = [
     path('admin/website-configuration-update/<int:pk>/', AdminWebsiteConfigurationUpdateAPIView.as_view()),
     path('vat-and-delivery-charge/', VatAndDeliveryChargeAPIView.as_view()),
 
-    # admin reports 
+    # admin reports
     path('admin/report/selling-revenue/', AdminReportSellingRevenueAPIView.as_view()),
+
+    # Admin Farmers Payment Summary
+    path('admin/farmer-payment-summary/', FarmersPaymentSummaryAPIView.as_view()),
 
 ]

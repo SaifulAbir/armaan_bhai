@@ -29,7 +29,8 @@ urlpatterns = [
     path('agent/agent-pickup-location/list/', AgentPickupLocationListOfAgentAPIView.as_view()),
 
     path('agent/agent-set-qc-passed-on-order/list/', AgentSetQcPassedOnOrderListAPIView.as_view()),
-    path('agent/update-pickup-location-qc-passed-info/<str:id>/', PickupLocationQcPassedInfoUpdateAPIView.as_view()),
+    path('agent/update-qc-passed-info/<str:id>/', QcPassedInfoUpdateAPIView.as_view()),
+    path('agent/update-pickup-location-qc-passed-info/<str:id>/', PickupLocationInfoUpdateAPIView.as_view()),
     # add payment method
     path('agent/create-payment-method/', PaymentMethodCreateAPIView.as_view()),
     path('agent/payment-details/<int:farmer_id>/', PaymentDetailsAPIView.as_view()),

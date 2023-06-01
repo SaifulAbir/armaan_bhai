@@ -52,12 +52,12 @@ class DeliveryAddressDeleteAPIView(DestroyAPIView):
     lookup_url_kwarg = "id"
 
     def delete(self, request, *args, **kwargs):
-        # try:
-        return super(DeliveryAddressDeleteAPIView, self).delete(request, *args, **kwargs)
-        # except ProtectedError:
-        #     print(ProtectedError)
-        #     return Response({"error": "This address is used in an order. So you can't delete this address."},
-        #                     status=status.HTTP_400_BAD_REQUEST)
+        try:
+            return super(DeliveryAddressDeleteAPIView, self).delete(request, *args, **kwargs)
+        except ProtectedError:
+            print(ProtectedError)
+            return Response({"error": "This address is used in an order. So you can't delete this address."},
+                            status=status.HTTP_400_BAD_REQUEST)
 
 
 class CheckoutAPIView(CreateAPIView):

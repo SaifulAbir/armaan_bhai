@@ -240,6 +240,12 @@ class DivisionListAPI(ListAPIView):
     queryset = Division.objects.all()
 
 
+class UpazillaAllListAPI(ListAPIView):
+    permission_classes = (AllowAny,)
+    serializer_class = UpazillaListSerializer
+    queryset = Upazilla.objects.all()
+
+
 class DistrictListAPI(ListAPIView):
     permission_classes = (AllowAny, )
     serializer_class = DistrictListSerializer
@@ -268,6 +274,7 @@ class UpazillaListAPI(ListAPIView):
         district_id = self.kwargs['district_id']
         query = Upazilla.objects.filter(district=district_id)
         return query
+
 
 class DivisionCreateAPIView(CreateAPIView):
     serializer_class = DivisionListSerializer

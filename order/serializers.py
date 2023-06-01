@@ -464,9 +464,10 @@ class AgentOrderListForSetupQcPassedSerializer(serializers.ModelSerializer):
     products = serializers.SerializerMethodField('get_products')
     pickup_location = serializers.SerializerMethodField()
     is_qc_passed = serializers.SerializerMethodField()
+    location_title = serializers.SerializerMethodField('get_location_title')
     class Meta:
         model = User
-        fields = ['id', 'full_name', 'phone_number', 'products', 'pickup_location', 'is_qc_passed']
+        fields = ['id', 'full_name', 'phone_number', 'products', 'pickup_location', 'location_title', 'is_qc_passed']
 
     def get_products(self, obj):
         today = datetime.today()
@@ -480,6 +481,14 @@ class AgentOrderListForSetupQcPassedSerializer(serializers.ModelSerializer):
         for i in query:
             if i.pickup_location:
                 pickup_location = i.pickup_location.id
+                return pickup_location
+            
+    def get_location_title(self, obj):
+        today = datetime.today()
+        query = OrderItem.objects.filter(Q(product__user = obj), Q(product__possible_productions_date=today), Q(suborder__order_status='ON_PROCESS') | Q(suborder__order_status='ON_TRANSIT') | Q(suborder__order_status='CANCELED')).distinct('pickup_location')
+        for i in query:
+            if i.pickup_location:
+                pickup_location = i.pickup_location.address
                 return pickup_location
 
     def get_is_qc_passed(self, obj):

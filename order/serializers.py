@@ -348,7 +348,7 @@ QC_CHOICES =(
     ('PASS', 'Pass'),
     ('FAIL', 'Fail'),
 )
-class PickupLocationQcPassedInfoUpdateSerializer(serializers.ModelSerializer):
+class PickupLocationInfoUpdateSerializer(serializers.ModelSerializer):
     pickup_location = serializers.IntegerField(required=False)
     is_qc_passed = serializers.ChoiceField(choices = QC_CHOICES, required=False)
     class Meta:
@@ -381,6 +381,43 @@ class PickupLocationQcPassedInfoUpdateSerializer(serializers.ModelSerializer):
                 SubOrder.objects.filter(order_item_suborder__product__user=instance.id, order_item_suborder__product__possible_productions_date = tomorrow).update(order_status='ON_TRANSIT')
             if is_qc_passed == 'FAIL':
                 SubOrder.objects.filter(order_item_suborder__product__user=instance.id, order_item_suborder__product__possible_productions_date = tomorrow).update(order_status='CANCELED')
+
+        return super().update(instance, validated_data)
+    
+
+class QcPassedInfoUpdateSerializer(serializers.ModelSerializer):
+    pickup_location = serializers.IntegerField(required=False)
+    is_qc_passed = serializers.ChoiceField(choices = QC_CHOICES, required=False)
+    class Meta:
+        model = User
+        fields = ['id', 'pickup_location', 'is_qc_passed']
+
+    def update(self, instance, validated_data):
+        try:
+            pickup_location = validated_data.pop('pickup_location')
+        except:
+            pickup_location = ''
+        try:
+            is_qc_passed = validated_data.pop('is_qc_passed')
+        except:
+            is_qc_passed = ''
+
+        today = datetime.today()
+        if pickup_location:
+            OrderItem.objects.filter(product__user = instance.id, product__possible_productions_date = today).update(pickup_location=pickup_location)
+        if is_qc_passed:
+            OrderItem.objects.filter(product__user = instance.id, product__possible_productions_date = today).update(is_qc_passed=is_qc_passed)
+
+        if Order.objects.filter(order_item_order__product__user=instance.id, order_item_order__product__possible_productions_date = today).exists():
+            if is_qc_passed == 'PASS':
+                Order.objects.filter(order_item_order__product__user=instance.id, order_item_order__product__possible_productions_date = today).update(order_status='ON_TRANSIT')
+            if is_qc_passed == 'FAIL':
+                Order.objects.filter(order_item_order__product__user=instance.id, order_item_order__product__possible_productions_date = today).update(order_status='CANCELED')
+        if SubOrder.objects.filter(order_item_suborder__product__user=instance.id, order_item_suborder__product__possible_productions_date = today).exists():
+            if is_qc_passed == 'PASS':
+                SubOrder.objects.filter(order_item_suborder__product__user=instance.id, order_item_suborder__product__possible_productions_date = today).update(order_status='ON_TRANSIT')
+            if is_qc_passed == 'FAIL':
+                SubOrder.objects.filter(order_item_suborder__product__user=instance.id, order_item_suborder__product__possible_productions_date = today).update(order_status='CANCELED')
 
         return super().update(instance, validated_data)
 

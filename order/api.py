@@ -246,8 +246,19 @@ class AgentPickupLocationListOfAgentAPIView(ListAPIView):
         return queryset
 
 
-class PickupLocationQcPassedInfoUpdateAPIView(UpdateAPIView):
-    serializer_class = PickupLocationQcPassedInfoUpdateSerializer
+class PickupLocationInfoUpdateAPIView(UpdateAPIView):
+    serializer_class = PickupLocationInfoUpdateSerializer
+    lookup_field = 'id'
+    lookup_url_kwarg = 'id'
+
+    def get_object(self):
+        id = self.kwargs['id']
+        query = User.objects.get(id=id)
+        return query
+
+
+class QcPassedInfoUpdateAPIView(UpdateAPIView):
+    serializer_class = QcPassedInfoUpdateSerializer
     lookup_field = 'id'
     lookup_url_kwarg = 'id'
 

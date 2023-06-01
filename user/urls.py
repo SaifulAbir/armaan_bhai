@@ -44,6 +44,7 @@ urlpatterns = [
     path('division/list/', DivisionListAPI.as_view(), name='division_list'),
     path('district/list/<int:division_id>/', DistrictListAPI.as_view(), name='district_list'),
     path('all-district/list/', AllDistrictListAPI.as_view(), name='all_district_list'),
+    path('upazilla/list/', UpazillaAllListAPI.as_view(), name='upazilla_list'),
 
     path('upazilla/list/<int:district_id>/', UpazillaListAPI.as_view(), name='upazilla_list'),
     # crud of division, district and upazilla

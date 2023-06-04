@@ -19,9 +19,6 @@ urlpatterns = [
 
     path('customer/best-selling-product-list/', CustomerBestSellingProductListAPI.as_view()),
 
-    # path('offers-list/', OffersListAPIView.as_view()),
-    # path('offer-details/<int:id>/', OfferDetailsAPIView.as_view()),
-    # path('offer-products-list/<int:id>/<int:pagination>/', OfferProductsListAPIView.as_view()),
     path('offer-products-all-list/', OfferProductsAllListAPIView.as_view()),
 
     path('admin/offers-list/', AdminOffersListAPIView.as_view()),

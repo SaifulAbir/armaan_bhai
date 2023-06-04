@@ -21,7 +21,6 @@ class DeliveryAddressCreateAPIView(CreateAPIView):
     serializer_class = DeliveryAddressSerializer
 
     def post(self, request, *args, **kwargs):
-        # request.data['user'] = request.user
         return super(DeliveryAddressCreateAPIView, self).post(request, *args, **kwargs)
 
 
@@ -157,15 +156,6 @@ class AgentOrderList(ListAPIView):
             queryset = queryset.filter(Q(delivery_address__district__id=district))
         return queryset
 
-#
-# class CollectOrderList(ListAPIView):
-#     serializer_class = AgentOrderListSerializer
-#     pagination_class = CustomPagination
-#
-#     def get_queryset(self):
-#         queryset = Order.objects.filter(order_date__lt=datetime.today()).order_by('-created_at')
-#         return queryset
-
 
 class PickupLocationCreateAPIView(CreateAPIView):
     serializer_class = PickupLocationSerializer
@@ -224,9 +214,20 @@ class AgentSetPickupLocationOnOrderListAPIView(ListAPIView):
         user = self.request.user
         if self.request.user.user_type == "AGENT":
             tomorrow = datetime.today() + timedelta(days=1)
-            # queryset = User.objects.filter(Q(agent_user_id=user.id), Q(user_type="FARMER"), Q(product_seller__order_item_product__isnull=False)).exclude(~Q(product_seller__possible_productions_date=tomorrow)).order_by('id').distinct()
-
             queryset = User.objects.filter(Q(agent_user_id=user.id), Q(user_type="FARMER"), Q(product_seller__order_item_product__isnull=False), Q(product_seller__possible_productions_date=tomorrow)).order_by('id').distinct()
+        else:
+            queryset = None
+        return queryset
+
+
+class AgentSetQcPassedOnOrderListAPIView(ListAPIView):
+    serializer_class = AgentOrderListForSetupQcPassedSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if self.request.user.user_type == "AGENT":
+            today = datetime.today()
+            queryset = User.objects.filter(Q(agent_user_id=user.id), Q(user_type="FARMER"), Q(product_seller__order_item_product__isnull=False), Q(product_seller__possible_productions_date=today), Q(product_seller__order_item_product__pickup_location__isnull=False) ).order_by('id').distinct()
         else:
             queryset = None
         return queryset
@@ -245,8 +246,19 @@ class AgentPickupLocationListOfAgentAPIView(ListAPIView):
         return queryset
 
 
-class PickupLocationQcPassedInfoUpdateAPIView(UpdateAPIView):
-    serializer_class = PickupLocationQcPassedInfoUpdateSerializer
+class PickupLocationInfoUpdateAPIView(UpdateAPIView):
+    serializer_class = PickupLocationInfoUpdateSerializer
+    lookup_field = 'id'
+    lookup_url_kwarg = 'id'
+
+    def get_object(self):
+        id = self.kwargs['id']
+        query = User.objects.get(id=id)
+        return query
+
+
+class QcPassedInfoUpdateAPIView(UpdateAPIView):
+    serializer_class = QcPassedInfoUpdateSerializer
     lookup_field = 'id'
     lookup_url_kwarg = 'id'
 
@@ -520,7 +532,6 @@ class DistrictInfoListAPIView(ListAPIView):
         if self.request.user.user_type == "ADMIN":
             queryset = District.objects.all()
         if self.request.user.user_type == "AGENT":
-            # queryset = District.objects.filter(division__division_user__id=self.request.user.id)
             queryset = District.objects.all()
         if queryset:
             return queryset
@@ -637,7 +648,7 @@ class AdminCouponDeleteAPIView(ListAPIView):
                 )
         else:
             raise ValidationError({"msg": 'You can not delete coupon data, because you are not an Admin!'})
-        
+
 
 class ApplyCouponAPIView(APIView):
     permission_classes = (AllowAny,)
@@ -682,7 +693,7 @@ class ApplyCouponAPIView(APIView):
                 return Response({"status": "Invalid coupon!"})
         except:
             return Response({"status": "Something went wrong!"})
-        
+
 
 class AdminWebsiteConfigurationCreateAPIView(CreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -694,7 +705,7 @@ class AdminWebsiteConfigurationCreateAPIView(CreateAPIView):
         else:
             raise ValidationError(
                 {"msg": 'You can not work on web Configuration, because you are not an Admin!'})
-        
+
 
 class AdminWebsiteConfigurationViewAPIView(RetrieveAPIView):
     permission_classes = [IsAuthenticated]
@@ -725,3 +736,101 @@ class VatAndDeliveryChargeAPIView(APIView):
             ticket_details_data = Setting.objects.filter(is_active=True).order_by('-created_at')[:1]
             serializer = WebsiteConfigurationSerializer(ticket_details_data, many=True)
             return Response(serializer.data)
+
+
+class AdminReportSellingRevenueAPIView(ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = AdminSellingRevenueReportSerializer
+
+    def get_queryset(self):
+        if self.request.user.user_type == "ADMIN":
+            start_date = self.request.GET.get('start_date')
+            end_date = self.request.GET.get('end_date')
+            sub_order_obj = SubOrder.objects.filter(order_status='DELIVERED', payment_status='PAID').exists()
+            if sub_order_obj:
+                queryset = SubOrder.objects.filter(order_status='DELIVERED', payment_status='PAID').order_by('-created_at')
+                if start_date and end_date:
+                    queryset = queryset.filter(Q(order_date__range=(start_date,end_date)))
+                return queryset
+            else:
+                raise ValidationError(
+                    {"msg": 'Sub orders data Does not exist!'}
+                )
+        else:
+            raise ValidationError({"msg": 'You can not see selling revenue data, because you are not an Admin!'})
+
+
+# Admin Farmers Payment Summary
+class FarmersPaymentSummaryAPIView(ListAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = FarmersPaymentSummarySerializer
+
+    def get_queryset(self):
+        queryset = PaymentHistory.objects.filter(status='PAID')
+
+        division_id = self.request.query_params.get('division_id')
+        district_id = self.request.query_params.get('district_id')
+        upazilla_id = self.request.query_params.get('upazilla_id')
+        farmer_name = self.request.query_params.get('farmer_name')
+        start_date = self.request.query_params.get('start_date')
+        end_date = self.request.query_params.get('end_date')
+
+        if division_id:
+            queryset = queryset.filter(farmer__division_id=division_id)
+
+        if district_id:
+            queryset = queryset.filter(farmer__district_id=district_id)
+
+        if upazilla_id:
+            queryset = queryset.filter(farmer__upazilla_id=upazilla_id)
+
+        if farmer_name:
+            queryset = queryset.filter(Q(farmer_account_info__farmer__full_name=farmer_name) | Q(farmer_account_info__farmer__full_name=farmer_name.replace(' ', '')))
+
+        if start_date and end_date:
+            oed = datetime.strptime(str(end_date), '%Y-%m-%d')
+            end_date = oed + timedelta(days=1)
+            queryset = queryset.filter(Q(date__range=(start_date, end_date)))
+
+        if not (division_id or district_id or upazilla_id or farmer_name or start_date or end_date):
+            # Get the initial date range (last 7 days)
+            initial_start_date = datetime.now().date() - timedelta(days=7)
+            initial_end_date = datetime.now().date() + timedelta(days=1)
+
+            # Apply the initial date range filter
+            queryset = queryset.filter(date__range=(initial_start_date, initial_end_date))
+
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+
+        serializer = self.get_serializer(queryset, many=True)
+
+        total_amount = queryset.aggregate(total_amount=Sum('amount'))['total_amount'] or 0
+
+        farmer_count = queryset.values('farmer_account_info__farmer').distinct().count()
+
+        # farmer_names = queryset.values_list('farmer_account_info__farmer__full_name', flat=True).distinct()
+
+        payment_history = serializer.data
+
+        included_farmer_names = set()
+        filtered_payment_history = []
+        for history in payment_history:
+            farmer_name = history['farmer_name']
+            if farmer_name not in included_farmer_names:
+                filtered_payment_history.append(history)
+                included_farmer_names.add(farmer_name)
+
+        response_data = {
+            'payment_history': filtered_payment_history,
+            'total_amount': total_amount,
+            'farmer_count': farmer_count,
+            # 'unique_farmer_names': farmer_names
+
+        }
+
+        return Response(response_data)
+
+

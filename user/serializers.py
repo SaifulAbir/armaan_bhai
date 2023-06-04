@@ -337,7 +337,6 @@ class AgentUpdateSerializer(serializers.ModelSerializer):
                   'district','upazilla','village','postcode']
 
     def update(self, instance, validated_data):
-        validated_data['is_active'] = instance.is_active
         return super().update(instance, validated_data)
 
         
@@ -351,7 +350,6 @@ class FarmerProfileUpdateSerializer(serializers.ModelSerializer):
                   'district','upazilla','village','postcode']
 
     def update(self, instance, validated_data):
-        validated_data['is_active'] = instance.is_active
         return super().update(instance, validated_data)
 
 

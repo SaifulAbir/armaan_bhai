@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from product.models import Product, Category, SubCategory, Units, Inventory, ProductImage, ProductionStep
+from product.models import Product, Category, SubCategory, Units, Inventory, ProductImage, ProductionStep, Offer, OfferProduct
 from user.models import User, Division, District, Upazilla
 from order.models import Setting
 from user.serializers import FarmerListSerializer, FarmerListForBestSellingSerializer
@@ -208,6 +208,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     unit = UnitListSerializer(many=False, read_only=True)
     related_products = serializers.SerializerMethodField('get_related_products')
     sell_price_per_unit = serializers.SerializerMethodField('get_sell_price_with_vat')
+    # offer_price = serializers.SerializerMethodField('get_sell_after_offer')
 
     class Meta:
         model = Product
@@ -245,13 +246,45 @@ class ProductListSerializer(serializers.ModelSerializer):
             return []
 
     def get_sell_price_with_vat(self, obj):
-        vat = obj.vat  # assuming vat is defined in the Product model
         sell_price = obj.sell_price_per_unit
-        if vat is not None:
-            sell_price_with_vat = sell_price * (1 + vat / 100)
-            return round(sell_price_with_vat, 2)
+
+        # Check if there is an active offer for the product
+        offer = OfferProduct.objects.filter(product=obj, offer__is_active=True, offer__end_date__gte=timezone.now()).first()
+
+        if offer:
+            discount_type = offer.offer.discount_price_type
+            discount_value = offer.offer.discount_price
+
+            if discount_type == 'per':
+                offer_price = (1 - (discount_value / 100)) * sell_price
+            elif discount_type == 'flat':
+                offer_price = sell_price - discount_value
+            else:
+                offer_price = sell_price
+
+            vat = obj.vat
+            if vat is not None:
+                sell_price_with_vat = offer_price * (1 + vat/100)
+                return round(sell_price_with_vat, 2)
+            else:
+                return round(offer_price, 2)
         else:
-            return sell_price
+            vat = obj.vat
+            if vat is not None:
+                sell_price_with_vat = sell_price * (1 + vat/100)
+                return round(sell_price_with_vat, 2)
+            else:
+                return round(sell_price, 2)
+
+
+    # def get_sell_price_with_vat(self, obj):
+    #     vat = obj.vat  # assuming vat is defined in the Product model
+    #     sell_price = obj.sell_price_per_unit
+    #     if vat is not None:
+    #         sell_price_with_vat = sell_price * (1 + vat / 100)
+    #         return round(sell_price_with_vat, 2)
+    #     else:
+    #         return sell_price
 
 
 class ProductViewSerializer(serializers.ModelSerializer):
@@ -288,13 +321,36 @@ class ProductViewSerializer(serializers.ModelSerializer):
         ]
 
     def get_sell_price_with_vat(self, obj):
-        vat = obj.vat  # assuming vat is defined in the Product model
         sell_price = obj.sell_price_per_unit
-        if vat is not None:
-            sell_price_with_vat = sell_price * (1 + vat / 100)
-            return round(sell_price_with_vat, 2)
+
+        # Check if there is an active offer for the product
+        offer = OfferProduct.objects.filter(product=obj, offer__is_active=True,
+                                            offer__end_date__gte=timezone.now()).first()
+
+        if offer:
+            discount_type = offer.offer.discount_price_type
+            discount_value = offer.offer.discount_price
+
+            if discount_type == 'per':
+                offer_price = (1 - (discount_value / 100)) * sell_price
+            elif discount_type == 'flat':
+                offer_price = sell_price - discount_value
+            else:
+                offer_price = sell_price
+
+            vat = obj.vat
+            if vat is not None:
+                sell_price_with_vat = offer_price * (1 + vat / 100)
+                return round(sell_price_with_vat, 2)
+            else:
+                return round(offer_price, 2)
         else:
-            return sell_price
+            vat = obj.vat
+            if vat is not None:
+                sell_price_with_vat = sell_price * (1 + vat / 100)
+                return round(sell_price_with_vat, 2)
+            else:
+                return round(sell_price, 2)
 
     def get_related_products(self, obj):
         try:
@@ -465,3 +521,239 @@ class BestSellingProductListSerializer(serializers.ModelSerializer):
             return None
 
 
+class AdminOfferProductsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OfferProduct
+        fields = ['id',
+                  'product',
+                  ]
+
+
+class AdminOfferSerializer(serializers.ModelSerializer):
+    offer_products = AdminOfferProductsSerializer(many=True, required=False)
+    existing_offer_products = serializers.SerializerMethodField(
+        'get_existing_offer_products')
+    start_date = serializers.DateTimeField(
+        format="%Y-%m-%d %H:%M:%S", required=False)
+    end_date = serializers.DateTimeField(
+        format="%Y-%m-%d %H:%M:%S", required=False)
+
+    class Meta:
+        model = Offer
+        read_only_field = ['id']
+        fields = ['id',
+                  'title',
+                  'start_date',
+                  'end_date',
+                  'thumbnail',
+                  'short_description',
+                  'full_description',
+                  'discount_price',
+                  'discount_price_type',
+                  'offer_products',
+                  'existing_offer_products',
+                  'is_active',
+                  ]
+
+    def get_existing_offer_products(self, obj):
+        queryset = OfferProduct.objects.filter(offer=obj, is_active=True)
+        serializer = AdminOfferProductsSerializer(instance=queryset, many=True)
+        return serializer.data
+
+    def create(self, validated_data):
+        # offer_products
+        try:
+            offer_products = validated_data.pop('offer_products')
+        except:
+            offer_products = ''
+
+        offer_instance = Offer.objects.create(**validated_data)
+
+        try:
+            # offer_products
+            if offer_products:
+                for offer_product in offer_products:
+                    product = offer_product['product']
+                    OfferProduct.objects.create(
+                        offer=offer_instance, product=product)
+            return offer_instance
+        except:
+            return offer_instance
+
+    def update(self, instance, validated_data):
+        # offer_products
+        try:
+            offer_products = validated_data.pop('offer_products')
+        except:
+            offer_products = ''
+
+        try:
+            # offer_products
+            if offer_products:
+                o_p = OfferProduct.objects.filter(offer=instance).exists()
+                if o_p == True:
+                    OfferProduct.objects.filter(offer=instance).delete()
+
+                for offer_product in offer_products:
+                    product = offer_product['product']
+                    OfferProduct.objects.create(
+                        offer=instance, product=product)
+            else:
+                o_p = OfferProduct.objects.filter(offer=instance).exists()
+                if o_p == True:
+                    OfferProduct.objects.filter(offer=instance).delete()
+
+            validated_data.update({"updated_at": timezone.now()})
+            return super().update(instance, validated_data)
+        except:
+            validated_data.update({"updated_at": timezone.now()})
+            return super().update(instance, validated_data)
+
+
+class AdminOfferUpdateDetailsSerializer(serializers.ModelSerializer):
+    offer_products = serializers.SerializerMethodField(
+        'get_offer_products')
+    start_date = serializers.DateTimeField(
+        format="%Y-%m-%d %H:%M:%S", required=False)
+    end_date = serializers.DateTimeField(
+        format="%Y-%m-%d %H:%M:%S", required=False)
+
+    class Meta:
+        model = Offer
+        read_only_field = ['id']
+        fields = ['id',
+                  'title',
+                  'start_date',
+                  'end_date',
+                  'thumbnail',
+                  'short_description',
+                  'full_description',
+                  'discount_price',
+                  'discount_price_type',
+                  'offer_products',
+                  ]
+
+    def get_offer_products(self, obj):
+        queryset = OfferProduct.objects.filter(offer=obj, is_active=True)
+        serializer = AdminOfferProductsSerializer(instance=queryset, many=True)
+        return serializer.data
+
+
+class OfferInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Offer
+        fields = [
+            'id',
+            'title',
+            'start_date',
+            'end_date',
+            'thumbnail',
+            'discount_price',
+            'discount_price_type',
+            'short_description'
+        ]
+
+class OfferProductListSerializer(serializers.ModelSerializer):
+    category = CategoryListSerializer(many=False, read_only=True)
+    sub_category = SubCategoryListSerializer(many=False, read_only=True)
+    unit = UnitListSerializer(many=False, read_only=True)
+    sell_price_per_unit = serializers.SerializerMethodField('get_sell_price_with_vat')
+    offer_details = serializers.SerializerMethodField('get_offer_details')
+    previous_sell_price_per_unit = serializers.SerializerMethodField('get_previous_sell_price_with_vat')
+
+    class Meta:
+        model = Product
+        fields = [
+            'id',
+            'title',
+            'slug',
+            'category',
+            'sub_category',
+            'unit',
+            'thumbnail',
+            'price_per_unit',
+            'full_description',
+            'quantity',
+            'total_quantity',
+            'possible_productions_date',
+            'possible_delivery_date',
+            'sell_price_per_unit',
+            'status',
+            'sell_count',
+            'created_at',
+            'offer_details',
+            'previous_sell_price_per_unit'
+        ]
+
+    def get_offer_details(self, obj):
+        try:
+            today = timezone.now().date()
+            queryset = Offer.objects.filter(end_date__gt=today, is_active=True).order_by('-created_at')[:1]
+            serializer = OfferInfoSerializer(instance=queryset, many=True, context={'request': self.context['request']})
+            return serializer.data
+        except:
+            return []
+
+    def get_sell_price_with_vat(self, obj):
+        sell_price = obj.sell_price_per_unit
+
+        # Check if there is an active offer for the product
+        offer = OfferProduct.objects.filter(product=obj, offer__is_active=True,
+                                            offer__end_date__gte=timezone.now()).first()
+
+        if offer:
+            discount_type = offer.offer.discount_price_type
+            discount_value = offer.offer.discount_price
+
+            if discount_type == 'per':
+                offer_price = (1 - (discount_value / 100)) * sell_price
+            elif discount_type == 'flat':
+                offer_price = sell_price - discount_value
+            else:
+                offer_price = sell_price
+
+            vat = obj.vat
+            if vat is not None:
+                sell_price_with_vat = offer_price * (1 + vat / 100)
+                return round(sell_price_with_vat, 2)
+            else:
+                return round(offer_price, 2)
+        else:
+            vat = obj.vat
+            if vat is not None:
+                sell_price_with_vat = sell_price * (1 + vat / 100)
+                return round(sell_price_with_vat, 2)
+            else:
+                return round(sell_price, 2)
+
+    def get_previous_sell_price_with_vat(self, obj):
+        vat = obj.vat  # assuming vat is defined in the Product model
+        sell_price = obj.sell_price_per_unit
+        if vat is not None:
+            sell_price_with_vat = sell_price * (1 + vat / 100)
+            return round(sell_price_with_vat, 2)
+        else:
+            return sell_price
+        
+
+class AdminCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = [
+            'id',
+            'title',
+            'logo'
+        ]
+
+
+class AdminSubCategorySerializer(serializers.ModelSerializer):
+    category_title = serializers.CharField(source='category.title', read_only=True)
+    class Meta:
+        model = SubCategory
+        fields = [
+            'id',
+            'title',
+            'logo',
+            'category',
+            'category_title'
+        ]

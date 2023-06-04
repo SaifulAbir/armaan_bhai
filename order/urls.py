@@ -26,8 +26,11 @@ urlpatterns = [
     path('update/agent-pickup-location/<int:pk>/', AgentPickupLocationUpdateAPIView.as_view()),
     # set pickup / Mukam location
     path('agent/agent-set-pickup-location-on-order/list/', AgentSetPickupLocationOnOrderListAPIView.as_view()),
+    path('agent/update-pickup-location-qc-passed-info/<str:id>/', PickupLocationInfoUpdateAPIView.as_view()),
     path('agent/agent-pickup-location/list/', AgentPickupLocationListOfAgentAPIView.as_view()),
-    path('agent/update-pickup-location-qc-passed-info/<str:id>/', PickupLocationQcPassedInfoUpdateAPIView.as_view()),
+
+    path('agent/agent-set-qc-passed-on-order/list/', AgentSetQcPassedOnOrderListAPIView.as_view()),
+    path('agent/update-qc-passed-info/<str:id>/', QcPassedInfoUpdateAPIView.as_view()),
     # add payment method
     path('agent/create-payment-method/', PaymentMethodCreateAPIView.as_view()),
     path('agent/payment-details/<int:farmer_id>/', PaymentDetailsAPIView.as_view()),
@@ -63,5 +66,11 @@ urlpatterns = [
     path('admin/website-configuration-view/<int:id>/', AdminWebsiteConfigurationViewAPIView.as_view()),
     path('admin/website-configuration-update/<int:pk>/', AdminWebsiteConfigurationUpdateAPIView.as_view()),
     path('vat-and-delivery-charge/', VatAndDeliveryChargeAPIView.as_view()),
+
+    # admin reports
+    path('admin/report/selling-revenue/', AdminReportSellingRevenueAPIView.as_view()),
+
+    # Admin Farmers Payment Summary
+    path('admin/farmer-payment-summary/', FarmersPaymentSummaryAPIView.as_view()),
 
 ]

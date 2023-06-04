@@ -158,7 +158,8 @@ class ProductCreateSerializer(serializers.ModelSerializer):
                                      current_quantity=quantity)
 
         # update status and sell_price_per_unit
-        Product.objects.filter(id=product_instance.id).update(status='PUBLISH')
+        if self.context['request'].user.user_type == 'ADMIN' :
+            Product.objects.filter(id=product_instance.id).update(status='PUBLISH')
         try:
             price_per_unit = validated_data["price_per_unit"]
         except:

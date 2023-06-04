@@ -235,7 +235,7 @@ class AdminOffersListAPIView(ListAPIView):
     pagination_class = ProductCustomPagination
 
     def get_queryset(self):
-        if self.request.user.user_type == "ADMIN" or self.request.user.user_type == "AGENT": 
+        if self.request.user.user_type == "ADMIN":
             today_date = timezone.now().date()
             queryset = Offer.objects.all().order_by('-created_at')
             if queryset:
@@ -252,7 +252,7 @@ class AdminOfferCreateAPIView(CreateAPIView):
     serializer_class = AdminOfferSerializer
 
     def post(self, request, *args, **kwargs):
-        if self.request.user.user_type == "ADMIN" or self.request.user.user_type == "AGENT":
+        if self.request.user.user_type == "ADMIN":
             return super(AdminOfferCreateAPIView, self).post(request, *args, **kwargs)
         else:
             raise ValidationError(
@@ -266,7 +266,7 @@ class AdminOfferUpdateAPIView(UpdateAPIView):
 
     def get_queryset(self):
         id = self.kwargs['id']
-        if self.request.user.user_type == "ADMIN" or self.request.user.user_type == "AGENT":
+        if self.request.user.user_type == "ADMIN":
             query = Offer.objects.filter(id=id)
             if query:
                 return query
@@ -285,7 +285,7 @@ class AdminOfferUpdateDetailsAPIView(RetrieveAPIView):
 
     def get_queryset(self):
         id = self.kwargs['id']
-        if self.request.user.user_type == "ADMIN" or self.request.user.user_type == "AGENT":
+        if self.request.user.user_type == "ADMIN":
             query = Offer.objects.filter(id=id)
             if query:
                 return query
@@ -305,7 +305,7 @@ class AdminOfferDeleteAPIView(ListAPIView):
 
     def get_queryset(self):
         id = self.kwargs['id']
-        if self.request.user.user_type == "ADMIN" or self.request.user.user_type == "AGENT":
+        if self.request.user.user_type == "ADMIN":
             offer_obj = Offer.objects.filter(id=id).exists()
             if offer_obj:
                 Offer.objects.filter(id=id).update(is_active=False)
@@ -399,7 +399,7 @@ class OfferProductsAllListAPIView(ListAPIView):
 
         if products:
             queryset = Product.objects.filter(
-                id__in=products, status='PUBLISH', possible_productions_date__gt=today).order_by('-created_at')
+                id__in=products, status='PUBLISH', possible_productions_date__gt=today, quantity__gt=0).order_by('-created_at')
         else:
             queryset = []
 
@@ -414,7 +414,7 @@ class AdminProductListForOfferCreateAPI(ListAPIView):
         offer_id = self.request.GET.get('offer_id')
         today = timezone.now().date()
         product_list = [p.id for p in Product.objects.filter(
-            status='PUBLISH', possible_productions_date__gt=today).order_by('-created_at')]
+            status='PUBLISH', possible_productions_date__gt=today, quantity__gt=0).order_by('-created_at')]
 
         active_offers_products_list = [p.product.id for p in OfferProduct.objects.filter(
             is_active=True, offer__is_active=True, offer__end_date__gte=datetime.today()

@@ -185,12 +185,13 @@ class FarmerListAPI(ListAPIView):
     serializer_class = FarmerListSerializer
     pagination_class = CustomPagination
 
+
     def get_queryset(self):
         user = self.request.user
         if user.user_type == "AGENT":
-            queryset = User.objects.filter(agent_user_id=user.id, user_type="FARMER")
+            queryset = User.objects.filter(agent_user_id=user.id, user_type="FARMER").order_by('-id')
         elif user.is_superuser:
-            queryset = User.objects.filter(user_type="FARMER")
+            queryset = User.objects.filter(user_type="FARMER").order_by('-id')
         else:
             queryset = None
         return queryset
@@ -202,7 +203,7 @@ class AgentFarmerListAPI(ListAPIView):
     def get_queryset(self):
         user = self.request.user
         if user.user_type == "AGENT":
-            queryset = User.objects.filter(agent_user_id=user.id, user_type="FARMER")
+            queryset = User.objects.filter(agent_user_id=user.id, user_type="FARMER").order_by('-id')
         else:
             queryset = None
         return queryset
@@ -215,7 +216,7 @@ class AgentListAPI(ListAPIView):
     def get_queryset(self):
         user = self.request.user
         if user.is_superuser:
-            queryset = User.objects.filter(user_type="AGENT")
+            queryset = User.objects.filter(user_type="AGENT").order_by('-id')
         else:
             queryset = None
         return queryset

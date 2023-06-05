@@ -1282,6 +1282,18 @@ class CouponReportSerializer(serializers.ModelSerializer):
         #         return order_instance
 
 
+
+class SellingRevenueReportSerializer(serializers.ModelSerializer):
+    product_title = serializers.CharField(source='product.title', read_only=True)
+    unit_title = serializers.CharField(source='product.unit.title', read_only=True)
+    class Meta:
+        model = OrderItem
+        fields = ['id',
+                  'product_title',
+                  'quantity',
+                  'unit_title'
+                  ]
+
 class AdminSellingRevenueReportSerializer(serializers.ModelSerializer):
     customer_name = serializers.CharField(source='user.full_name', read_only=True)
     customer_phone = serializers.CharField(source='user.phone_number', read_only=True)
@@ -1291,7 +1303,13 @@ class AdminSellingRevenueReportSerializer(serializers.ModelSerializer):
         fields = ['id', 'customer_name', 'customer_phone', 'products', 'total_price', 'order_date']
 
     def get_products(self, obj):
-        tomorrow = datetime.today() + timedelta(days=1)
-        query = Product.objects.filter(order_item_product__suborder = obj)
-        serializer = AgentMukamLocationSetupDataSerializer(instance=query, many=True)
+        # query = Product.objects.filter(order_item_product__suborder = obj)
+        query = OrderItem.objects.filter(suborder = obj)
+        serializer = SellingRevenueReportSerializer(instance=query, many=True)
         return serializer.data
+
+    # def get_products(self, obj):
+    #     tomorrow = datetime.today() + timedelta(days=1)
+    #     query = Product.objects.filter(Q(user = obj), Q(possible_productions_date=tomorrow), Q(order_item_product__isnull=False) ).annotate(whole_quantity=Sum('order_item_product__quantity', filter=Q(order_item_product__suborder__order_status='ON_PROCESS') | Q(order_item_product__suborder__order_status='ON_TRANSIT') | Q(order_item_product__suborder__order_status='CANCELED')))
+    #     serializer = AgentMukamLocationSetupDataSerializer(instance=query, many=True)
+    #     return serializer.data

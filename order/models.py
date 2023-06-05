@@ -306,6 +306,8 @@ class OrderItem(AbstractTimeStamp):
         PickupLocation, on_delete=models.CASCADE, null=True, blank=True, related_name='order_item_pickup_location')
     agent = models.ForeignKey(User, on_delete=models.CASCADE,
                               related_name='order_item_agent', null=True, blank=True)
+    commission = models.FloatField(
+        max_length=255, null=False, blank=False, default=0, help_text="Agent Commission")
     payment_status = models.CharField(
         max_length=20, null=False, blank=False, choices=paymentStatus, default='NONE')
     

@@ -1029,6 +1029,19 @@ class FarmersPaymentSummarySerializer(serializers.ModelSerializer):
         return sub_total_amount['sum_amount']
 
 
+#admin coupon usage report
+
+class CouponReportSerializer(serializers.ModelSerializer):
+    coupon_name = serializers.CharField()
+    usage_count = serializers.IntegerField()
+    total_discount = serializers.FloatField()
+    max_time_use = serializers.IntegerField()
+
+    class Meta:
+        model = Coupon
+        fields = ['coupon_name', 'max_time_use', 'usage_count', 'total_discount']
+
+
 
 # class FarmersPaymentSummarySerializer(serializers.ModelSerializer):
 #     farmer_name = serializers.SerializerMethodField()

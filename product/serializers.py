@@ -102,7 +102,9 @@ class ProductCreateSerializer(serializers.ModelSerializer):
             'quantity',
             'possible_productions_date',
             'possible_delivery_date',
-            'production_steps'
+            'production_steps',
+            'sell_price_per_unit',
+            'commission'
         ]
 
     def create(self, validated_data):
@@ -159,7 +161,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
 
         # update status and sell_price_per_unit
         if self.context['request'].user.user_type == 'ADMIN' :
-            Product.objects.filter(id=product_instance.id).update(status='PUBLISH')
+            Product.objects.filter(id=product_instance.id).update(status='PUBLISH', user=self.context['request'].user)
         try:
             price_per_unit = validated_data["price_per_unit"]
         except:
@@ -231,6 +233,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             'possible_delivery_date',
             'production_steps',
             'sell_price_per_unit',
+            'commission',
             'status',
             'sell_count',
             'created_at',
@@ -318,7 +321,8 @@ class ProductViewSerializer(serializers.ModelSerializer):
             'possible_delivery_date',
             'production_steps',
             'related_products',
-            'vat'
+            'vat',
+            'commission'
         ]
 
     def get_sell_price_with_vat(self, obj):
@@ -395,7 +399,8 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
             'possible_productions_date',
             'possible_delivery_date',
             'production_steps',
-            'vat'
+            'vat',
+            'commission'
         ]
 
     def update(self, instance, validated_data):
@@ -479,7 +484,8 @@ class PublishProductSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'sell_price_per_unit',
-            'status'
+            'status',
+            'commission'
         ]
 
 

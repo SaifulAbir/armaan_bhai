@@ -97,8 +97,9 @@ class AdminDashboardDataAPIView(APIView):
                 total_sales = None
 
             # total sale amount
+
             # total_sale_amount = OrderItem.objects.filter(suborder__payment_status='PAID').aggregate(total=Sum('total_price'))['total'] or 0
-            total_sale_amount = OrderItem.objects.filter(suborder__order_status='DELIVERED', suborder__payment_status='PAID').aggregate(total=Sum( F('product__sell_price_per_unit') * F('quantity') ))['total'] or 0
+            total_sale_amount = OrderItem.objects.filter(suborder__order_status='DELIVERED', suborder__payment_status='PAID').aggregate(total=Sum( ('total_price') ))['total'] or 0
 
             # total sale amount this month
             current_month = timezone.now().month

@@ -28,6 +28,7 @@ class CustomerProductListAPI(ListAPIView):
         sub_category = request.GET.get('sub_category_id')
         status = request.GET.get('status')
         district = request.GET.get('district')
+        district_id = request.GET.get('district_id')
         price = request.GET.get('price')
         delivery_start_date = request.GET.get('delivery_start_date')
         delivery_end_date = request.GET.get('delivery_end_date')
@@ -57,6 +58,9 @@ class CustomerProductListAPI(ListAPIView):
 
         if district:
             queryset = queryset.filter(user__district=district)
+
+        if district_id:
+            queryset = queryset.filter(user__district=district_id)
 
         if price:
             queryset = queryset.filter(sell_price_per_unit__range=(0,price))

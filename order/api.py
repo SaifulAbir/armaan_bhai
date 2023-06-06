@@ -873,13 +873,13 @@ class CouponReportAPIView(ListAPIView):
         if start_date and end_date:
             start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
             end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
-            queryset = queryset.filter(suborder__created_at__date__range=(start_date, end_date),
-                                       suborder__coupon_status=True)
+            queryset = queryset.filter(order__created_at__date__range=(start_date, end_date),
+                                       order__coupon_status=True)
 
         report = []
 
         for coupon in queryset:
-            suborders = SubOrder.objects.filter(coupon=coupon)
+            suborders = Order.objects.filter(coupon=coupon)
             if start_date and end_date:
                 suborders = suborders.filter(created_at__date__range=(start_date, end_date))
             usage_count = suborders.count()

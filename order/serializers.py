@@ -80,6 +80,9 @@ class CheckoutSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Order items are missing')
 
         payment_type = validated_data.get('payment_type')
+        coupon = validated_data.get('coupon')
+        coupon_status = validated_data.get('coupon_status')
+        coupon_discount_amount = validated_data.get('coupon_discount_amount', 0.0)
 
         if payment_type == 'PG':
             order_instance = Order.objects.create(
@@ -107,6 +110,12 @@ class CheckoutSerializer(serializers.ModelSerializer):
                 except:
                     agent_commission = 0.0
 
+                suborder_instance_count = 0
+                total_discount_amount = validated_data.get('coupon_discount_amount', 0.0)
+                num_suborders = len(order_items)
+                sub_discount_amount = total_discount_amount / num_suborders
+                print(sub_discount_amount)
+
                 total_price = float(unit_price) * float(quantity)
                 print(total_price,"price")
                 if int(quantity) > product.quantity:
@@ -124,7 +133,11 @@ class CheckoutSerializer(serializers.ModelSerializer):
                                                                delivery_date=product.possible_delivery_date,
                                                                payment_status='PAID',
                                                                delivery_charge=delivery_charge,
-                                                               order_status='ON_PROCESS')
+                                                               order_status='ON_PROCESS',
+                                                               coupon=coupon,
+                                                               coupon_discount_amount=coupon_discount_amount,
+                                                               coupon_status=coupon_status,
+                                                               divided_discount_amount=sub_discount_amount)
                     else:
                         suborder_obj = SubOrder.objects.create(order=order_instance,
                                                                user=self.context['request'].user,
@@ -134,7 +147,11 @@ class CheckoutSerializer(serializers.ModelSerializer):
                                                                delivery_date=product.possible_delivery_date,
                                                                payment_status='DUE',
                                                                delivery_charge=delivery_charge,
-                                                               order_status='ON_PROCESS')
+                                                               order_status='ON_PROCESS',
+                                                               coupon=coupon,
+                                                               coupon_discount_amount=coupon_discount_amount,
+                                                               coupon_status=coupon_status,
+                                                               divided_discount_amount=sub_discount_amount)
                     suborders[suborder_key] = suborder_obj
                 else:
                     suborder_obj.total_price += total_price

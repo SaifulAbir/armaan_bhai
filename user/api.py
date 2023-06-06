@@ -338,7 +338,7 @@ class UpazillaListAPIView(ListAPIView):
 
 class UpazillaUpdateAPIView(UpdateAPIView):
     serializer_class = UpazillaListSerializer
-    queryset = Division.objects.all()
+    queryset = Upazilla.objects.all()
 
 
 class ChangePasswordView(generics.UpdateAPIView):

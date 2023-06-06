@@ -58,19 +58,27 @@ class SubCategoryListSerializer(serializers.ModelSerializer):
 class DivisionListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Division
-        fields = ['id', 'name']
+        fields = ['id', 'name', 'is_active']
 
 
 class DistrictListSerializer(serializers.ModelSerializer):
+    division_name = serializers.SerializerMethodField()
     class Meta:
         model = District
-        fields = ['id', 'name', 'division']
+        fields = ['id', 'name', 'division', 'division_name', 'is_active']
+
+    def get_division_name(self, obj):
+        return obj.division.name
 
 
 class UpazillaListSerializer(serializers.ModelSerializer):
+    district_name = serializers.SerializerMethodField()
     class Meta:
         model = Upazilla
-        fields = ['id', 'name', 'district']
+        fields = ['id', 'name', 'district', 'district_name', 'is_active']
+
+    def get_district_name(self, obj):
+        return obj.district.name
 
 
 class UnitListSerializer(serializers.ModelSerializer):

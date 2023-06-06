@@ -8,6 +8,7 @@ from django.utils.translation import gettext as _
 
 class Division(AbstractTimeStamp):
     name = models.CharField(max_length=255)
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         db_table = 'divisions'
@@ -20,6 +21,7 @@ class District(AbstractTimeStamp):
     division = models.ForeignKey(Division, on_delete=models.PROTECT, null=True, related_name='division_district')
     name = models.CharField(max_length=255)
     english_name = models.CharField(max_length=255)
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         db_table = 'districts'
@@ -32,6 +34,7 @@ class Upazilla(AbstractTimeStamp):
     division = models.ForeignKey(Division, on_delete=models.PROTECT, null=True)
     district = models.ForeignKey(District, on_delete=models.PROTECT, null=True)
     name = models.CharField(max_length=255)
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         db_table = 'upazillas'

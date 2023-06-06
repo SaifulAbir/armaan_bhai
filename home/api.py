@@ -90,15 +90,17 @@ class AdminDashboardDataAPIView(APIView):
                 admin_list = None
 
             # total sales this month
-            if Order.objects.all().exists():
-                today = datetime.datetime.now()
-                total_sales = Order.objects.filter(order_date__month=today.month).aggregate(total_sales_this_month = Sum('total_price'))
-            else:
-                total_sales = None
+            # if Order.objects.all().exists():
+            today = datetime.datetime.now()
+            total_sales = OrderItem.objects.filter(suborder__order_status='DELIVERED', suborder__payment_status='PAID', suborder__order_date__month=today.month).aggregate(total = Sum('total_price'))['total'] or 0
+            # else:
+            #     total_sales = None
 
             # total sale amount
+
             # total_sale_amount = OrderItem.objects.filter(suborder__payment_status='PAID').aggregate(total=Sum('total_price'))['total'] or 0
-            total_sale_amount = OrderItem.objects.filter(suborder__order_status='DELIVERED', suborder__payment_status='PAID').aggregate(total=Sum( F('product__sell_price_per_unit') * F('quantity') ))['total'] or 0
+            total_sale_amount = OrderItem.objects.filter(suborder__order_status='DELIVERED', suborder__payment_status='PAID').aggregate(total=Sum( ('total_price') ))['total'] or 0
+            total_sale_amount = round(total_sale_amount, 2)
 
             # total sale amount this month
             current_month = timezone.now().month
@@ -106,7 +108,8 @@ class AdminDashboardDataAPIView(APIView):
             end_of_month = start_of_month.replace(day=28) + datetime.timedelta(days=4)
             end_of_month = end_of_month - datetime.timedelta(days=end_of_month.day)
             # total_sale_amount_of_this_month = OrderItem.objects.filter(suborder__payment_status='PAID', created_at__gte=start_of_month, created_at__lte=end_of_month).aggregate(total=Sum('total_price'))['total'] or 0
-            total_sale_amount_of_this_month = OrderItem.objects.filter(suborder__order_status='DELIVERED', suborder__payment_status='PAID', created_at__gte=start_of_month, created_at__lte=end_of_month).aggregate(total=Sum( F('product__sell_price_per_unit') * F('quantity') ))['total'] or 0
+            total_sale_amount_of_this_month = OrderItem.objects.filter(suborder__order_status='DELIVERED', suborder__payment_status='PAID', suborder__created_at__gte=start_of_month, suborder__created_at__lte=end_of_month).aggregate(total=Sum( ('total_price')))['total'] or 0
+            total_sale_amount_of_this_month = round(total_sale_amount_of_this_month, 2)
 
 
             return Response({

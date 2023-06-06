@@ -169,13 +169,14 @@ class CheckoutSerializer(serializers.ModelSerializer):
                     coupon=coupon.id, user=self.context['request'].user).exists()
                 if not coupon_stat:
                     CouponStat.objects.create(
-                        coupon=coupon, user=self.context['request'].user)
+                        coupon=coupon, user=self.context['request'].user, order=order_instance)
                     usage_count = int(coupon.usage_count)
                     coupon_obj.update(usage_count=usage_count + 1)
                 else:
                     raise serializers.ValidationError("Usage limit exceeded")
             else:
                 raise serializers.ValidationError("Usage limit exceeded")
+            return order_instance
 
         # send email to the user
         user = self.context['request'].user
@@ -1034,6 +1035,19 @@ class FarmersPaymentSummarySerializer(serializers.ModelSerializer):
 
         sub_total_amount = queryset.aggregate(sum_amount=Sum('amount'))
         return sub_total_amount['sum_amount']
+
+
+#admin coupon usage report
+
+class CouponReportSerializer(serializers.ModelSerializer):
+    coupon_name = serializers.CharField()
+    usage_count = serializers.IntegerField()
+    total_discount = serializers.FloatField()
+    max_time_use = serializers.IntegerField()
+
+    class Meta:
+        model = Coupon
+        fields = ['coupon_name', 'max_time_use', 'usage_count', 'total_discount']
 
 
 

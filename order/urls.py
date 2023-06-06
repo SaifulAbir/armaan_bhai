@@ -74,4 +74,6 @@ urlpatterns = [
     # Admin Farmers Payment Summary
     path('admin/farmer-payment-summary/', FarmersPaymentSummaryAPIView.as_view()),
 
+    path('admin/coupon-report/', CouponReportAPIView.as_view()),
+
 ]

@@ -784,45 +784,48 @@ class AdminReportAgentWiseSaleAPIView(ListAPIView):
 
 # Admin Farmers Payment Summary
 class FarmersPaymentSummaryAPIView(ListAPIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     serializer_class = FarmersPaymentSummarySerializer
 
     def get_queryset(self):
-        queryset = PaymentHistory.objects.filter(status='PAID')
+        if self.request.user.user_type == "ADMIN":
+            queryset = PaymentHistory.objects.filter(status='PAID')
 
-        division_id = self.request.query_params.get('division_id')
-        district_id = self.request.query_params.get('district_id')
-        upazilla_id = self.request.query_params.get('upazilla_id')
-        farmer_name = self.request.query_params.get('farmer_name')
-        start_date = self.request.query_params.get('start_date')
-        end_date = self.request.query_params.get('end_date')
+            division_id = self.request.query_params.get('division_id')
+            district_id = self.request.query_params.get('district_id')
+            upazilla_id = self.request.query_params.get('upazilla_id')
+            farmer_name = self.request.query_params.get('farmer_name')
+            start_date = self.request.query_params.get('start_date')
+            end_date = self.request.query_params.get('end_date')
 
-        if division_id:
-            queryset = queryset.filter(farmer__division_id=division_id)
+            if division_id:
+                queryset = queryset.filter(farmer__division_id=division_id)
 
-        if district_id:
-            queryset = queryset.filter(farmer__district_id=district_id)
+            if district_id:
+                queryset = queryset.filter(farmer__district_id=district_id)
 
-        if upazilla_id:
-            queryset = queryset.filter(farmer__upazilla_id=upazilla_id)
+            if upazilla_id:
+                queryset = queryset.filter(farmer__upazilla_id=upazilla_id)
 
-        if farmer_name:
-            queryset = queryset.filter(Q(farmer_account_info__farmer__full_name=farmer_name) | Q(farmer_account_info__farmer__full_name=farmer_name.replace(' ', '')))
+            if farmer_name:
+                queryset = queryset.filter(Q(farmer_account_info__farmer__full_name=farmer_name) | Q(farmer_account_info__farmer__full_name=farmer_name.replace(' ', '')))
 
-        if start_date and end_date:
-            oed = datetime.strptime(str(end_date), '%Y-%m-%d')
-            end_date = oed + timedelta(days=1)
-            queryset = queryset.filter(Q(date__range=(start_date, end_date)))
+            if start_date and end_date:
+                oed = datetime.strptime(str(end_date), '%Y-%m-%d')
+                end_date = oed + timedelta(days=1)
+                queryset = queryset.filter(Q(date__range=(start_date, end_date)))
 
-        if not (division_id or district_id or upazilla_id or farmer_name or start_date or end_date):
-            # Get the initial date range (last 7 days)
-            initial_start_date = datetime.now().date() - timedelta(days=7)
-            initial_end_date = datetime.now().date() + timedelta(days=1)
+            if not (division_id or district_id or upazilla_id or farmer_name or start_date or end_date):
+                # Get the initial date range (last 7 days)
+                initial_start_date = datetime.now().date() - timedelta(days=7)
+                initial_end_date = datetime.now().date() + timedelta(days=1)
 
-            # Apply the initial date range filter
-            queryset = queryset.filter(date__range=(initial_start_date, initial_end_date))
+                # Apply the initial date range filter
+                queryset = queryset.filter(date__range=(initial_start_date, initial_end_date))
 
-        return queryset
+            return queryset
+        else:
+            raise ValidationError({"msg": 'You can not see selling revenue data, because you are not an Admin!'})
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
@@ -854,5 +857,43 @@ class FarmersPaymentSummaryAPIView(ListAPIView):
         }
 
         return Response(response_data)
+
+
+#admin coupon usage report
+class CouponReportAPIView(ListAPIView):
+    permission_classes = [IsAuthenticated]
+    queryset = Coupon.objects.all()
+    serializer_class = CouponReportSerializer
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+
+        if start_date and end_date:
+            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+            queryset = queryset.filter(suborder__created_at__date__range=(start_date, end_date),
+                                       suborder__coupon_status=True)
+
+        report = []
+
+        for coupon in queryset:
+            suborders = SubOrder.objects.filter(coupon=coupon)
+            if start_date and end_date:
+                suborders = suborders.filter(created_at__date__range=(start_date, end_date))
+            usage_count = suborders.count()
+            print(usage_count)
+            total_discount = suborders.aggregate(total_discount=Sum('coupon_discount_amount'))['total_discount'] or 0
+
+            report.append({
+                'coupon_name': coupon.coupon_title,
+                'max_time_use': coupon.max_time,
+                'usage_count': usage_count,
+                'total_discount': total_discount,
+            })
+
+        serializer = self.get_serializer(report, many=True)
+        return Response(serializer.data)
 
 

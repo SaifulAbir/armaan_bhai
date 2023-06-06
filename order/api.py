@@ -530,9 +530,9 @@ class DistrictInfoListAPIView(ListAPIView):
 
     def get_queryset(self):
         if self.request.user.user_type == "ADMIN":
-            queryset = District.objects.all()
+            queryset = District.objects.filter(is_active=True)
         if self.request.user.user_type == "AGENT":
-            queryset = District.objects.all()
+            queryset = District.objects.filter(is_active=True)
         if queryset:
             return queryset
         else:

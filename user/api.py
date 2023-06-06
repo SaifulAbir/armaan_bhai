@@ -314,13 +314,13 @@ class DistrictListAPIView(ListAPIView):
     pagination_class = CustomPagination
 
     def get_queryset(self):
-        queryset = Division.objects.filter(is_active=True)
+        queryset = District.objects.filter(is_active=True)
         return queryset
 
 
 class DistrictUpdateAPIView(UpdateAPIView):
     serializer_class = DistrictListSerializer
-    queryset = Division.objects.all()
+    queryset = District.objects.all()
 
 
 class UpazillaCreateAPIView(CreateAPIView):
@@ -332,7 +332,7 @@ class UpazillaListAPIView(ListAPIView):
     pagination_class = CustomPagination
 
     def get_queryset(self):
-        queryset = Division.objects.filter(is_active=True)
+        queryset = Upazilla.objects.filter(is_active=True)
         return queryset
 
 

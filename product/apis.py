@@ -245,7 +245,7 @@ class AdminOffersListAPIView(ListAPIView):
                     {"msg": 'Offers does not exist!'})
         else:
             raise ValidationError(
-                {"msg": 'You can not view offers list, because you are not an Admin or an Agent!'})
+                {"msg": 'You can not view offers list, because you are not an Admin!'})
 
 
 class AdminOfferCreateAPIView(CreateAPIView):
@@ -256,7 +256,7 @@ class AdminOfferCreateAPIView(CreateAPIView):
             return super(AdminOfferCreateAPIView, self).post(request, *args, **kwargs)
         else:
             raise ValidationError(
-                {"msg": 'You can not create Offers, because you are not an Admin or an Agent!'})
+                {"msg": 'You can not create Offers, because you are not an Admin!'})
 
 
 class AdminOfferUpdateAPIView(UpdateAPIView):
@@ -275,7 +275,7 @@ class AdminOfferUpdateAPIView(UpdateAPIView):
                     {"msg": 'Offer does not exist!'})
         else:
             raise ValidationError(
-                {"msg": 'You can not update Offer, because you are not an Admin or an Agent!'})
+                {"msg": 'You can not update Offer, because you are not an Admin!'})
 
 
 class AdminOfferUpdateDetailsAPIView(RetrieveAPIView):
@@ -294,7 +294,7 @@ class AdminOfferUpdateDetailsAPIView(RetrieveAPIView):
                     {"msg": 'Offer does not exist!'})
         else:
             raise ValidationError(
-                {"msg": 'You can not see Update details, because you are not an Admin or an Admin or an Agent!'})
+                {"msg": 'You can not see Update details, because you are not an Admin or an Admin!'})
 
 
 class AdminOfferDeleteAPIView(ListAPIView):
@@ -318,7 +318,7 @@ class AdminOfferDeleteAPIView(ListAPIView):
                 )
         else:
             raise ValidationError(
-                {"msg": 'You can not delete Offer data, because you are not an Admin or an Agent!'})
+                {"msg": 'You can not delete Offer data, because you are not an Admin!'})
 
 
 class OffersListAPIView(ListAPIView):

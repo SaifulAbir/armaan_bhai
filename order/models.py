@@ -307,7 +307,9 @@ class OrderItem(AbstractTimeStamp):
     agent = models.ForeignKey(User, on_delete=models.CASCADE,
                               related_name='order_item_agent', null=True, blank=True)
     commission = models.FloatField(
-        max_length=255, null=False, blank=False, default=0, help_text="Agent Commission")
+        max_length=255, null=False, blank=False, default=0, help_text="Agent Commission Amount")
+    commission_total = models.FloatField(
+        max_length=255, null=False, blank=False, default=0, help_text="Agent Commission Total = commission x product quantity")
     payment_status = models.CharField(
         max_length=20, null=False, blank=False, choices=paymentStatus, default='NONE')
     

@@ -760,6 +760,28 @@ class AdminReportSellingRevenueAPIView(ListAPIView):
             raise ValidationError({"msg": 'You can not see selling revenue data, because you are not an Admin!'})
 
 
+class AdminReportAgentWiseSaleAPIView(ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = AdminAgentWiseSaleReportSerializer
+
+    def get_queryset(self):
+        if self.request.user.user_type == "ADMIN":
+            # start_date = self.request.GET.get('start_date')
+            # end_date = self.request.GET.get('end_date')
+
+            obj = User.objects.filter(user_type='AGENT', is_active=True).exists()
+            if obj:
+                queryset = User.objects.filter(user_type='AGENT', is_active=True).order_by('-id')
+                # if start_date and end_date:
+                #     queryset = queryset.filter(Q(order_date__range=(start_date,end_date)))
+                return queryset
+            else:
+                raise ValidationError(
+                    {"msg": 'Agent data Does not exist!'}
+                )
+        else:
+            raise ValidationError({"msg": 'You can not see Agent sale report, because you are not an Admin!'})
+
 # Admin Farmers Payment Summary
 class FarmersPaymentSummaryAPIView(ListAPIView):
     permission_classes = [IsAuthenticated]

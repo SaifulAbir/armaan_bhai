@@ -238,13 +238,13 @@ class AdminListAPI(ListAPIView):
 class DivisionListAPI(ListAPIView):
     permission_classes = (AllowAny,)
     serializer_class = DivisionListSerializer
-    queryset = Division.objects.all()
+    queryset = Division.objects.filter(is_active=True)
 
 
 class UpazillaAllListAPI(ListAPIView):
     permission_classes = (AllowAny,)
     serializer_class = UpazillaListSerializer
-    queryset = Upazilla.objects.all()
+    queryset = Upazilla.objects.filter(is_active=True)
 
 
 class DistrictListAPI(ListAPIView):
@@ -255,13 +255,18 @@ class DistrictListAPI(ListAPIView):
 
     def get_queryset(self):
         division_id = self.kwargs['division_id']
-        query = District.objects.filter(division=division_id)
-        return query
+        query = District.objects.filter(division=division_id, is_active=True)
+        if query:
+            return query
+        else:
+            return Response({
+                'details': 'No District found'
+            }, status=status.HTTP_404_NOT_FOUND)
     
 class AllDistrictListAPI(ListAPIView):
     permission_classes = (AllowAny, )
     serializer_class = DistrictListSerializer
-    queryset = District.objects.all()
+    queryset = District.objects.filter(is_active=True)
 
 
 
@@ -273,8 +278,13 @@ class UpazillaListAPI(ListAPIView):
 
     def get_queryset(self):
         district_id = self.kwargs['district_id']
-        query = Upazilla.objects.filter(district=district_id)
-        return query
+        query = Upazilla.objects.filter(district=district_id, is_active=True)
+        if query:
+            return query
+        else:
+            return Response({
+                'details': 'No Upazilla found'
+            }, status=status.HTTP_404_NOT_FOUND)
 
 
 class DivisionCreateAPIView(CreateAPIView):
@@ -286,7 +296,7 @@ class DivisionListAPIView(ListAPIView):
     pagination_class = CustomPagination
 
     def get_queryset(self):
-        queryset = Division.objects.all()
+        queryset = Division.objects.filter(is_active=True)
         return queryset
 
 
@@ -304,7 +314,7 @@ class DistrictListAPIView(ListAPIView):
     pagination_class = CustomPagination
 
     def get_queryset(self):
-        queryset = Division.objects.all()
+        queryset = Division.objects.filter(is_active=True)
         return queryset
 
 
@@ -322,7 +332,7 @@ class UpazillaListAPIView(ListAPIView):
     pagination_class = CustomPagination
 
     def get_queryset(self):
-        queryset = Division.objects.all()
+        queryset = Division.objects.filter(is_active=True)
         return queryset
 
 

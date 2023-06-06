@@ -53,13 +53,13 @@ class AdminDashboardDataAPIView(APIView):
 
             # total district
             if District.objects.all().exists():
-                total_district = District.objects.all().count()
+                total_district = District.objects.filter(is_active=True).count()
             else:
                 total_district = 0
 
             # total upazilla
             if Upazilla.objects.all().exists():
-                total_upazilla = Upazilla.objects.all().count()
+                total_upazilla = Upazilla.objects.filter(is_active=True).count()
             else:
                 total_upazilla = 0
 

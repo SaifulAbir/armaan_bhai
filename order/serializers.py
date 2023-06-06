@@ -11,7 +11,7 @@ from user.serializers import CustomerProfileDetailSerializer, DivisionSerializer
 from django.utils import timezone
 from django.db.models import Sum
 from django.db.models import Q
-from django.db.models.functions import Coalesce
+from django.db.models.functions import Coalesce, Round
 from rest_framework.exceptions import ValidationError
 from datetime import date
 from django.template.loader import render_to_string
@@ -1360,8 +1360,8 @@ class AdminAgentWiseSaleReportFarmerSerializer(serializers.ModelSerializer):
             filtered_queryset = OrderItem.objects.filter(product__user=obj.id, suborder__payment_status='PAID', created_at__range=(start_date,end_date))
         else:
             filtered_queryset = OrderItem.objects.filter(product__user=obj.id, suborder__payment_status='PAID')
-        total_sum = filtered_queryset.aggregate(total=Sum('total_price'))['total'] or 0
-        return total_sum
+        total_sum = filtered_queryset.aggregate(total=  Sum('total_price') )['total'] or 0
+        return round(total_sum, 2)
 
 class AdminAgentWiseSaleReportSerializer(serializers.ModelSerializer):
     farmers = serializers.SerializerMethodField('get_farmers')
@@ -1371,13 +1371,11 @@ class AdminAgentWiseSaleReportSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'full_name', 'phone_number', 'farmers',  'products', 'total_commission']
-        
 
     def get_farmers(self, obj):
         start_date = self.context['request'].query_params.get('start_date')
         end_date = self.context['request'].query_params.get('end_date')
 
-        # query = User.objects.filter(user_type='FARMER', agent_user_id=obj.id, is_active=True)
         query = User.objects.filter(user_type='FARMER', agent_user_id=obj.id, is_active=True, product_seller__order_item_product__isnull=False, product_seller__order_item_product__suborder__payment_status='PAID').distinct()
         serializer = AdminAgentWiseSaleReportFarmerSerializer(instance=query, many=True, context={
                                                 'request': self.context['request'], 'start_date':start_date, 'end_date':end_date})

@@ -69,6 +69,7 @@ urlpatterns = [
 
     # admin reports
     path('admin/report/selling-revenue/', AdminReportSellingRevenueAPIView.as_view()),
+    path('admin/report/agent-wise-sale/', AdminReportAgentWiseSaleAPIView.as_view()),
 
     # Admin Farmers Payment Summary
     path('admin/farmer-payment-summary/', FarmersPaymentSummaryAPIView.as_view()),

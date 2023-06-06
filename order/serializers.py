@@ -11,6 +11,7 @@ from user.serializers import CustomerProfileDetailSerializer, DivisionSerializer
 from django.utils import timezone
 from django.db.models import Sum
 from django.db.models import Q
+from django.db.models.functions import Coalesce
 from rest_framework.exceptions import ValidationError
 from datetime import date
 from django.template.loader import render_to_string
@@ -52,7 +53,8 @@ class ProductItemCheckoutSerializer(serializers.ModelSerializer):
                   'product',
                   'product_obj',
                   'quantity',
-                  'unit_price'
+                  'unit_price',
+                  'commission'
                   ]
 
 
@@ -100,6 +102,11 @@ class CheckoutSerializer(serializers.ModelSerializer):
                 product = order_item['product']
                 quantity = order_item['quantity']
                 unit_price = order_item['unit_price']
+                try:
+                    agent_commission = order_item['commission']
+                except:
+                    agent_commission = 0.0
+
                 total_price = float(unit_price) * float(quantity)
                 print(total_price,"price")
                 if int(quantity) > product.quantity:
@@ -134,7 +141,7 @@ class CheckoutSerializer(serializers.ModelSerializer):
                     suborder_obj.product_count += 1
                     suborder_obj.save()
                 OrderItem.objects.create(order=order_instance, suborder=suborder_obj, product=product,
-                                         quantity=int(quantity), unit_price=unit_price, total_price=total_price)
+                                         quantity=int(quantity), unit_price=unit_price, total_price=total_price, commission=agent_commission, commission_total=float(agent_commission)*float(quantity))
 
                 if order_instance:
                     product_obj = Product.objects.filter(id=product.id)
@@ -1304,13 +1311,84 @@ class AdminSellingRevenueReportSerializer(serializers.ModelSerializer):
         fields = ['id', 'customer_name', 'customer_phone', 'products', 'total_price', 'order_date']
 
     def get_products(self, obj):
-        # query = Product.objects.filter(order_item_product__suborder = obj)
         query = OrderItem.objects.filter(suborder = obj)
         serializer = SellingRevenueReportSerializer(instance=query, many=True)
         return serializer.data
 
-    # def get_products(self, obj):
-    #     tomorrow = datetime.today() + timedelta(days=1)
-    #     query = Product.objects.filter(Q(user = obj), Q(possible_productions_date=tomorrow), Q(order_item_product__isnull=False) ).annotate(whole_quantity=Sum('order_item_product__quantity', filter=Q(order_item_product__suborder__order_status='ON_PROCESS') | Q(order_item_product__suborder__order_status='ON_TRANSIT') | Q(order_item_product__suborder__order_status='CANCELED')))
-    #     serializer = AgentMukamLocationSetupDataSerializer(instance=query, many=True)
-    #     return serializer.data
+
+class AdminAgentWiseSaleReportFarmerSerializer(serializers.ModelSerializer):
+    commission_per_farmer = serializers.CharField(source='commission_total', read_only=True)
+    commission_per_farmer = serializers.SerializerMethodField('get_commission_per_farmer')
+    total_sale_amount = serializers.SerializerMethodField('get_total_sale_amount')
+    class Meta:
+        model = User
+        fields = ['id', 'full_name', 'commission_per_farmer', 'total_sale_amount']
+
+    def get_commission_per_farmer(self, obj):
+        start_date = self.context['start_date']
+        end_date = self.context['end_date']
+
+        if start_date and end_date:
+            filtered_queryset = OrderItem.objects.filter(product__user=obj.id, suborder__payment_status='PAID', created_at__range=(start_date,end_date))
+        else:
+            filtered_queryset = OrderItem.objects.filter(product__user=obj.id, suborder__payment_status='PAID')
+        total_sum = filtered_queryset.aggregate(total=Sum('commission_total'))['total'] or 0
+        return total_sum
+
+    def get_total_sale_amount(self, obj):
+        start_date = self.context['start_date']
+        end_date = self.context['end_date']
+
+        if start_date and end_date:
+            filtered_queryset = OrderItem.objects.filter(product__user=obj.id, suborder__payment_status='PAID', created_at__range=(start_date,end_date))
+        else:
+            filtered_queryset = OrderItem.objects.filter(product__user=obj.id, suborder__payment_status='PAID')
+        total_sum = filtered_queryset.aggregate(total=Sum('total_price'))['total'] or 0
+        return total_sum
+
+class AdminAgentWiseSaleReportSerializer(serializers.ModelSerializer):
+    farmers = serializers.SerializerMethodField('get_farmers')
+    # total_product_sale = serializers.SerializerMethodField('get_total_product_sale')
+    products = serializers.SerializerMethodField('get_products')
+    total_commission = serializers.SerializerMethodField('get_total_commission')
+    class Meta:
+        model = User
+        fields = ['id', 'full_name', 'phone_number', 'farmers',  'products', 'total_commission']
+        
+
+    def get_farmers(self, obj):
+        start_date = self.context['request'].query_params.get('start_date')
+        end_date = self.context['request'].query_params.get('end_date')
+
+        # query = User.objects.filter(user_type='FARMER', agent_user_id=obj.id, is_active=True)
+        query = User.objects.filter(user_type='FARMER', agent_user_id=obj.id, is_active=True, product_seller__order_item_product__isnull=False, product_seller__order_item_product__suborder__payment_status='PAID').distinct()
+        serializer = AdminAgentWiseSaleReportFarmerSerializer(instance=query, many=True, context={
+                                                'request': self.context['request'], 'start_date':start_date, 'end_date':end_date})
+        return serializer.data
+
+    def get_products(self, obj):
+        start_date = self.context['request'].query_params.get('start_date')
+        end_date = self.context['request'].query_params.get('end_date')
+
+        if start_date and end_date:
+            query = Product.objects.filter(user__agent_user_id = obj.id, order_item_product__isnull=False, order_item_product__suborder__payment_status='PAID' ).annotate(whole_quantity=Coalesce(Sum('order_item_product__quantity', filter=Q(order_item_product__suborder__order_status='DELIVERED', order_item_product__created_at__range=(start_date,end_date)) ), 0) )
+        else:
+            query = Product.objects.filter(user__agent_user_id = obj.id, order_item_product__isnull=False, order_item_product__suborder__payment_status='PAID' ).annotate(whole_quantity=Coalesce(Sum('order_item_product__quantity', filter=Q(order_item_product__suborder__order_status='DELIVERED')), 0) )
+        serializer = AgentMukamLocationSetupDataSerializer(instance=query, many=True, context={
+                                                'request': self.context['request']})
+        return serializer.data
+
+    def get_total_commission(self, obj):
+        start_date = self.context['request'].query_params.get('start_date')
+        end_date = self.context['request'].query_params.get('end_date')
+
+        if start_date and end_date:
+            filtered_queryset = OrderItem.objects.filter(product__user__agent_user_id=obj.id, suborder__payment_status='PAID', created_at__range=(start_date,end_date))
+        else:
+            filtered_queryset = OrderItem.objects.filter(product__user__agent_user_id=obj.id, suborder__payment_status='PAID')
+        total_sum = filtered_queryset.aggregate(total=Sum('commission_total'))['total'] or 0
+        return total_sum
+
+    # def get_total_product_sale(self, obj):
+    #     data = OrderItem.objects.filter(product__user__agent_user_id=obj.id, suborder__payment_status='PAID').count()
+    #     return data

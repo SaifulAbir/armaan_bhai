@@ -839,7 +839,7 @@ class FarmersPaymentSummaryAPIView(ListAPIView):
 
 #admin coupon usage report
 class CouponReportAPIView(ListAPIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     queryset = Coupon.objects.all()
     serializer_class = CouponReportSerializer
 

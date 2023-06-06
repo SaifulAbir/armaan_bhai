@@ -1343,7 +1343,7 @@ class AdminAgentWiseSaleReportFarmerSerializer(serializers.ModelSerializer):
             filtered_queryset = OrderItem.objects.filter(product__user=obj.id, suborder__payment_status='PAID', created_at__range=(start_date,end_date))
         else:
             filtered_queryset = OrderItem.objects.filter(product__user=obj.id, suborder__payment_status='PAID')
-        total_sum = filtered_queryset.aggregate(total=  Sum('total_price') )['total'] or 0
+        total_sum = filtered_queryset.aggregate(total=Sum('commission_total'))['total'] or 0
         return total_sum
 
 class AdminAgentWiseSaleReportSerializer(serializers.ModelSerializer):

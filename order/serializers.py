@@ -162,13 +162,14 @@ class CheckoutSerializer(serializers.ModelSerializer):
                     coupon=coupon.id, user=self.context['request'].user).exists()
                 if not coupon_stat:
                     CouponStat.objects.create(
-                        coupon=coupon, user=self.context['request'].user)
+                        coupon=coupon, user=self.context['request'].user, order=order_instance)
                     usage_count = int(coupon.usage_count)
                     coupon_obj.update(usage_count=usage_count + 1)
                 else:
                     raise serializers.ValidationError("Usage limit exceeded")
             else:
                 raise serializers.ValidationError("Usage limit exceeded")
+            return order_instance
 
         # send email to the user
         user = self.context['request'].user

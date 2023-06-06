@@ -857,8 +857,11 @@ class CouponReportAPIView(ListAPIView):
         report = []
 
         for coupon in queryset:
-            suborders = SubOrder.objects.filter(coupon=coupon, created_at__date__range=(start_date, end_date))
+            suborders = SubOrder.objects.filter(coupon=coupon)
+            if start_date and end_date:
+                suborders = suborders.filter(created_at__date__range=(start_date, end_date))
             usage_count = suborders.count()
+            print(usage_count)
             total_discount = suborders.aggregate(total_discount=Sum('coupon_discount_amount'))['total_discount'] or 0
 
             report.append({

@@ -726,6 +726,7 @@ class OfferProductListSerializer(serializers.ModelSerializer):
             'possible_delivery_date',
             'sell_price_per_unit',
             'status',
+            'commission',
             'sell_count',
             'created_at',
             'offer_details',

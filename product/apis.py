@@ -144,7 +144,10 @@ class AgentProductListAPI(ListAPIView):
         own_product = request.GET.get('own_product')
         user = self.request.user
         if own_product is not None:
-            return Product.objects.filter(user=user).order_by('-created_at')
+            if user.user_type == "ADMIN":
+                return Product.objects.filter(user__user_type="ADMIN").order_by('-created_at')
+            else:
+                return []
         if user.user_type == "AGENT":
             queryset = Product.objects.filter(user__agent_user_id=user.id).order_by('-created_at')
         elif user.user_type == "FARMER":

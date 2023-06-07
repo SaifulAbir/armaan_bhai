@@ -808,7 +808,7 @@ class SalesOfAnAgentSerializer(serializers.ModelSerializer):
         else:
             total_amount = OrderItem.objects.filter(product__user__agent_user_id=obj.id, suborder__payment_status='PAID').aggregate(total=Sum('total_price'))['total'] or 0
 
-        return total_amount
+        return round(total_amount, 2)
 
 
 class FarmerOwnPaymentListSerializer(serializers.ModelSerializer):

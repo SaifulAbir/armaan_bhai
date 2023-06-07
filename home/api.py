@@ -176,24 +176,24 @@ class AdminDashboardDataAPIView(APIView):
 
             # total sale amount
             # total_sale_amount = OrderItem.objects.filter(product__user__agent_user_id=self.request.user.id,suborder__payment_status='PAID').aggregate(total=Sum('total_price'))['total'] or 0
-            total_sale_amount = OrderItem.objects.filter(product__user__agent_user_id=self.request.user.id,
-                                                         suborder__order_status='DELIVERED',
-                                                         suborder__payment_status='PAID').aggregate(
-                total=Sum(F('product__price_per_unit') * F('quantity')))['total'] or 0
-            # total_sale_amount = OrderItem.objects.filter(product__user__agent_user_id=self.request.user.id, suborder__order_status='DELIVERED',  suborder__payment_status='PAID').aggregate(total=Sum( ('total_price') ))['total'] or 0
+            # total_sale_amount = OrderItem.objects.filter(product__user__agent_user_id=self.request.user.id,
+            #                                              suborder__order_status='DELIVERED',
+            #                                              suborder__payment_status='PAID').aggregate(
+            #     total=Sum(F('product__price_per_unit') * F('quantity')))['total'] or 0
+            total_sale_amount = OrderItem.objects.filter(product__user__agent_user_id=self.request.user.id, suborder__order_status='DELIVERED',  suborder__payment_status='PAID').aggregate(total=Sum( ('total_price') ))['total'] or 0
 
             # total sale amount this month
             current_month = timezone.now().month
             start_of_month = date(year=timezone.now().year, month=current_month, day=1)
             end_of_month = start_of_month.replace(day=28) + datetime.timedelta(days=4)
             end_of_month = end_of_month - datetime.timedelta(days=end_of_month.day)
-            total_sale_amount_of_this_month = \
-            OrderItem.objects.filter(product__user__agent_user_id=self.request.user.id,
-                                     suborder__order_status='DELIVERED', suborder__payment_status='PAID',
-                                     created_at__gte=start_of_month, created_at__lte=end_of_month).aggregate(
-                total=Sum(F('product__price_per_unit') * F('quantity')))['total'] or 0
+            # total_sale_amount_of_this_month = \
+            # OrderItem.objects.filter(product__user__agent_user_id=self.request.user.id,
+            #                          suborder__order_status='DELIVERED', suborder__payment_status='PAID',
+            #                          created_at__gte=start_of_month, created_at__lte=end_of_month).aggregate(
+            #     total=Sum(F('product__price_per_unit') * F('quantity')))['total'] or 0
             # total_sale_amount_of_this_month = OrderItem.objects.filter(product__user__agent_user_id=self.request.user.id, suborder__payment_status='PAID', created_at__gte=start_of_month, created_at__lte=end_of_month).aggregate(total=Sum('total_price'))['total'] or 0
-            # total_sale_amount_of_this_month = OrderItem.objects.filter(product__user__agent_user_id=self.request.user.id, suborder__order_status='DELIVERED', suborder__payment_status='PAID', created_at__gte=start_of_month, created_at__lte=end_of_month).aggregate(total=Sum( ('total_price') ))['total'] or 0
+            total_sale_amount_of_this_month = OrderItem.objects.filter(product__user__agent_user_id=self.request.user.id, suborder__order_status='DELIVERED', suborder__payment_status='PAID', created_at__gte=start_of_month, created_at__lte=end_of_month).aggregate(total=Sum( ('total_price') ))['total'] or 0
 
 
             return Response({

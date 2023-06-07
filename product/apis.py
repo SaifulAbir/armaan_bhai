@@ -7,6 +7,7 @@ from django.db.models import Q
 from django.utils import timezone
 from product.models import *
 from datetime import datetime
+from django.db.models import F, Case, When, DecimalField
 
 
 class ProductCreateAPIView(CreateAPIView):
@@ -63,18 +64,28 @@ class CustomerProductListAPI(ListAPIView):
         if district_id:
             queryset = queryset.filter(user__district=district_id)
 
+        queryset = queryset.annotate(
+            sell_price_with_offer=Case(
+                When(offer_offer_product__offer__is_active=True, offer_offer_product__offer__end_date__gte=today,
+                     then=F('sell_price_per_unit') * (1 - F('offer_offer_product__offer__discount_price') / 100)),
+                default=F('sell_price_per_unit'),
+                output_field=DecimalField()
+            )
+        ).annotate(
+            sell_price_with_vat=Case(
+                When(vat__isnull=False, then=F('sell_price_with_offer') * (1 + F('vat') / 100)),
+                default=F('sell_price_with_offer'),
+                output_field=DecimalField()
+            )
+        )
+        # print(queryset)
+
         if start_price and end_price:
-            print('1')
-            print(start_price)
-            print(end_price)
-            queryset = queryset.filter(sell_price_per_unit__range=(start_price,end_price))
+            queryset = queryset.filter(sell_price_with_vat__range=(start_price, end_price))
         elif start_price:
-            print('2')
-            queryset = queryset.filter(sell_price_per_unit__gte=start_price)
+            queryset = queryset.filter(sell_price_with_vat__gte=start_price)
         elif end_price:
-            print('3')
-            print(end_price)
-            queryset = queryset.filter(sell_price_per_unit__range=(0,end_price))
+            queryset = queryset.filter(sell_price_with_vat__range=(0, end_price))
 
         if delivery_start_date and delivery_end_date:
             queryset = queryset.filter(possible_delivery_date__range=(delivery_start_date,delivery_end_date))

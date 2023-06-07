@@ -11,7 +11,7 @@ from user.serializers import CustomerProfileDetailSerializer, DivisionSerializer
 from django.utils import timezone
 from django.db.models import Sum
 from django.db.models import Q
-from django.db.models.functions import Coalesce
+from django.db.models.functions import Coalesce, Round
 from rest_framework.exceptions import ValidationError
 from datetime import date
 from django.template.loader import render_to_string
@@ -80,6 +80,9 @@ class CheckoutSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Order items are missing')
 
         payment_type = validated_data.get('payment_type')
+        coupon = validated_data.get('coupon')
+        coupon_status = validated_data.get('coupon_status')
+        coupon_discount_amount = validated_data.get('coupon_discount_amount', 0.0)
 
         if payment_type == 'PG':
             order_instance = Order.objects.create(
@@ -107,6 +110,12 @@ class CheckoutSerializer(serializers.ModelSerializer):
                 except:
                     agent_commission = 0.0
 
+                suborder_instance_count = 0
+                total_discount_amount = validated_data.get('coupon_discount_amount', 0.0)
+                num_suborders = len(order_items)
+                sub_discount_amount = total_discount_amount / num_suborders
+                print(sub_discount_amount)
+
                 total_price = float(unit_price) * float(quantity)
                 print(total_price,"price")
                 if int(quantity) > product.quantity:
@@ -124,7 +133,11 @@ class CheckoutSerializer(serializers.ModelSerializer):
                                                                delivery_date=product.possible_delivery_date,
                                                                payment_status='PAID',
                                                                delivery_charge=delivery_charge,
-                                                               order_status='ON_PROCESS')
+                                                               order_status='ON_PROCESS',
+                                                               coupon=coupon,
+                                                               coupon_discount_amount=coupon_discount_amount,
+                                                               coupon_status=coupon_status,
+                                                               divided_discount_amount=sub_discount_amount)
                     else:
                         suborder_obj = SubOrder.objects.create(order=order_instance,
                                                                user=self.context['request'].user,
@@ -134,7 +147,11 @@ class CheckoutSerializer(serializers.ModelSerializer):
                                                                delivery_date=product.possible_delivery_date,
                                                                payment_status='DUE',
                                                                delivery_charge=delivery_charge,
-                                                               order_status='ON_PROCESS')
+                                                               order_status='ON_PROCESS',
+                                                               coupon=coupon,
+                                                               coupon_discount_amount=coupon_discount_amount,
+                                                               coupon_status=coupon_status,
+                                                               divided_discount_amount=sub_discount_amount)
                     suborders[suborder_key] = suborder_obj
                 else:
                     suborder_obj.total_price += total_price
@@ -467,6 +484,7 @@ class AgentMukamLocationSetupDataSerializer(serializers.ModelSerializer):
                   'title',
                   'whole_quantity',
                   'product_unit_title',
+                  'commission'
                   ]
     def get_whole_quantity(self, obj):
         try:
@@ -1327,11 +1345,13 @@ class AdminAgentWiseSaleReportFarmerSerializer(serializers.ModelSerializer):
     def get_commission_per_farmer(self, obj):
         start_date = self.context['start_date']
         end_date = self.context['end_date']
+        agent_id = self.context['agent_id']
 
         if start_date and end_date:
-            filtered_queryset = OrderItem.objects.filter(product__user=obj.id, suborder__payment_status='PAID', created_at__range=(start_date,end_date))
+            filtered_queryset = OrderItem.objects.filter(product__user__agent_user_id=agent_id, suborder__payment_status='PAID', created_at__range=(start_date,end_date))
         else:
-            filtered_queryset = OrderItem.objects.filter(product__user=obj.id, suborder__payment_status='PAID')
+            filtered_queryset = OrderItem.objects.filter(product__user__agent_user_id=agent_id, suborder__payment_status='PAID')
+
         total_sum = filtered_queryset.aggregate(total=Sum('commission_total'))['total'] or 0
         return total_sum
 
@@ -1343,8 +1363,8 @@ class AdminAgentWiseSaleReportFarmerSerializer(serializers.ModelSerializer):
             filtered_queryset = OrderItem.objects.filter(product__user=obj.id, suborder__payment_status='PAID', created_at__range=(start_date,end_date))
         else:
             filtered_queryset = OrderItem.objects.filter(product__user=obj.id, suborder__payment_status='PAID')
-        total_sum = filtered_queryset.aggregate(total=Sum('total_price'))['total'] or 0
-        return total_sum
+        total_sum = filtered_queryset.aggregate(total=  Sum('total_price') )['total'] or 0
+        return round(total_sum, 2)
 
 class AdminAgentWiseSaleReportSerializer(serializers.ModelSerializer):
     farmers = serializers.SerializerMethodField('get_farmers')
@@ -1354,16 +1374,14 @@ class AdminAgentWiseSaleReportSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'full_name', 'phone_number', 'farmers',  'products', 'total_commission']
-        
 
     def get_farmers(self, obj):
         start_date = self.context['request'].query_params.get('start_date')
         end_date = self.context['request'].query_params.get('end_date')
 
-        # query = User.objects.filter(user_type='FARMER', agent_user_id=obj.id, is_active=True)
         query = User.objects.filter(user_type='FARMER', agent_user_id=obj.id, is_active=True, product_seller__order_item_product__isnull=False, product_seller__order_item_product__suborder__payment_status='PAID').distinct()
         serializer = AdminAgentWiseSaleReportFarmerSerializer(instance=query, many=True, context={
-                                                'request': self.context['request'], 'start_date':start_date, 'end_date':end_date})
+                                                'request': self.context['request'], 'start_date':start_date, 'end_date':end_date, 'agent_id':obj.id})
         return serializer.data
 
     def get_products(self, obj):
@@ -1386,6 +1404,8 @@ class AdminAgentWiseSaleReportSerializer(serializers.ModelSerializer):
             filtered_queryset = OrderItem.objects.filter(product__user__agent_user_id=obj.id, suborder__payment_status='PAID', created_at__range=(start_date,end_date))
         else:
             filtered_queryset = OrderItem.objects.filter(product__user__agent_user_id=obj.id, suborder__payment_status='PAID')
+        # print("agent_id2")
+        # print(obj.id)
         total_sum = filtered_queryset.aggregate(total=Sum('commission_total'))['total'] or 0
         return total_sum
 

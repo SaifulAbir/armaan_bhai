@@ -500,6 +500,7 @@ class PublishProductSerializer(serializers.ModelSerializer):
 class BestSellingProductListSerializer(serializers.ModelSerializer):
     sell_price_per_unit = serializers.SerializerMethodField('get_sell_price_with_vat')
     user = serializers.SerializerMethodField('get_farmer_info')
+    previous_sell_price_per_unit = serializers.SerializerMethodField('get_previous_sell_price_with_vat')
 
     class Meta:
         model = Product
@@ -516,6 +517,7 @@ class BestSellingProductListSerializer(serializers.ModelSerializer):
             'full_description',
             'commission',
             'user',
+            'previous_sell_price_per_unit'
         ]
 
     def get_sell_price_with_vat(self, obj):
@@ -526,15 +528,23 @@ class BestSellingProductListSerializer(serializers.ModelSerializer):
             return round(sell_price_with_vat, 2)
         else:
             return sell_price
-        
+
     def get_farmer_info(self, obj):
         try:
             farmer = obj.user
-            print(farmer)
             serializer = FarmerListForBestSellingSerializer(instance=farmer)
             return serializer.data
         except:
             return None
+
+    def get_previous_sell_price_with_vat(self, obj):
+        vat = obj.vat
+        sell_price = obj.sell_price_per_unit
+        if vat is not None:
+            sell_price_with_vat = sell_price * (1 + vat / 100)
+            return round(sell_price_with_vat, 2)
+        else:
+            return sell_price
 
 
 class AdminOfferProductsSerializer(serializers.ModelSerializer):

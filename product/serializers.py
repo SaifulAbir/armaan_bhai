@@ -514,6 +514,7 @@ class BestSellingProductListSerializer(serializers.ModelSerializer):
             'unit',
             'sell_count',
             'full_description',
+            'commission',
             'user',
         ]
 

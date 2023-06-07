@@ -521,13 +521,34 @@ class BestSellingProductListSerializer(serializers.ModelSerializer):
         ]
 
     def get_sell_price_with_vat(self, obj):
-        vat = obj.vat  # assuming vat is defined in the Product model
         sell_price = obj.sell_price_per_unit
-        if vat is not None:
-            sell_price_with_vat = sell_price * (1 + vat / 100)
-            return round(sell_price_with_vat, 2)
+        offer = OfferProduct.objects.filter(product=obj, offer__is_active=True,
+                                            offer__end_date__gte=timezone.now()).first()
+
+        if offer:
+            discount_type = offer.offer.discount_price_type
+            discount_value = offer.offer.discount_price
+
+            if discount_type == 'per':
+                offer_price = (1 - (discount_value / 100)) * sell_price
+            elif discount_type == 'flat':
+                offer_price = sell_price - discount_value
+            else:
+                offer_price = sell_price
+
+            vat = obj.vat
+            if vat is not None:
+                sell_price_with_vat = offer_price * (1 + vat / 100)
+                return round(sell_price_with_vat, 2)
+            else:
+                return round(offer_price, 2)
         else:
-            return sell_price
+            vat = obj.vat
+            if vat is not None:
+                sell_price_with_vat = sell_price * (1 + vat / 100)
+                return round(sell_price_with_vat, 2)
+            else:
+                return round(sell_price, 2)
 
     def get_farmer_info(self, obj):
         try:

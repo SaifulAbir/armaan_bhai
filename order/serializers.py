@@ -646,9 +646,10 @@ class AdminOrdersListByPickupPointsListSerializer(serializers.ModelSerializer):
 class ProductItemSerializer(serializers.ModelSerializer):
     product_title = serializers.SerializerMethodField('get_product_title')
     farmer_unit_price = serializers.SerializerMethodField('get_farmer_unit_price')
+    unit_title = serializers.CharField(source="product.unit.title", read_only=True)
     class Meta:
         model = OrderItem
-        fields = ['id', 'product','product_title', 'quantity', 'unit_price','farmer_unit_price', 'total_price', 'is_qc_passed','payment_status']
+        fields = ['id', 'product','product_title', 'quantity', 'unit_title', 'unit_price','farmer_unit_price', 'total_price', 'is_qc_passed','payment_status']
 
     def get_product_title(self, obj):
         return obj.product.title

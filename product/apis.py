@@ -242,6 +242,36 @@ class UnitListAPIView(ListAPIView):
     def get_queryset(self):
         queryset = Units.objects.filter(is_active=True)
         return queryset
+    
+
+class AdminUnitCreateAPIView(CreateAPIView):
+    serializer_class = UnitListSerializer
+
+    def post(self, request, *args, **kwargs):
+        return super(AdminUnitCreateAPIView, self).post(request, *args, **kwargs)
+    
+
+class AdminUnitDeleteAPIView(ListAPIView):
+    serializer_class = UnitListSerializer
+    lookup_field = 'id'
+    lookup_url_kwarg = 'id'
+
+    def get_queryset(self):
+        id = self.kwargs['id']
+        if self.request.user.user_type == "ADMIN":
+            unit_obj = Units.objects.filter(id=id).exists()
+            if unit_obj:
+                Units.objects.filter(id=id).update(is_active=False)
+                queryset = Units.objects.filter(
+                    is_active=True).order_by('-created_at')
+                return queryset
+            else:
+                raise ValidationError(
+                    {"msg": 'Units data Does not exist!'}
+                )
+        else:
+            raise ValidationError(
+                {"msg": 'You can not delete Units data, because you are not an Admin!'})
 
 
 class CustomerBestSellingProductListAPI(ListAPIView):

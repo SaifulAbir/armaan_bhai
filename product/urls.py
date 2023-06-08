@@ -14,7 +14,6 @@ urlpatterns = [
     path('admin/product/update/<str:slug>/', ProductUpdateAPIView.as_view(), name='product_view'),
     path('admin/product/publish-or-unpublish/<str:slug>/', PublishProductUpdateAPIView.as_view(), name='product_publish'),
     path('customer/category/list/', CategoryListAPIView.as_view(), name='product_list'),
-    path('admin/unit/list/', UnitListAPIView.as_view(), name='unit_list'),
     path('customer/sub-category-list/<int:cid>/', SubCategoryListAPIView.as_view()),
 
     path('customer/best-selling-product-list/', CustomerBestSellingProductListAPI.as_view()),
@@ -38,4 +37,8 @@ urlpatterns = [
     path('admin/sub-category-update/<int:id>/', AdminSubCategoryUpdateAPIView.as_view()),
     path('admin/category-delete/<int:id>/', AdminCategoryDeleteAPIView.as_view()),
     path('admin/sub-category-delete/<int:id>/', AdminSubCategoryDeleteAPIView.as_view()),
+
+    path('admin/unit/list/', UnitListAPIView.as_view(), name='unit_list'),
+    path('admin/unit-create/', AdminUnitCreateAPIView.as_view()),
+    path('admin/unit-delete/<int:id>/', AdminUnitDeleteAPIView.as_view()),
 ]

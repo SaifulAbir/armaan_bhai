@@ -501,6 +501,7 @@ class BestSellingProductListSerializer(serializers.ModelSerializer):
     sell_price_per_unit = serializers.SerializerMethodField('get_sell_price_with_vat')
     user = serializers.SerializerMethodField('get_farmer_info')
     previous_sell_price_per_unit = serializers.SerializerMethodField('get_previous_sell_price_with_vat')
+    unit = UnitListSerializer(many=False, read_only=True)
 
     class Meta:
         model = Product

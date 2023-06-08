@@ -569,7 +569,7 @@ class PaymentDetailsSerializer(serializers.ModelSerializer):
                   'farmer', 'created_by']
 
 
-class PaymentDetailsUpdateSerializer(serializers.ModelSerializer):
+class PaymentDetailsUpdateSerializer(serializers.ModelSerializer): 
     class Meta:
         model = FarmerAccountInfo
         fields = ['id', 'account_type', 'account_number', 'account_holder', 'bank_name', 'brunch_name', 'Mobile_number', 'farmer', 'created_by']

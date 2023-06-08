@@ -306,7 +306,7 @@ class ProductViewSerializer(serializers.ModelSerializer):
     category_title = serializers.CharField(source="category.title", read_only=True)
     related_products = serializers.SerializerMethodField('get_related_products')
     sell_price_per_unit = serializers.SerializerMethodField('get_sell_price_with_vat')
-    unit = serializers.CharField(source='product.unit.title', read_only=True)
+    # unit = serializers.CharField(source='product.unit.title', read_only=True)
 
     class Meta:
         model = Product

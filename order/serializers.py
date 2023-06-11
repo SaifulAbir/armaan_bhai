@@ -569,7 +569,7 @@ class PaymentDetailsSerializer(serializers.ModelSerializer):
                   'farmer', 'created_by']
 
 
-class PaymentDetailsUpdateSerializer(serializers.ModelSerializer):
+class PaymentDetailsUpdateSerializer(serializers.ModelSerializer): 
     class Meta:
         model = FarmerAccountInfo
         fields = ['id', 'account_type', 'account_number', 'account_holder', 'bank_name', 'brunch_name', 'Mobile_number', 'farmer', 'created_by']
@@ -646,9 +646,10 @@ class AdminOrdersListByPickupPointsListSerializer(serializers.ModelSerializer):
 class ProductItemSerializer(serializers.ModelSerializer):
     product_title = serializers.SerializerMethodField('get_product_title')
     farmer_unit_price = serializers.SerializerMethodField('get_farmer_unit_price')
+    unit_title = serializers.CharField(source="product.unit.title", read_only=True)
     class Meta:
         model = OrderItem
-        fields = ['id', 'product','product_title', 'quantity', 'unit_price','farmer_unit_price', 'total_price', 'is_qc_passed','payment_status']
+        fields = ['id', 'product','product_title', 'quantity', 'unit_title', 'unit_price','farmer_unit_price', 'total_price', 'is_qc_passed','payment_status']
 
     def get_product_title(self, obj):
         return obj.product.title
@@ -808,7 +809,7 @@ class SalesOfAnAgentSerializer(serializers.ModelSerializer):
         else:
             total_amount = OrderItem.objects.filter(product__user__agent_user_id=obj.id, suborder__payment_status='PAID').aggregate(total=Sum('total_price'))['total'] or 0
 
-        return total_amount
+        return round(total_amount, 2)
 
 
 class FarmerOwnPaymentListSerializer(serializers.ModelSerializer):

@@ -306,6 +306,7 @@ class ProductViewSerializer(serializers.ModelSerializer):
     category_title = serializers.CharField(source="category.title", read_only=True)
     related_products = serializers.SerializerMethodField('get_related_products')
     sell_price_per_unit = serializers.SerializerMethodField('get_sell_price_with_vat')
+    unit = UnitListSerializer(many=False, read_only=True)
 
     class Meta:
         model = Product
@@ -501,6 +502,7 @@ class BestSellingProductListSerializer(serializers.ModelSerializer):
     sell_price_per_unit = serializers.SerializerMethodField('get_sell_price_with_vat')
     user = serializers.SerializerMethodField('get_farmer_info')
     previous_sell_price_per_unit = serializers.SerializerMethodField('get_previous_sell_price_with_vat')
+    unit = UnitListSerializer(many=False, read_only=True)
 
     class Meta:
         model = Product

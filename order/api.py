@@ -797,22 +797,55 @@ class FarmersPaymentSummaryAPIView(ListAPIView):
             farmer_name = self.request.query_params.get('farmer_name')
             start_date = self.request.query_params.get('start_date')
             end_date = self.request.query_params.get('end_date')
+            if end_date:
+                oed = datetime.strptime(str(end_date), '%Y-%m-%d')
+                end_date = oed + timedelta(days=1)
+            if start_date and end_date and division_id and district_id and upazilla_id:
+                queryset = queryset.filter(farmer__division__id=division_id, farmer__district__id=district_id, farmer__upazilla__id=upazilla_id, created_at__range=(start_date, end_date))
 
-            if division_id:
-                queryset = queryset.filter(farmer__division_id=division_id)
+            elif start_date and end_date and division_id and district_id:
+                queryset = queryset.filter(farmer__division__id=division_id, farmer__district__id=district_id, created_at__range=(start_date, end_date))
+            
+            elif start_date and end_date and division_id and upazilla_id:
+                queryset = queryset.filter(farmer__division__id=division_id, farmer__upazilla__id=upazilla_id, created_at__range=(start_date, end_date))
 
-            if district_id:
-                queryset = queryset.filter(farmer__district_id=district_id)
+            elif start_date and end_date and district_id and upazilla_id:
+                queryset = queryset.filter(farmer__district__id=district_id, farmer__upazilla__id=upazilla_id, created_at__range=(start_date, end_date))
+            
+            elif start_date and end_date and division_id:
+                queryset = queryset.filter(farmer__division__id=division_id, created_at__range=(start_date, end_date))
 
-            if upazilla_id:
-                queryset = queryset.filter(farmer__upazilla_id=upazilla_id)
+            elif start_date and end_date and district_id:
+                queryset = queryset.filter(farmer__district__id=district_id, created_at__range=(start_date, end_date))
+
+            elif start_date and end_date and upazilla_id:
+                queryset = queryset.filter(farmer__upazilla__id=upazilla_id, created_at__range=(start_date, end_date))
+
+            elif division_id and district_id and upazilla_id:
+                queryset = queryset.filter(farmer__division__id=division_id, farmer__district__id=district_id, farmer__upazilla__id=upazilla_id)
+            
+            elif division_id and district_id:
+                queryset = queryset.filter(farmer__division__id=division_id, farmer__district__id=district_id)
+            
+            elif division_id and upazilla_id:
+                queryset = queryset.filter(farmer__division__id=division_id, farmer__upazilla__id=upazilla_id)
+
+            elif district_id and upazilla_id:
+                queryset = queryset.filter(farmer__district__id=district_id, farmer__upazilla__id=upazilla_id)
+
+            elif division_id:
+                queryset = queryset.filter(farmer__division__id=division_id)
+
+            elif district_id:
+                queryset = queryset.filter(farmer__district__id=district_id)
+
+            elif upazilla_id:
+                queryset = queryset.filter(farmer__upazilla__id=upazilla_id)
 
             if farmer_name:
                 queryset = queryset.filter(Q(farmer_account_info__farmer__full_name=farmer_name) | Q(farmer_account_info__farmer__full_name=farmer_name.replace(' ', '')))
 
             if start_date and end_date:
-                oed = datetime.strptime(str(end_date), '%Y-%m-%d')
-                end_date = oed + timedelta(days=1)
                 queryset = queryset.filter(Q(date__range=(start_date, end_date)))
 
             if not (division_id or district_id or upazilla_id or farmer_name or start_date or end_date):

@@ -184,15 +184,15 @@ class FarmerCreateSerializer(serializers.ModelSerializer):
 
 class CreateCustomerSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(required=True, validators=[UniqueValidator(queryset=User.objects.filter(is_active=True))])
-    otp = serializers.SerializerMethodField()
-
-    def get_otp(self, obj):
-        otp = obj.user_otp.last().otp_number
-        return otp
+    # otp = serializers.SerializerMethodField()
+    #
+    # def get_otp(self, obj):
+    #     otp = obj.user_otp.last().otp_number
+    #     return otp
 
     class Meta:
         model = User
-        fields = ['id', 'full_name', 'phone_number', 'otp']
+        fields = ['id', 'full_name', 'phone_number']
         extra_kwargs = {"full_name": {"required": True},
                         "phone_number": {"required": True},
                         'username': {'read_only': True}
@@ -225,15 +225,15 @@ class CreateCustomerSerializer(serializers.ModelSerializer):
 
 class CustomerLoginSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField()
-    otp = serializers.SerializerMethodField()
-
-    def get_otp(self, obj):
-        otp = obj.user_otp.last().otp_number
-        return otp
+    # otp = serializers.SerializerMethodField()
+    #
+    # def get_otp(self, obj):
+    #     otp = obj.user_otp.last().otp_number
+    #     return otp
 
     class Meta:
         model = User
-        fields = ['id', 'full_name', 'phone_number', 'otp']
+        fields = ['id', 'full_name', 'phone_number']
         extra_kwargs = {"phone_number": {"required": True},
                         "full_name": {"read_only": True}}
 
@@ -261,9 +261,8 @@ class CustomerLoginSerializer(serializers.ModelSerializer):
 class CustomerOTPReSendSerializer(serializers.ModelSerializer):
     class Meta:
         extra_kwargs = {'contact_number': {'required': True},
-                        'otp_number': {'read_only': True},
                         }
-        fields = ('contact_number', 'otp_number')
+        fields = ('contact_number',)
         model = OTPModel
 
     def create(self, validated_data):

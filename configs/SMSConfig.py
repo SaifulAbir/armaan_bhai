@@ -6,8 +6,11 @@ from twilio.rest import Client
 from zeep import Client
 import math
 from random import randint
+import requests
+from urllib.parse import quote
 
 from armaan_bhai import settings
+from armaan_bhai.settings import SMS_USER_ID, SMS_PASSWORD, SMS_MESSAGE
 
 otp_number_max_length = 6
 
@@ -65,6 +68,11 @@ class OTPManager(object):
 
     def initialize_otp_and_sms_otp(self, contact_number):
         otp_number = self.initialize_otp(contact_number)
+        mobile = "88" + contact_number
+        sender_id = "SMS Alert"
+        url = "https://mshastra.com/sendurl.aspx?user={}&pwd={}&senderid={}&mobileno={}&msgtext={}&priority=High&CountryCode=ALL".format(SMS_USER_ID, SMS_PASSWORD, sender_id, mobile, SMS_MESSAGE.format(otp_number))
+        print(requests.get(url))
+        # data = response.json()
         # self.send_twilio_message(contact_number, "Hello From Saiful")
         #
         # if int(otp_number):

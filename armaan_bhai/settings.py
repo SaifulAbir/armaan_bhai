@@ -190,9 +190,13 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=8),
 }
 
-TWILIO_ACCOUNT_SID = 'AC9543d0d3ba7583d0629e55bb80eb360d'
-TWILIO_AUTH_TOKEN = '9b5b15f001941d855cd36f9f44319250'
-TWILIO_PHONE_NUMBER = '+8801783375471'
+# TWILIO_ACCOUNT_SID = 'AC9543d0d3ba7583d0629e55bb80eb360d'
+# TWILIO_AUTH_TOKEN = '9b5b15f001941d855cd36f9f44319250'
+# TWILIO_PHONE_NUMBER = '+8801783375471'
+SMS_USER_ID = os.environ.get('SMS_USER_ID')
+SMS_PASSWORD = os.environ.get('SMS_PASSWORD')
+SMS_MESSAGE = 'Your OTP is: {}. It will be valid for 2 minutes. Armaan Bhai'
+# SMS_MESSAGE = 'Fuck Yourself. It will be valid for 2 minutes. Otherwise you will regret'
 
 # email settings
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

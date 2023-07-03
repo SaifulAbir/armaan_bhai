@@ -299,6 +299,16 @@ class ProductListSerializer(serializers.ModelSerializer):
     #         return sell_price
 
 
+class ProductListDropdownSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Product
+        fields = [
+            'id',
+            'title',
+        ]
+
+
 class ProductViewSerializer(serializers.ModelSerializer):
     production_steps = ProductionStepSerializer(many=True, read_only=True)
     product_images = ProductImageSerializer(many=True, read_only=True)

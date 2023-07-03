@@ -6,6 +6,7 @@ urlpatterns = [
     path('admin/create/product/', ProductCreateAPIView.as_view(), name='create_product'),
     # customer product list
     path('customer/product/list/', CustomerProductListAPI.as_view(), name='product_list'),
+    path('customer/product/dropdown/list', ProductListDropdownAPI.as_view(), name='product_list_dropdown'),
     path('admin/farmer-product-list/<int:fid>/', FarmerProductListAPI.as_view()),
     # agent product list
     path('agent/product-list/', AgentProductListAPI.as_view()),

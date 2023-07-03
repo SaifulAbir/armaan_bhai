@@ -122,6 +122,28 @@ class CustomerProductListAPI(ListAPIView):
 
         return response
 
+
+class ProductListDropdownAPI(ListAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = ProductListDropdownSerializer
+
+    def get_queryset(self):
+        request = self.request
+        query = request.GET.get('query')
+
+        today = timezone.now().date()
+
+        queryset = Product.objects.filter(status="PUBLISH", possible_productions_date__gt=today, quantity__gt=0).order_by('-created_at')
+
+        if query:
+            queryset = queryset.filter(
+                Q(title__icontains=query)
+            )
+        else:
+            queryset = queryset.none()
+        return queryset
+
+
 class FarmerProductListAPI(ListAPIView):
     serializer_class = ProductListSerializer
     pagination_class = ProductCustomPagination
